@@ -33,18 +33,24 @@ type GKEClusterConfig struct {
 
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
-	AmazonCredentialSecret string            `json:"amazonCredentialSecret"`
-	DisplayName            string            `json:"displayName" norman:"noupdate"`
-	Region                 string            `json:"region" norman:"noupdate"`
-	Imported               bool              `json:"imported" norman:"noupdate"`
-	KubernetesVersion      *string           `json:"kubernetesVersion"`
-	Tags                   map[string]string `json:"tags"`
-	SecretsEncryption      *bool             `json:"secretsEncryption" norman:"noupdate"`
-	LoggingTypes           []string          `json:"loggingTypes"`
-	Subnets                []string          `json:"subnets" norman:"noupdate"`
-	SecurityGroups         []string          `json:"securityGroups" norman:"noupdate"`
-	ServiceRole            *string           `json:"serviceRole" norman:"noupdate"`
-	NodeGroups             []NodeGroup       `json:"nodeGroups"`
+	DisplayName        string            `json:"displayName" norman:"noupdate"`
+	Region             string            `json:"region" norman:"noupdate"`
+	Imported           bool              `json:"imported" norman:"noupdate"`
+	Description        string            `json:"description"`
+	EnableAlphaFeature bool              `json:"enableAlphaFeature"`
+	ClusterAddons      ClusterAddons     `json:"clusterAddons"`
+	ClusterIpv4Cidr    string            `json:"clusterIpv4Cidr"`
+	ProjectID          string            `json:"projectID"`
+	CredentialContent  string            `json:"credentialContent"`
+	ClusterName        string            `json:"clusterName"`
+	KubernetesVersion  *string           `json:"kubernetesVersion"`
+	Tags               map[string]string `json:"tags"`
+	SecretsEncryption  *bool             `json:"secretsEncryption" norman:"noupdate"`
+	LoggingTypes       []string          `json:"loggingTypes"`
+	Subnets            []string          `json:"subnets" norman:"noupdate"`
+	SecurityGroups     []string          `json:"securityGroups" norman:"noupdate"`
+	ServiceRole        *string           `json:"serviceRole" norman:"noupdate"`
+	NodeGroups         []NodeGroup       `json:"nodeGroups"`
 }
 
 type GKEClusterConfigStatus struct {
@@ -55,6 +61,13 @@ type GKEClusterConfigStatus struct {
 	// describes how the above network fields were provided. Valid values are provided and generated
 	NetworkFieldsSource string `json:"networkFieldsSource"`
 	FailureMessage      string `json:"failureMessage"`
+}
+
+type ClusterAddons struct {
+	HTTPLoadBalancing        *bool `json:"httpLoadBalancing`
+	HorizontalPodAutoscaling *bool `json:"horizontalPodAutoscaling"`
+	KubernetesDashboard      *bool `json:"kubernetesDashboard"`
+	NetworkPolicyConfig      *bool `json:"networkPolicyConfig"`
 }
 
 type NodeGroup struct {

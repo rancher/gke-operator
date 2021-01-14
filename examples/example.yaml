@@ -1,0 +1,11 @@
+apiVersion: gke.cattle.io/v1
+kind: GKEClusterConfig
+metadata:
+  name: mareks-cluster
+spec:
+  displayName: "display-name"
+  clusterName: "cluster-name"
+  region: "us-east1-b"
+  kubernetesVersion: "1.17.15-gke.800"
+  projectID: "my-project-id"
+  credentialContent: "json-service-account-file"

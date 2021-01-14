@@ -17,12 +17,38 @@ spec:
       properties:
         spec:
           properties:
-            amazonCredentialSecret:
+            clusterAddons:
+              properties:
+                horizontalPodAutoscaling:
+                  nullable: true
+                  type: boolean
+                httpLoadBalancing:
+                  nullable: true
+                  type: boolean
+                kubernetesDashboard:
+                  nullable: true
+                  type: boolean
+                networkPolicyConfig:
+                  nullable: true
+                  type: boolean
+              type: object
+            clusterIpv4Cidr:
+              nullable: true
+              type: string
+            clusterName:
+              nullable: true
+              type: string
+            credentialContent:
+              nullable: true
+              type: string
+            description:
               nullable: true
               type: string
             displayName:
               nullable: true
               type: string
+            enableAlphaFeature:
+              type: boolean
             imported:
               type: boolean
             kubernetesVersion:
@@ -85,6 +111,9 @@ spec:
                 type: object
               nullable: true
               type: array
+            projectID:
+              nullable: true
+              type: string
             region:
               nullable: true
               type: string
