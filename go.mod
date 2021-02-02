@@ -1,10 +1,11 @@
 module github.com/rancher/gke-operator
 
-go 1.13
+go 1.14
 
 replace k8s.io/client-go => k8s.io/client-go v0.18.0
 
 require (
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/rancher/lasso v0.0.0-20200905045615-7fcb07d6a20b
 	github.com/rancher/rke v1.2.4
 	github.com/rancher/wrangler v0.7.3-0.20201020003736-e86bc912dfac

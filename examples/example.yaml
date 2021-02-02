@@ -3,9 +3,27 @@ kind: GKEClusterConfig
 metadata:
   name: mareks-cluster
 spec:
-  displayName: "display-name"
-  clusterName: "cluster-name"
+  displayName: "my-cluster"
+  resourceGroup: "my-group"
+  clusterName: "mareks-cluster-delete-me"
   region: "us-east1-b"
+  projectID: "suse-css-platform"
   kubernetesVersion: "1.17.15-gke.800"
-  projectID: "my-project-id"
-  credentialContent: "json-service-account-file"
+  credentialContent: '{}'
+  nodePools: 
+    - name: my-node-pool
+      autoscaling:
+          enabled: true
+          maxNodeCount: 3
+          minNodeCount: 2
+      config:
+          diskSizeGb: 50
+          diskType: "ssd"
+          imageType: "ssd"
+          localSsdCount: 1
+          machineType: ""
+          preemptible: false
+      initialNodeCount: 2
+      maxPodsConstraint: 550
+      version: "1.17.15-gke.800"
+      

@@ -33,11 +33,11 @@ type GKEClusterConfig struct {
 
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
-	DisplayName        string            `json:"displayName" norman:"noupdate"`
 	Region             string            `json:"region" norman:"noupdate"`
+	Zone               string            `json:"zone" norman:"noupdate"`
 	Imported           bool              `json:"imported" norman:"noupdate"`
 	Description        string            `json:"description"`
-	EnableAlphaFeature bool              `json:"enableAlphaFeature"`
+	EnableAlphaFeature *bool             `json:"enableAlphaFeature"`
 	ClusterAddons      ClusterAddons     `json:"clusterAddons"`
 	ClusterIpv4Cidr    string            `json:"clusterIpv4Cidr"`
 	ProjectID          string            `json:"projectID"`
@@ -50,7 +50,7 @@ type GKEClusterConfigSpec struct {
 	Subnets            []string          `json:"subnets" norman:"noupdate"`
 	SecurityGroups     []string          `json:"securityGroups" norman:"noupdate"`
 	ServiceRole        *string           `json:"serviceRole" norman:"noupdate"`
-	NodeGroups         []NodeGroup       `json:"nodeGroups"`
+	NodePools          []NodePoolConfig  `json:"nodePools"`
 }
 
 type GKEClusterConfigStatus struct {
@@ -70,17 +70,34 @@ type ClusterAddons struct {
 	NetworkPolicyConfig      *bool `json:"networkPolicyConfig"`
 }
 
-type NodeGroup struct {
-	Gpu           *bool              `json:"gpu"`
-	NodegroupName *string            `json:"nodegroupName" norman:"required"`
-	DiskSize      *int64             `json:"diskSize"`
-	InstanceType  *string            `json:"instanceType" norman:"required"`
-	Labels        map[string]*string `json:"labels"`
-	Ec2SshKey     *string            `json:"ec2SshKey"`
-	DesiredSize   *int64             `json:"desiredSize"`
-	MaxSize       *int64             `json:"maxSize"`
-	MinSize       *int64             `json:"minSize"`
-	Subnets       []string           `json:"subnets"`
-	Tags          map[string]*string `json:"tags"`
-	Version       *string            `json:"version"`
+type NodePoolConfig struct {
+	Autoscaling       *NodePoolAutoscaling `json:"autoscaling,omitempty"`
+	Config            *NodeConfig          `json:"config,omitempty"`
+	InitialNodeCount  *int64               `json:"initialNodeCount,omitempty"`
+	MaxPodsConstraint *int32               `json:"maxPodsConstraint,omitempty"`
+	Name              *string              `json:"name,omitempty"`
+	Version           *string              `json:"version,omitempty"`
+}
+
+type NodePoolAutoscaling struct {
+	Enabled      *bool  `json:"enabled,omitempty"`
+	MaxNodeCount *int64 `json:"maxNodeCount,omitempty"`
+	MinNodeCount *int64 `json:"minNodeCount,omitempty"`
+}
+
+type NodeConfig struct {
+	DiskSizeGb    *int64             `json:"diskSizeGb,omitempty"`
+	DiskType      *string            `json:"diskType,omitempty"`
+	ImageType     *string            `json:"imageType,omitempty"`
+	Labels        *map[string]string `json:"labels,omitempty"`
+	LocalSsdCount *int64             `json:"localSsdCount,omitempty"`
+	MachineType   *string            `json:"machineType,omitempty"`
+	Preemptible   *bool              `json:"preemptible,omitempty"`
+	Taints        []*NodeTaintConfig `json:"taints,omitempty"`
+}
+
+type NodeTaintConfig struct {
+	Effect string `json:"effect,omitempty"`
+	Key    string `json:"key,omitempty"`
+	Value  string `json:"value,omitempty"`
 }

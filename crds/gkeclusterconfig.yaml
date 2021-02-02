@@ -44,10 +44,8 @@ spec:
             description:
               nullable: true
               type: string
-            displayName:
-              nullable: true
-              type: string
             enableAlphaFeature:
+              nullable: true
               type: boolean
             imported:
               type: boolean
@@ -60,51 +58,74 @@ spec:
                 type: string
               nullable: true
               type: array
-            nodeGroups:
+            nodePools:
               items:
                 properties:
-                  desiredSize:
+                  autoscaling:
                     nullable: true
-                    type: integer
-                  diskSize:
-                    nullable: true
-                    type: integer
-                  ec2SshKey:
-                    nullable: true
-                    type: string
-                  gpu:
-                    nullable: true
-                    type: boolean
-                  instanceType:
-                    nullable: true
-                    type: string
-                  labels:
-                    additionalProperties:
-                      nullable: true
-                      type: string
-                    nullable: true
+                    properties:
+                      enabled:
+                        nullable: true
+                        type: boolean
+                      maxNodeCount:
+                        nullable: true
+                        type: integer
+                      minNodeCount:
+                        nullable: true
+                        type: integer
                     type: object
-                  maxSize:
+                  config:
+                    nullable: true
+                    properties:
+                      diskSizeGb:
+                        nullable: true
+                        type: integer
+                      diskType:
+                        nullable: true
+                        type: string
+                      imageType:
+                        nullable: true
+                        type: string
+                      labels:
+                        additionalProperties:
+                          nullable: true
+                          type: string
+                        nullable: true
+                        type: object
+                      localSsdCount:
+                        nullable: true
+                        type: integer
+                      machineType:
+                        nullable: true
+                        type: string
+                      preemptible:
+                        nullable: true
+                        type: boolean
+                      taints:
+                        items:
+                          properties:
+                            effect:
+                              nullable: true
+                              type: string
+                            key:
+                              nullable: true
+                              type: string
+                            value:
+                              nullable: true
+                              type: string
+                          type: object
+                        nullable: true
+                        type: array
+                    type: object
+                  initialNodeCount:
                     nullable: true
                     type: integer
-                  minSize:
+                  maxPodsConstraint:
                     nullable: true
                     type: integer
-                  nodegroupName:
+                  name:
                     nullable: true
                     type: string
-                  subnets:
-                    items:
-                      nullable: true
-                      type: string
-                    nullable: true
-                    type: array
-                  tags:
-                    additionalProperties:
-                      nullable: true
-                      type: string
-                    nullable: true
-                    type: object
                   version:
                     nullable: true
                     type: string
@@ -141,6 +162,9 @@ spec:
                 type: string
               nullable: true
               type: object
+            zone:
+              nullable: true
+              type: string
           type: object
         status:
           properties:
