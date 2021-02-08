@@ -50,6 +50,15 @@ const (
 	NodePoolStatusError = "ERROR"
 )
 
+// Network Providers
+const (
+	// NetworkProviderUnspecified is an unspecified netowrk provider
+	NetworkProviderUnspecified = "PROVIDER_UNSPECIFIED"
+
+	// NetworkProviderCalico describes the calico provider
+	NetworkProviderCalico = "CALICO"
+)
+
 // Cluster Status
 const (
 	// ClusterStatusProvisioning The PROVISIONING state indicates the cluster is

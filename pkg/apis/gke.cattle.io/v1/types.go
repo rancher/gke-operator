@@ -33,24 +33,46 @@ type GKEClusterConfig struct {
 
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
-	Region             string            `json:"region" norman:"noupdate"`
-	Zone               string            `json:"zone" norman:"noupdate"`
-	Imported           bool              `json:"imported" norman:"noupdate"`
-	Description        string            `json:"description"`
-	EnableAlphaFeature *bool             `json:"enableAlphaFeature"`
-	ClusterAddons      ClusterAddons     `json:"clusterAddons"`
-	ClusterIpv4Cidr    string            `json:"clusterIpv4Cidr"`
-	ProjectID          string            `json:"projectID"`
-	CredentialContent  string            `json:"credentialContent"`
-	ClusterName        string            `json:"clusterName"`
-	KubernetesVersion  *string           `json:"kubernetesVersion"`
-	Tags               map[string]string `json:"tags"`
-	SecretsEncryption  *bool             `json:"secretsEncryption" norman:"noupdate"`
-	LoggingTypes       []string          `json:"loggingTypes"`
-	Subnets            []string          `json:"subnets" norman:"noupdate"`
-	SecurityGroups     []string          `json:"securityGroups" norman:"noupdate"`
-	ServiceRole        *string           `json:"serviceRole" norman:"noupdate"`
-	NodePools          []NodePoolConfig  `json:"nodePools"`
+	Region               string                `json:"region" norman:"noupdate"`
+	Zone                 string                `json:"zone" norman:"noupdate"`
+	Imported             bool                  `json:"imported" norman:"noupdate"`
+	Description          string                `json:"description"`
+	EnableAlphaFeature   *bool                 `json:"enableAlphaFeature"`
+	ClusterAddons        ClusterAddons         `json:"clusterAddons"`
+	ClusterIpv4Cidr      string                `json:"clusterIpv4Cidr"`
+	ProjectID            string                `json:"projectID"`
+	CredentialContent    string                `json:"credentialContent"`
+	ClusterName          string                `json:"clusterName"`
+	KubernetesVersion    *string               `json:"kubernetesVersion"`
+	Tags                 map[string]string     `json:"tags"`
+	SecretsEncryption    *bool                 `json:"secretsEncryption" norman:"noupdate"`
+	LoggingTypes         []string              `json:"loggingTypes"`
+	Subnets              []string              `json:"subnets" norman:"noupdate"`
+	SecurityGroups       []string              `json:"securityGroups" norman:"noupdate"`
+	ServiceRole          *string               `json:"serviceRole" norman:"noupdate"`
+	EnableTpu            bool                  `json:"enableTpu,omitempty"`
+	NodePools            []NodePoolConfig      `json:"nodePools"`
+	NetworkConfig        *NetworkConfig        `json:"networkConfig,omitempty"`
+	NetworkPolicy        *NetworkPolicy        `json:"networkPolicy,omitempty"`
+	PrivateClusterConfig *PrivateClusterConfig `json:"privateClusterConfig,omitempty"`
+}
+
+type NetworkConfig struct {
+	Network    *string `json:"network,omitempty"`
+	Subnetwork *string `json:"subnetwork,omitempty"`
+}
+
+type NetworkPolicy struct {
+	Enabled  *bool   `json:"enabled,omitempty"`
+	Provider *string `json:"provider,omitempty"`
+}
+
+type PrivateClusterConfig struct {
+	EnablePrivateEndpoint *bool  `json:"enablePrivateEndpoint,omitempty"`
+	EnablePrivateNodes    *bool  `json:"enablePrivateNodes,omitempty"`
+	MasterIpv4CidrBlock   string `json:"masterIpv4CidrBlock,omitempty"`
+	PrivateEndpoint       string `json:"privateEndpoint,omitempty"`
+	PublicEndpoint        string `json:"publicEndpoint,omitempty"`
 }
 
 type GKEClusterConfigStatus struct {

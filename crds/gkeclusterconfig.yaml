@@ -47,6 +47,8 @@ spec:
             enableAlphaFeature:
               nullable: true
               type: boolean
+            enableTpu:
+              type: boolean
             imported:
               type: boolean
             kubernetesVersion:
@@ -58,6 +60,26 @@ spec:
                 type: string
               nullable: true
               type: array
+            networkConfig:
+              nullable: true
+              properties:
+                network:
+                  nullable: true
+                  type: string
+                subnetwork:
+                  nullable: true
+                  type: string
+              type: object
+            networkPolicy:
+              nullable: true
+              properties:
+                enabled:
+                  nullable: true
+                  type: boolean
+                provider:
+                  nullable: true
+                  type: string
+              type: object
             nodePools:
               items:
                 properties:
@@ -132,6 +154,25 @@ spec:
                 type: object
               nullable: true
               type: array
+            privateClusterConfig:
+              nullable: true
+              properties:
+                enablePrivateEndpoint:
+                  nullable: true
+                  type: boolean
+                enablePrivateNodes:
+                  nullable: true
+                  type: boolean
+                masterIpv4CidrBlock:
+                  nullable: true
+                  type: string
+                privateEndpoint:
+                  nullable: true
+                  type: string
+                publicEndpoint:
+                  nullable: true
+                  type: string
+              type: object
             projectID:
               nullable: true
               type: string

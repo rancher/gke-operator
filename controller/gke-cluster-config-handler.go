@@ -68,7 +68,7 @@ func (h *Handler) OnGkeConfigChanged(key string, config *gkev1.GKEClusterConfig)
 
 	switch config.Status.Phase {
 	case gkeConfigImportingPhase:
-		fmt.Errorf("not implemented")
+		return h.importCluster(config)
 	case gkeConfigNotCreatedPhase:
 		return h.create(config)
 	case gkeConfigCreatingPhase:
@@ -76,7 +76,7 @@ func (h *Handler) OnGkeConfigChanged(key string, config *gkev1.GKEClusterConfig)
 	case gkeConfigActivePhase:
 		return h.checkAndUpdate(config)
 	case gkeConfigUpdatingPhase:
-		fmt.Errorf("not implemented")
+		return h.checkAndUpdate(config)
 	}
 
 	return config, nil
@@ -125,6 +125,13 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 		}
 		return config, err
 	}
+}
+
+// importCluster cluster returns a spec representing the upstream state of the cluster matching to the
+// given config's displayName and region.
+func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+	config.Status.Phase = gkeConfigActivePhase
+	return h.gkeCC.UpdateStatus(config)
 }
 
 func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
