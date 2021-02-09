@@ -38,6 +38,11 @@ spec:
             clusterName:
               nullable: true
               type: string
+            clusterSecondaryRangeName:
+              nullable: true
+              type: string
+            createSubnetwork:
+              type: boolean
             credentialContent:
               nullable: true
               type: string
@@ -80,6 +85,9 @@ spec:
                   nullable: true
                   type: string
               type: object
+            nodeIpv4CidrBlock:
+              nullable: true
+              type: string
             nodePools:
               items:
                 properties:
@@ -191,12 +199,21 @@ spec:
             serviceRole:
               nullable: true
               type: string
+            servicesIpv4Cidr:
+              nullable: true
+              type: string
+            servicesSecondaryRangeName:
+              nullable: true
+              type: string
             subnets:
               items:
                 nullable: true
                 type: string
               nullable: true
               type: array
+            subnetworkName:
+              nullable: true
+              type: string
             tags:
               additionalProperties:
                 nullable: true
