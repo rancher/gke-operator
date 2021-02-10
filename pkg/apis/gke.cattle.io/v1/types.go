@@ -33,34 +33,40 @@ type GKEClusterConfig struct {
 
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
-	Region                     string                `json:"region" norman:"noupdate"`
-	Zone                       string                `json:"zone" norman:"noupdate"`
-	Imported                   bool                  `json:"imported" norman:"noupdate"`
-	Description                string                `json:"description"`
-	EnableAlphaFeature         *bool                 `json:"enableAlphaFeature"`
-	ClusterAddons              ClusterAddons         `json:"clusterAddons"`
-	ClusterSecondaryRangeName  string                `json:"clusterSecondaryRangeName,omitempty"`
-	ServicesSecondaryRangeName string                `json:"servicesSecondaryRangeName,omitempty"`
-	ClusterIpv4CidrBlock       string                `json:"clusterIpv4Cidr"`
-	NodeIpv4CidrBlock          string                `json:"nodeIpv4CidrBlock,omitempty"`
-	ServicesIpv4CidrBlock      string                `json:"servicesIpv4Cidr,omitempty"`
-	ProjectID                  string                `json:"projectID"`
-	CredentialContent          string                `json:"credentialContent"`
-	ClusterName                string                `json:"clusterName"`
-	KubernetesVersion          *string               `json:"kubernetesVersion"`
-	Tags                       map[string]string     `json:"tags"`
-	SecretsEncryption          *bool                 `json:"secretsEncryption" norman:"noupdate"`
-	LoggingTypes               []string              `json:"loggingTypes"`
-	Subnets                    []string              `json:"subnets" norman:"noupdate"`
-	SecurityGroups             []string              `json:"securityGroups" norman:"noupdate"`
-	ServiceRole                *string               `json:"serviceRole" norman:"noupdate"`
-	EnableTpu                  bool                  `json:"enableTpu,omitempty"`
-	NodePools                  []NodePoolConfig      `json:"nodePools"`
-	CreateSubnetwork           bool                  `json:"createSubnetwork,omitempty"`
-	SubnetworkName             string                `json:"subnetworkName,omitempty"`
-	NetworkConfig              *NetworkConfig        `json:"networkConfig,omitempty"`
-	NetworkPolicy              *NetworkPolicy        `json:"networkPolicy,omitempty"`
-	PrivateClusterConfig       *PrivateClusterConfig `json:"privateClusterConfig,omitempty"`
+	Region               string                `json:"region" norman:"noupdate"`
+	Zone                 string                `json:"zone" norman:"noupdate"`
+	Imported             bool                  `json:"imported" norman:"noupdate"`
+	Description          string                `json:"description"`
+	EnableAlphaFeature   *bool                 `json:"enableAlphaFeature"`
+	ClusterAddons        ClusterAddons         `json:"clusterAddons"`
+	ClusterIpv4CidrBlock string                `json:"clusterIpv4Cidr"`
+	ProjectID            string                `json:"projectID"`
+	CredentialContent    string                `json:"credentialContent"`
+	ClusterName          string                `json:"clusterName"`
+	KubernetesVersion    *string               `json:"kubernetesVersion"`
+	Tags                 map[string]string     `json:"tags"`
+	SecretsEncryption    *bool                 `json:"secretsEncryption" norman:"noupdate"`
+	LoggingTypes         []string              `json:"loggingTypes"`
+	Subnets              []string              `json:"subnets" norman:"noupdate"`
+	SecurityGroups       []string              `json:"securityGroups" norman:"noupdate"`
+	ServiceRole          *string               `json:"serviceRole" norman:"noupdate"`
+	EnableTpu            bool                  `json:"enableTpu,omitempty"`
+	NodePools            []NodePoolConfig      `json:"nodePools"`
+	NetworkConfig        *NetworkConfig        `json:"networkConfig,omitempty"`
+	NetworkPolicy        *NetworkPolicy        `json:"networkPolicy,omitempty"`
+	PrivateClusterConfig *PrivateClusterConfig `json:"privateClusterConfig,omitempty"`
+	IPAllocationPolicy   *IPAllocationPolicy   `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
+}
+
+type IPAllocationPolicy struct {
+	ClusterIpv4CidrBlock       string `json:"clusterIpv4CidrBlock,omitempty"`
+	ClusterSecondaryRangeName  string `json:"clusterSecondaryRangeName,omitempty"`
+	CreateSubnetwork           bool   `json:"createSubnetwork,omitempty"`
+	NodeIpv4CidrBlock          string `json:"nodeIpv4CidrBlock,omitempty"`
+	ServicesIpv4CidrBlock      string `json:"servicesIpv4CidrBlock,omitempty"`
+	ServicesSecondaryRangeName string `json:"servicesSecondaryRangeName,omitempty"`
+	SubnetworkName             string `json:"subnetworkName,omitempty"`
+	UseIPAliases               bool   `json:"useIpAliases,omitempty"`
 }
 
 type NetworkConfig struct {

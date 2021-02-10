@@ -102,14 +102,23 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 		},
 	}
 
+	spec := config.Spec
+
 	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && !*config.Spec.EnableAlphaFeature
 
 	request.Cluster.Name = config.Spec.ClusterName
 	request.Cluster.InitialClusterVersion = *config.Spec.KubernetesVersion
 	request.Cluster.Description = config.Spec.Description
 	request.Cluster.EnableKubernetesAlpha = enableAlphaFeatures
-	request.Cluster.ClusterIpv4Cidr = config.Spec.ClusterIpv4Cidr
-	request.Cluster.InitialNodeCount = 1
+	request.Cluster.IpAllocationPolicy = &gkeapi.IPAllocationPolicy{
+		NodeIpv4CidrBlock:          spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
+		ClusterSecondaryRangeName:  spec.IPAllocationPolicy.ClusterSecondaryRangeName,
+		CreateSubnetwork:           spec.IPAllocationPolicy.CreateSubnetwork,
+		ServicesIpv4CidrBlock:      spec.IPAllocationPolicy.ServicesIpv4CidrBlock,
+		ServicesSecondaryRangeName: spec.IPAllocationPolicy.ServicesSecondaryRangeName,
+		SubnetworkName:             spec.IPAllocationPolicy.SubnetworkName,
+		UseIpAliases:               spec.IPAllocationPolicy.UseIPAliases,
+	}
 
 	disableHTTPLoadBalancing := config.Spec.ClusterAddons.HTTPLoadBalancing != nil && !*config.Spec.ClusterAddons.HTTPLoadBalancing
 	disableHorizontalPodAutoscaling := config.Spec.ClusterAddons.HorizontalPodAutoscaling != nil && !*config.Spec.ClusterAddons.HorizontalPodAutoscaling
@@ -256,6 +265,10 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 				return fmt.Errorf("minNodeCount in the NodePool must be >= 1 and <= maxNodeCount")
 			}
 		}
+	}
+
+	if config.Spec.IPAllocationPolicy == nil {
+		return fmt.Errorf("IpAllocationPolicy can't be nil")
 	}
 
 	//check if cluster with same name exists
