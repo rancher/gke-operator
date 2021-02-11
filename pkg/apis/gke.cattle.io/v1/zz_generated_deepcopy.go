@@ -321,13 +321,9 @@ func (in *NodeConfig) DeepCopyInto(out *NodeConfig) {
 	}
 	if in.Labels != nil {
 		in, out := &in.Labels, &out.Labels
-		*out = new(map[string]string)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make(map[string]string, len(*in))
-			for key, val := range *in {
-				(*out)[key] = val
-			}
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
 		}
 	}
 	if in.LocalSsdCount != nil {
@@ -347,14 +343,8 @@ func (in *NodeConfig) DeepCopyInto(out *NodeConfig) {
 	}
 	if in.Taints != nil {
 		in, out := &in.Taints, &out.Taints
-		*out = make([]*NodeTaintConfig, len(*in))
-		for i := range *in {
-			if (*in)[i] != nil {
-				in, out := &(*in)[i], &(*out)[i]
-				*out = new(NodeTaintConfig)
-				**out = **in
-			}
-		}
+		*out = make([]NodeTaintConfig, len(*in))
+		copy(*out, *in)
 	}
 	return
 }
@@ -420,7 +410,7 @@ func (in *NodePoolConfig) DeepCopyInto(out *NodePoolConfig) {
 	}
 	if in.MaxPodsConstraint != nil {
 		in, out := &in.MaxPodsConstraint, &out.MaxPodsConstraint
-		*out = new(int32)
+		*out = new(int64)
 		**out = **in
 	}
 	if in.Name != nil {

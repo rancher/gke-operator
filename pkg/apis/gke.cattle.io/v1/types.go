@@ -108,7 +108,7 @@ type NodePoolConfig struct {
 	Autoscaling       *NodePoolAutoscaling `json:"autoscaling,omitempty"`
 	Config            *NodeConfig          `json:"config,omitempty"`
 	InitialNodeCount  *int64               `json:"initialNodeCount,omitempty"`
-	MaxPodsConstraint *int32               `json:"maxPodsConstraint,omitempty"`
+	MaxPodsConstraint *int64               `json:"maxPodsConstraint,omitempty"`
 	Name              *string              `json:"name,omitempty"`
 	Version           *string              `json:"version,omitempty"`
 }
@@ -120,14 +120,14 @@ type NodePoolAutoscaling struct {
 }
 
 type NodeConfig struct {
-	DiskSizeGb    *int64             `json:"diskSizeGb,omitempty"`
-	DiskType      *string            `json:"diskType,omitempty"`
-	ImageType     *string            `json:"imageType,omitempty"`
-	Labels        *map[string]string `json:"labels,omitempty"`
-	LocalSsdCount *int64             `json:"localSsdCount,omitempty"`
-	MachineType   *string            `json:"machineType,omitempty"`
-	Preemptible   *bool              `json:"preemptible,omitempty"`
-	Taints        []*NodeTaintConfig `json:"taints,omitempty"`
+	DiskSizeGb    *int64            `json:"diskSizeGb,omitempty"`
+	DiskType      *string           `json:"diskType,omitempty"`
+	ImageType     *string           `json:"imageType,omitempty"`
+	Labels        map[string]string `json:"labels,omitempty"`
+	LocalSsdCount *int64            `json:"localSsdCount,omitempty"`
+	MachineType   *string           `json:"machineType,omitempty"`
+	Preemptible   *bool             `json:"preemptible,omitempty"`
+	Taints        []NodeTaintConfig `json:"taints,omitempty"`
 }
 
 type NodeTaintConfig struct {

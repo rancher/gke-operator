@@ -123,7 +123,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 	disableHTTPLoadBalancing := config.Spec.ClusterAddons.HTTPLoadBalancing != nil && !*config.Spec.ClusterAddons.HTTPLoadBalancing
 	disableHorizontalPodAutoscaling := config.Spec.ClusterAddons.HorizontalPodAutoscaling != nil && !*config.Spec.ClusterAddons.HorizontalPodAutoscaling
 	disableNetworkPolicyConfig := config.Spec.ClusterAddons.NetworkPolicyConfig != nil && !*config.Spec.ClusterAddons.NetworkPolicyConfig
-	disableKubernetesDashboard := false //config.Spec.ClusterAddons.KubernetesDashboard != nil && !*config.Spec.ClusterAddons.KubernetesDashboard
+	disableKubernetesDashboard := true //config.Spec.ClusterAddons.KubernetesDashboard != nil && !*config.Spec.ClusterAddons.KubernetesDashboard
 
 	request.Cluster.AddonsConfig = &gkeapi.AddonsConfig{
 		HttpLoadBalancing:        &gkeapi.HttpLoadBalancing{Disabled: !disableHTTPLoadBalancing},
@@ -163,12 +163,17 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 		}
 
 		request.Cluster.NodePools = append(request.Cluster.NodePools, &gkeapi.NodePool{
-			Autoscaling: as,
+			Name:             *np.Name,
+			Autoscaling:      as,
+			InitialNodeCount: *np.InitialNodeCount,
+			MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
+				MaxPodsPerNode: *np.MaxPodsConstraint,
+			},
 			Config: &gkeapi.NodeConfig{
 				DiskSizeGb:  *np.Config.DiskSizeGb,
 				DiskType:    *np.Config.DiskType,
 				ImageType:   *np.Config.ImageType,
-				Labels:      *np.Config.Labels,
+				Labels:      np.Config.Labels,
 				MachineType: *np.Config.MachineType,
 				Taints:      taints,
 				Preemptible: *np.Config.Preemptible,
@@ -288,30 +293,35 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 		}
 	}
 
-	if !config.Spec.Imported {
-		cannotBeNilError := "field [%s] cannot be nil for non-import cluster [%s]"
-		if config.Spec.KubernetesVersion == nil {
-			return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+	/*
+		if !config.Spec.Imported {
+			cannotBeNilError := "field [%s] cannot be nil for non-import cluster [%s]"
+			if config.Spec.KubernetesVersion == nil {
+				return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+			}
+			if config.Spec.SecretsEncryption == nil {
+				return fmt.Errorf(cannotBeNilError, "secretsEncryption", config.Name)
+			}
+			if config.Spec.Tags == nil {
+				return fmt.Errorf(cannotBeNilError, "tags", config.Name)
+			}
+			if config.Spec.Subnets == nil {
+				return fmt.Errorf(cannotBeNilError, "subnets", config.Name)
+			}
+			if config.Spec.SecurityGroups == nil {
+				return fmt.Errorf(cannotBeNilError, "securityGroups", config.Name)
+			}
+			if config.Spec.LoggingTypes == nil {
+				return fmt.Errorf(cannotBeNilError, "loggingTypes", config.Name)
+			}
 		}
-		if config.Spec.SecretsEncryption == nil {
-			return fmt.Errorf(cannotBeNilError, "secretsEncryption", config.Name)
-		}
-		if config.Spec.Tags == nil {
-			return fmt.Errorf(cannotBeNilError, "tags", config.Name)
-		}
-		if config.Spec.Subnets == nil {
-			return fmt.Errorf(cannotBeNilError, "subnets", config.Name)
-		}
-		if config.Spec.SecurityGroups == nil {
-			return fmt.Errorf(cannotBeNilError, "securityGroups", config.Name)
-		}
-		if config.Spec.LoggingTypes == nil {
-			return fmt.Errorf(cannotBeNilError, "loggingTypes", config.Name)
-		}
-	}
+	*/
 	for _, np := range config.Spec.NodePools {
 		cannotBeNilError := "field [%s] cannot be nil for nodegroup [%s] in non-nil cluster [%s]"
 		if !config.Spec.Imported {
+			if np.Name == nil {
+				return fmt.Errorf(cannotBeNilError, "name", np.Name, config.Name)
+			}
 			if np.Version == nil {
 				return fmt.Errorf(cannotBeNilError, "version", np.Name, config.Name)
 			}
@@ -424,15 +434,15 @@ func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterC
 				DiskSizeGb:    &np.Config.DiskSizeGb,
 				DiskType:      &np.Config.DiskType,
 				ImageType:     &np.Config.ImageType,
-				Labels:        &np.Config.Labels,
+				Labels:        np.Config.Labels,
 				LocalSsdCount: &np.Config.LocalSsdCount,
 				MachineType:   &np.Config.MachineType,
 				Preemptible:   &np.Config.Preemptible,
 			}
 
-			newNP.Config.Taints = make([]*gkev1.NodeTaintConfig, 0, len(np.Config.Taints))
+			newNP.Config.Taints = make([]gkev1.NodeTaintConfig, 0, len(np.Config.Taints))
 			for _, t := range np.Config.Taints {
-				newNP.Config.Taints = append(newNP.Config.Taints, &gkev1.NodeTaintConfig{
+				newNP.Config.Taints = append(newNP.Config.Taints, gkev1.NodeTaintConfig{
 					Effect: t.Effect,
 					Key:    t.Key,
 					Value:  t.Value,
