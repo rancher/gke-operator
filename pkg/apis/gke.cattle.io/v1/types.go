@@ -33,29 +33,30 @@ type GKEClusterConfig struct {
 
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
-	Region               string                `json:"region" norman:"noupdate"`
-	Zone                 string                `json:"zone" norman:"noupdate"`
-	Imported             bool                  `json:"imported" norman:"noupdate"`
-	Description          string                `json:"description"`
-	EnableAlphaFeature   *bool                 `json:"enableAlphaFeature"`
-	ClusterAddons        ClusterAddons         `json:"clusterAddons"`
-	ClusterIpv4CidrBlock string                `json:"clusterIpv4Cidr"`
-	ProjectID            string                `json:"projectID"`
-	CredentialContent    string                `json:"credentialContent"`
-	ClusterName          string                `json:"clusterName"`
-	KubernetesVersion    *string               `json:"kubernetesVersion"`
-	Tags                 map[string]string     `json:"tags"`
-	SecretsEncryption    *bool                 `json:"secretsEncryption" norman:"noupdate"`
-	LoggingTypes         []string              `json:"loggingTypes"`
-	Subnets              []string              `json:"subnets" norman:"noupdate"`
-	SecurityGroups       []string              `json:"securityGroups" norman:"noupdate"`
-	ServiceRole          *string               `json:"serviceRole" norman:"noupdate"`
-	EnableTpu            bool                  `json:"enableTpu,omitempty"`
-	NodePools            []NodePoolConfig      `json:"nodePools"`
-	NetworkConfig        *NetworkConfig        `json:"networkConfig,omitempty"`
-	NetworkPolicy        *NetworkPolicy        `json:"networkPolicy,omitempty"`
-	PrivateClusterConfig *PrivateClusterConfig `json:"privateClusterConfig,omitempty"`
-	IPAllocationPolicy   *IPAllocationPolicy   `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
+	Region                         string                          `json:"region" norman:"noupdate"`
+	Zone                           string                          `json:"zone" norman:"noupdate"`
+	Imported                       bool                            `json:"imported" norman:"noupdate"`
+	Description                    string                          `json:"description"`
+	EnableAlphaFeature             *bool                           `json:"enableAlphaFeature"`
+	ClusterAddons                  ClusterAddons                   `json:"clusterAddons"`
+	ClusterIpv4CidrBlock           string                          `json:"clusterIpv4Cidr"`
+	ProjectID                      string                          `json:"projectID"`
+	CredentialContent              string                          `json:"credentialContent"`
+	ClusterName                    string                          `json:"clusterName"`
+	KubernetesVersion              *string                         `json:"kubernetesVersion"`
+	Tags                           map[string]string               `json:"tags"`
+	SecretsEncryption              *bool                           `json:"secretsEncryption" norman:"noupdate"`
+	LoggingTypes                   []string                        `json:"loggingTypes"`
+	Subnets                        []string                        `json:"subnets" norman:"noupdate"`
+	SecurityGroups                 []string                        `json:"securityGroups" norman:"noupdate"`
+	ServiceRole                    *string                         `json:"serviceRole" norman:"noupdate"`
+	EnableTpu                      bool                            `json:"enableTpu,omitempty"`
+	NodePools                      []NodePoolConfig                `json:"nodePools"`
+	NetworkConfig                  *NetworkConfig                  `json:"networkConfig,omitempty"`
+	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`
+	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
+	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
+	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetowrks,omitempty" norman:"noupdate"`
 }
 
 type IPAllocationPolicy struct {
@@ -134,4 +135,14 @@ type NodeTaintConfig struct {
 	Effect string `json:"effect,omitempty"`
 	Key    string `json:"key,omitempty"`
 	Value  string `json:"value,omitempty"`
+}
+
+type MasterAuthorizedNetworksConfig struct {
+	CidrBlocks []*CidrBlock `json:"cidrBlocks,omitempty"`
+	Enabled    bool         `json:"enabled,omitempty"`
+}
+
+type CidrBlock struct {
+	CidrBlock   string `json:"cidrBlock,omitempty"`
+	DisplayName string `json:"displayName,omitempty"`
 }

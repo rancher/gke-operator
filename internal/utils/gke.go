@@ -162,13 +162,10 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 			as.MinNodeCount = *np.Autoscaling.MinNodeCount
 		}
 
-		request.Cluster.NodePools = append(request.Cluster.NodePools, &gkeapi.NodePool{
+		nodePool := &gkeapi.NodePool{
 			Name:             *np.Name,
 			Autoscaling:      as,
 			InitialNodeCount: *np.InitialNodeCount,
-			MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
-				MaxPodsPerNode: *np.MaxPodsConstraint,
-			},
 			Config: &gkeapi.NodeConfig{
 				DiskSizeGb:  *np.Config.DiskSizeGb,
 				DiskType:    *np.Config.DiskType,
@@ -178,7 +175,53 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 				Taints:      taints,
 				Preemptible: *np.Config.Preemptible,
 			},
-		})
+		}
+		// If nill, use default
+		if np.MaxPodsConstraint != nil {
+			nodePool.MaxPodsConstraint = &gkeapi.MaxPodsConstraint{
+				MaxPodsPerNode: *np.MaxPodsConstraint,
+			}
+		}
+
+		request.Cluster.NodePools = append(request.Cluster.NodePools, nodePool)
+	}
+
+	if config.Spec.MasterAuthorizedNetworksConfig != nil {
+		var blocks = make([]*gkeapi.CidrBlock, len(config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks))
+		for _, b := range config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks {
+			blocks = append(blocks, &gkeapi.CidrBlock{
+				CidrBlock:   b.CidrBlock,
+				DisplayName: b.DisplayName,
+			})
+		}
+		request.Cluster.MasterAuthorizedNetworksConfig = &gkeapi.MasterAuthorizedNetworksConfig{
+			Enabled:    config.Spec.MasterAuthorizedNetworksConfig.Enabled,
+			CidrBlocks: blocks,
+		}
+	}
+
+	if config.Spec.NetworkConfig != nil {
+		request.Cluster.NetworkConfig = &gkeapi.NetworkConfig{
+			Subnetwork: *config.Spec.NetworkConfig.Subnetwork,
+			Network:    *config.Spec.NetworkConfig.Network,
+		}
+	}
+
+	if config.Spec.NetworkPolicy != nil {
+		request.Cluster.NetworkPolicy = &gkeapi.NetworkPolicy{
+			Enabled:  *config.Spec.NetworkPolicy.Enabled,
+			Provider: *config.Spec.NetworkPolicy.Provider,
+		}
+	}
+
+	if config.Spec.PrivateClusterConfig != nil {
+		request.Cluster.PrivateClusterConfig = &gkeapi.PrivateClusterConfig{
+			EnablePrivateEndpoint: *config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
+			EnablePrivateNodes:    *config.Spec.PrivateClusterConfig.EnablePrivateNodes,
+			MasterIpv4CidrBlock:   config.Spec.PrivateClusterConfig.MasterIpv4CidrBlock,
+			PrivateEndpoint:       config.Spec.PrivateClusterConfig.PrivateEndpoint,
+			PublicEndpoint:        config.Spec.PrivateClusterConfig.PublicEndpoint,
+		}
 	}
 
 	return request, nil
