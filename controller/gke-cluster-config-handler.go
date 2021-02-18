@@ -10,12 +10,10 @@ import (
 	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
-
-	gkeapi "google.golang.org/api/container/v1"
-
 	"github.com/rancher/rke/log"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
+	gkeapi "google.golang.org/api/container/v1"
 )
 
 const (
@@ -26,10 +24,6 @@ const (
 	gkeConfigActivePhase     = "active"
 	gkeConfigUpdatingPhase   = "updating"
 	gkeConfigImportingPhase  = "importing"
-	allOpen                  = "0.0.0.0/0"
-	gkeClusterConfigKind     = "GKEClusterConfig"
-	runningStatus            = "RUNNING"
-	none                     = "none"
 )
 
 type Handler struct {
@@ -93,17 +87,6 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 			// GKE config is likely deleting
 			return config, err
 		}
-		if err != nil {
-			if !strings.Contains(err.Error(), "currently has update") {
-				// the update is valid in that the controller should retry but there is
-				// no actionable resolution as far as a user is concerned. An update
-				// that has either been initiated by gke-operator or another source is
-				// already in progress. It is possible an update is not being immediately
-				// reflected in upstream cluster state. The config object will reenter the
-				// controller and then the controller will wait for the update to finish.
-				message = err.Error()
-			}
-		}
 		if config.Status.FailureMessage == message {
 			return config, err
 		}
@@ -127,8 +110,7 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 	}
 }
 
-// importCluster cluster returns a spec representing the upstream state of the cluster matching to the
-// given config's displayName and region.
+// importCluster cluster returns a spec containing the given config's displayName and region.
 func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	config.Status.Phase = gkeConfigActivePhase
 	return h.gkeCC.UpdateStatus(config)
@@ -147,7 +129,6 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 
 	logrus.Infof("deleting cluster [%s]", config.Name)
 
-	//TODO: delete cluster
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -158,7 +139,6 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 
 	logrus.Debugf("Removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region)
 	operation, err := utils.WaitClusterRemoveExp(ctx, svc, config)
-
 	if err != nil && !strings.Contains(err.Error(), "notFound") {
 		return config, err
 	} else if err == nil {
@@ -171,11 +151,6 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 }
 
 func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	/*
-		if err := utils.ValidateCreateRequest(config); err != nil {
-			return config, err
-		}
-	*/
 	if config.Spec.Imported {
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigImportingPhase
@@ -213,7 +188,6 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 }
 
 func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-
 	if err := h.validateUpdate(config); err != nil {
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigUpdatingPhase
@@ -234,6 +208,9 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	}
 
 	cluster, err := svc.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+	if err != nil {
+		return config, err
+	}
 
 	if cluster.Status == utils.ClusterStatusReconciling {
 		// upstream cluster is already updating, must wait until sending next update
@@ -271,7 +248,6 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	}
 
 	return h.updateUpstreamClusterState(config, upstreamSpec, svc)
-
 }
 
 // enqueueUpdate enqueues the config if it is already in the updating phase. Otherwise, the

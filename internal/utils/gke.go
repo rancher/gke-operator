@@ -88,6 +88,11 @@ const (
 	ClusterStatusDegraded = "DEGRADED"
 )
 
+// Errors
+const (
+	cannotBeNilError = "field [%s] cannot be nil for non-import cluster [%s]"
+)
+
 // GenerateGkeClusterCreateRequest creates a request
 func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.CreateClusterRequest, error) {
 
@@ -96,28 +101,25 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 		return nil, err
 	}
 
+	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && !*config.Spec.EnableAlphaFeature
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
+			Name:                  config.Spec.ClusterName,
+			Description:           config.Spec.Description,
+			InitialClusterVersion: *config.Spec.KubernetesVersion,
+			EnableKubernetesAlpha: enableAlphaFeatures,
+			IpAllocationPolicy: &gkeapi.IPAllocationPolicy{
+				ClusterIpv4CidrBlock:       config.Spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
+				ClusterSecondaryRangeName:  config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName,
+				CreateSubnetwork:           config.Spec.IPAllocationPolicy.CreateSubnetwork,
+				NodeIpv4CidrBlock:          config.Spec.IPAllocationPolicy.NodeIpv4CidrBlock,
+				ServicesIpv4CidrBlock:      config.Spec.IPAllocationPolicy.ServicesIpv4CidrBlock,
+				ServicesSecondaryRangeName: config.Spec.IPAllocationPolicy.ServicesSecondaryRangeName,
+				SubnetworkName:             config.Spec.IPAllocationPolicy.SubnetworkName,
+				UseIpAliases:               config.Spec.IPAllocationPolicy.UseIPAliases,
+			},
 			NodePools: []*gkeapi.NodePool{},
 		},
-	}
-
-	spec := config.Spec
-
-	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && !*config.Spec.EnableAlphaFeature
-
-	request.Cluster.Name = config.Spec.ClusterName
-	request.Cluster.InitialClusterVersion = *config.Spec.KubernetesVersion
-	request.Cluster.Description = config.Spec.Description
-	request.Cluster.EnableKubernetesAlpha = enableAlphaFeatures
-	request.Cluster.IpAllocationPolicy = &gkeapi.IPAllocationPolicy{
-		NodeIpv4CidrBlock:          spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
-		ClusterSecondaryRangeName:  spec.IPAllocationPolicy.ClusterSecondaryRangeName,
-		CreateSubnetwork:           spec.IPAllocationPolicy.CreateSubnetwork,
-		ServicesIpv4CidrBlock:      spec.IPAllocationPolicy.ServicesIpv4CidrBlock,
-		ServicesSecondaryRangeName: spec.IPAllocationPolicy.ServicesSecondaryRangeName,
-		SubnetworkName:             spec.IPAllocationPolicy.SubnetworkName,
-		UseIpAliases:               spec.IPAllocationPolicy.UseIPAliases,
 	}
 
 	disableHTTPLoadBalancing := config.Spec.ClusterAddons.HTTPLoadBalancing != nil && !*config.Spec.ClusterAddons.HTTPLoadBalancing
@@ -150,7 +152,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 			as.Enabled = asEnabled
 
 			if np.Autoscaling.MaxNodeCount == nil {
-				return nil, fmt.Errorf("max node count cant be nill")
+				return nil, fmt.Errorf("max node count cant be nil")
 			}
 			as.MaxNodeCount = *np.Autoscaling.MaxNodeCount
 
@@ -174,7 +176,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 				Preemptible: *np.Config.Preemptible,
 			},
 		}
-		// If nill, use default
+		// If nil, use default
 		if np.MaxPodsConstraint != nil {
 			nodePool.MaxPodsConstraint = &gkeapi.MaxPodsConstraint{
 				MaxPodsPerNode: *np.MaxPodsConstraint,
@@ -275,7 +277,7 @@ func GetClientset(cluster *gkeapi.Cluster, ts oauth2.TokenSource) (kubernetes.In
 
 // GetGKEClient returns a gke client capable of making requests on behalf of the services account
 func GetGKEClient(ctx context.Context, secretsCache wranglerv1.SecretCache, config *gkev1.GKEClusterConfig) (*gkeapi.Service, error) {
-	ns, id := Parse(config.Spec.CredentialContent)
+	ns, id := ParseCredential(config.Spec.CredentialContent)
 	secret, err := secretsCache.Get(ns, id)
 
 	if err != nil {
@@ -291,14 +293,16 @@ func GetGKEClient(ctx context.Context, secretsCache wranglerv1.SecretCache, conf
 
 // ValidateCreateRequest checks a config for the ability to generate a create request
 func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
-	//TODO: check if these can even be nill/empty in a inported cluster.
 	if config.Spec.ProjectID == "" {
 		return fmt.Errorf("project ID is required")
-	} else if config.Spec.Zone == "" && config.Spec.Region == "" {
+	}
+	if config.Spec.Zone == "" && config.Spec.Region == "" {
 		return fmt.Errorf("zone or region is required")
-	} else if config.Spec.Zone != "" && config.Spec.Region != "" {
+	}
+	if config.Spec.Zone != "" && config.Spec.Region != "" {
 		return fmt.Errorf("only one of zone or region must be specified")
-	} else if config.Spec.ClusterName == "" {
+	}
+	if config.Spec.ClusterName == "" {
 		return fmt.Errorf("cluster name is required")
 	}
 
@@ -313,8 +317,13 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 		}
 	}
 
-	if config.Spec.IPAllocationPolicy == nil {
-		return fmt.Errorf("IpAllocationPolicy can't be nil")
+	if !config.Spec.Imported {
+		if config.Spec.KubernetesVersion == nil {
+			return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+		}
+		if config.Spec.IPAllocationPolicy == nil {
+			return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
+		}
 	}
 
 	//check if cluster with same name exists
@@ -337,8 +346,6 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	/*
 		if !config.Spec.Imported {
 			cannotBeNilError := "field [%s] cannot be nil for non-import cluster [%s]"
-			if config.Spec.KubernetesVersion == nil {
-				return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
 			}
 			if config.Spec.LoggingTypes == nil {
 				return fmt.Errorf(cannotBeNilError, "loggingTypes", config.Name)
@@ -441,10 +448,10 @@ func NodePoolRRN(projectID, location, clusterName, nodePool string) string {
 }
 
 func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
-	newSpec := &gkev1.GKEClusterConfigSpec{}
-
-	newSpec.KubernetesVersion = &upstreamSpec.CurrentMasterVersion
-	newSpec.EnableAlphaFeature = &upstreamSpec.EnableKubernetesAlpha
+	newSpec := &gkev1.GKEClusterConfigSpec{
+		KubernetesVersion:  &upstreamSpec.CurrentMasterVersion,
+		EnableAlphaFeature: &upstreamSpec.EnableKubernetesAlpha,
+	}
 
 	// build node groups
 	newSpec.NodePools = make([]gkev1.NodePoolConfig, 0, len(upstreamSpec.NodePools))

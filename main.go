@@ -10,8 +10,6 @@ import (
 	"github.com/rancher/gke-operator/controller"
 	gkev1 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io"
 	core3 "github.com/rancher/wrangler/pkg/generated/controllers/core"
-
-	"github.com/rancher/wrangler-api/pkg/generated/controllers/apps"
 	"github.com/rancher/wrangler/pkg/kubeconfig"
 	"github.com/rancher/wrangler/pkg/signals"
 	"github.com/rancher/wrangler/pkg/start"
@@ -39,8 +37,6 @@ func main() {
 		logrus.Fatalf("Error building kubeconfig: %s", err.Error())
 	}
 
-	// Generated apps controller
-	apps := apps.NewFactoryFromConfigOrDie(cfg)
 	// core
 	core, err := core3.NewFactoryFromConfig(cfg)
 	if err != nil {
@@ -61,7 +57,7 @@ func main() {
 		gke.Gke().V1().GKEClusterConfig())
 
 	// Start all the controllers
-	if err := start.All(ctx, 3, apps, gke, core); err != nil {
+	if err := start.All(ctx, 3, gke, core); err != nil {
 		logrus.Fatalf("Error starting: %s", err.Error())
 	}
 

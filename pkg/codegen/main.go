@@ -17,7 +17,7 @@ import (
 func main() {
 	controllergen.Run(args.Options{
 		OutputPackage: "github.com/rancher/gke-operator/pkg/generated",
-		Boilerplate:   "hack/boilerplate.go.txt",
+		Boilerplate:   "pkg/codegen/boilerplate.go.txt",
 		Groups: map[string]args.Group{
 			"gke.cattle.io": {
 				Types: []interface{}{
@@ -49,6 +49,10 @@ func main() {
 	obj, err := gkeClusterConfig.ToCustomResourceDefinition()
 	if err != nil {
 		panic(err)
+	}
+
+	obj.ObjectMeta.Annotations = map[string]string{
+		"helm.sh/resource-policy": "keep",
 	}
 
 	gkeCCYaml, err := yaml.Export(&obj)

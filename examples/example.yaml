@@ -1,11 +1,11 @@
 apiVersion: gke.cattle.io/v1
 kind: GKEClusterConfig
 metadata:
-  name: mareks-cluster
+  name: my-cluster
 spec:
   displayName: "my-cluster"
   resourceGroup: "my-group"
-  clusterName: "mareks-cluster-delete-me"
+  clusterName: "my-cluster"
   region: "us-east1-b"
   projectID: "suse-css-platform"
   kubernetesVersion: "1.17.15-gke.800"
