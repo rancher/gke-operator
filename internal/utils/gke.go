@@ -123,12 +123,10 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 	disableHTTPLoadBalancing := config.Spec.ClusterAddons.HTTPLoadBalancing != nil && !*config.Spec.ClusterAddons.HTTPLoadBalancing
 	disableHorizontalPodAutoscaling := config.Spec.ClusterAddons.HorizontalPodAutoscaling != nil && !*config.Spec.ClusterAddons.HorizontalPodAutoscaling
 	disableNetworkPolicyConfig := config.Spec.ClusterAddons.NetworkPolicyConfig != nil && !*config.Spec.ClusterAddons.NetworkPolicyConfig
-	disableKubernetesDashboard := true //config.Spec.ClusterAddons.KubernetesDashboard != nil && !*config.Spec.ClusterAddons.KubernetesDashboard
 
 	request.Cluster.AddonsConfig = &gkeapi.AddonsConfig{
 		HttpLoadBalancing:        &gkeapi.HttpLoadBalancing{Disabled: !disableHTTPLoadBalancing},
 		HorizontalPodAutoscaling: &gkeapi.HorizontalPodAutoscaling{Disabled: disableHorizontalPodAutoscaling},
-		KubernetesDashboard:      &gkeapi.KubernetesDashboard{Disabled: disableKubernetesDashboard},
 		NetworkPolicyConfig:      &gkeapi.NetworkPolicyConfig{Disabled: disableNetworkPolicyConfig},
 	}
 
@@ -341,18 +339,6 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 			cannotBeNilError := "field [%s] cannot be nil for non-import cluster [%s]"
 			if config.Spec.KubernetesVersion == nil {
 				return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
-			}
-			if config.Spec.SecretsEncryption == nil {
-				return fmt.Errorf(cannotBeNilError, "secretsEncryption", config.Name)
-			}
-			if config.Spec.Tags == nil {
-				return fmt.Errorf(cannotBeNilError, "tags", config.Name)
-			}
-			if config.Spec.Subnets == nil {
-				return fmt.Errorf(cannotBeNilError, "subnets", config.Name)
-			}
-			if config.Spec.SecurityGroups == nil {
-				return fmt.Errorf(cannotBeNilError, "securityGroups", config.Name)
 			}
 			if config.Spec.LoggingTypes == nil {
 				return fmt.Errorf(cannotBeNilError, "loggingTypes", config.Name)

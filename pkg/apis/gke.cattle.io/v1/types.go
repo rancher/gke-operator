@@ -44,13 +44,7 @@ type GKEClusterConfigSpec struct {
 	CredentialContent              string                          `json:"credentialContent"`
 	ClusterName                    string                          `json:"clusterName"`
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
-	Tags                           map[string]string               `json:"tags"`
-	SecretsEncryption              *bool                           `json:"secretsEncryption" norman:"noupdate"`
 	LoggingTypes                   []string                        `json:"loggingTypes"`
-	Subnets                        []string                        `json:"subnets" norman:"noupdate"`
-	SecurityGroups                 []string                        `json:"securityGroups" norman:"noupdate"`
-	ServiceRole                    *string                         `json:"serviceRole" norman:"noupdate"`
-	EnableTpu                      bool                            `json:"enableTpu,omitempty"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
 	NetworkConfig                  *NetworkConfig                  `json:"networkConfig,omitempty"`
 	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`
@@ -89,19 +83,13 @@ type PrivateClusterConfig struct {
 }
 
 type GKEClusterConfigStatus struct {
-	Phase          string   `json:"phase"`
-	VirtualNetwork string   `json:"virtualNetwork"`
-	Subnets        []string `json:"subnets"`
-	SecurityGroups []string `json:"securityGroups"`
-	// describes how the above network fields were provided. Valid values are provided and generated
-	NetworkFieldsSource string `json:"networkFieldsSource"`
-	FailureMessage      string `json:"failureMessage"`
+	Phase          string `json:"phase"`
+	FailureMessage string `json:"failureMessage"`
 }
 
 type ClusterAddons struct {
 	HTTPLoadBalancing        *bool `json:"httpLoadBalancing`
 	HorizontalPodAutoscaling *bool `json:"horizontalPodAutoscaling"`
-	KubernetesDashboard      *bool `json:"kubernetesDashboard"`
 	NetworkPolicyConfig      *bool `json:"networkPolicyConfig"`
 }
 
