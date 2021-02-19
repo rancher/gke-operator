@@ -270,13 +270,13 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 			logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
 			err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
 				Update: &gkeapi.ClusterUpdate{
-					DesiredMasterVersion: *upstreamSpec.KubernetesVersion,
+					DesiredMasterVersion: *config.Spec.KubernetesVersion,
 				}})
 			if err != nil {
 				return config, err
 			}
+			return h.enqueueUpdate(config)
 		}
-		return h.enqueueUpdate(config)
 	}
 
 	// no new updates, set to active
