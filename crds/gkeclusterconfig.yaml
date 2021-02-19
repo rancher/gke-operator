@@ -77,12 +77,9 @@ spec:
             kubernetesVersion:
               nullable: true
               type: string
-            loggingTypes:
-              items:
-                nullable: true
-                type: string
+            loggingService:
               nullable: true
-              type: array
+              type: string
             masterAuthorizedNetowrks:
               nullable: true
               properties:

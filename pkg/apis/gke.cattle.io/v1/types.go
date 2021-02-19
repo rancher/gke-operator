@@ -44,7 +44,7 @@ type GKEClusterConfigSpec struct {
 	CredentialContent              string                          `json:"credentialContent"`
 	ClusterName                    string                          `json:"clusterName"`
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
-	LoggingTypes                   []string                        `json:"loggingTypes"`
+	LoggingService                 *string                         `json:"loggingService"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
 	NetworkConfig                  *NetworkConfig                  `json:"networkConfig,omitempty"`
 	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`

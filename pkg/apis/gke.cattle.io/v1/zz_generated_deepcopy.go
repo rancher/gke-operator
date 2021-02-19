@@ -146,10 +146,10 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.LoggingTypes != nil {
-		in, out := &in.LoggingTypes, &out.LoggingTypes
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+	if in.LoggingService != nil {
+		in, out := &in.LoggingService, &out.LoggingService
+		*out = new(string)
+		**out = **in
 	}
 	if in.NodePools != nil {
 		in, out := &in.NodePools, &out.NodePools
