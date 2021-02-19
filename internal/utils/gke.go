@@ -318,18 +318,6 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 		}
 	}
 
-	if !config.Spec.Imported {
-		if config.Spec.KubernetesVersion == nil {
-			return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
-		}
-		if config.Spec.IPAllocationPolicy == nil {
-			return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
-		}
-		if config.Spec.LoggingService == nil {
-			return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
-		}
-	}
-
 	//check if cluster with same name exists
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -347,39 +335,52 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 		}
 	}
 
+	if config.Spec.Imported {
+		// Validation from here on out is for nilable attributes, not required for imported clusters
+		return nil
+	}
+
+	if config.Spec.KubernetesVersion == nil {
+		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+	}
+	if config.Spec.IPAllocationPolicy == nil {
+		return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
+	}
+	if config.Spec.LoggingService == nil {
+		return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
+	}
+
 	for _, np := range config.Spec.NodePools {
-		cannotBeNilError := "field [%s] cannot be nil for nodegroup [%s] in non-nil cluster [%s]"
-		if !config.Spec.Imported {
-			if np.Name == nil {
-				return fmt.Errorf(cannotBeNilError, "name", np.Name, config.Name)
-			}
-			if np.Version == nil {
-				return fmt.Errorf(cannotBeNilError, "version", np.Name, config.Name)
-			}
-			if np.Autoscaling.MinNodeCount == nil {
-				return fmt.Errorf(cannotBeNilError, "minNodeCount", np.Name, config.Name)
-			}
-			if np.Autoscaling.MaxNodeCount == nil {
-				return fmt.Errorf(cannotBeNilError, "maxNodeCount", np.Name, config.Name)
-			}
-			if np.InitialNodeCount == nil {
-				return fmt.Errorf(cannotBeNilError, "initialNodeCount", np.Name, config.Name)
-			}
-			if np.Config.DiskSizeGb == nil {
-				return fmt.Errorf(cannotBeNilError, "diskSizeGb", np.Name, config.Name)
-			}
-			if np.Config.DiskType == nil {
-				return fmt.Errorf(cannotBeNilError, "diskType", np.Name, config.Name)
-			}
-			if np.Config.ImageType == nil {
-				return fmt.Errorf(cannotBeNilError, "imageType", np.Name, config.Name)
-			}
-			if np.Config.MachineType == nil {
-				return fmt.Errorf(cannotBeNilError, "machineType", np.Name, config.Name)
-			}
-			if np.Config.Preemptible == nil {
-				return fmt.Errorf(cannotBeNilError, "preemptible", np.Name, config.Name)
-			}
+		cannotBeNilForNodePoolError := "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s]"
+		if np.Name == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "name", np.Name, config.Name)
+		}
+		if np.Version == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "version", np.Name, config.Name)
+		}
+		if np.Autoscaling.MinNodeCount == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "minNodeCount", np.Name, config.Name)
+		}
+		if np.Autoscaling.MaxNodeCount == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "maxNodeCount", np.Name, config.Name)
+		}
+		if np.InitialNodeCount == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "initialNodeCount", np.Name, config.Name)
+		}
+		if np.Config.DiskSizeGb == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "diskSizeGb", np.Name, config.Name)
+		}
+		if np.Config.DiskType == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "diskType", np.Name, config.Name)
+		}
+		if np.Config.ImageType == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "imageType", np.Name, config.Name)
+		}
+		if np.Config.MachineType == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "machineType", np.Name, config.Name)
+		}
+		if np.Config.Preemptible == nil {
+			return fmt.Errorf(cannotBeNilForNodePoolError, "preemptible", np.Name, config.Name)
 		}
 	}
 
