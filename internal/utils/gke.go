@@ -119,18 +119,20 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 				SubnetworkName:             config.Spec.IPAllocationPolicy.SubnetworkName,
 				UseIpAliases:               config.Spec.IPAllocationPolicy.UseIPAliases,
 			},
-			NodePools: []*gkeapi.NodePool{},
+			AddonsConfig: &gkeapi.AddonsConfig{},
+			NodePools:    []*gkeapi.NodePool{},
 		},
 	}
 
-	disableHTTPLoadBalancing := config.Spec.ClusterAddons.HTTPLoadBalancing != nil && !*config.Spec.ClusterAddons.HTTPLoadBalancing
-	disableHorizontalPodAutoscaling := config.Spec.ClusterAddons.HorizontalPodAutoscaling != nil && !*config.Spec.ClusterAddons.HorizontalPodAutoscaling
-	disableNetworkPolicyConfig := config.Spec.ClusterAddons.NetworkPolicyConfig != nil && !*config.Spec.ClusterAddons.NetworkPolicyConfig
-
-	request.Cluster.AddonsConfig = &gkeapi.AddonsConfig{
-		HttpLoadBalancing:        &gkeapi.HttpLoadBalancing{Disabled: !disableHTTPLoadBalancing},
-		HorizontalPodAutoscaling: &gkeapi.HorizontalPodAutoscaling{Disabled: disableHorizontalPodAutoscaling},
-		NetworkPolicyConfig:      &gkeapi.NetworkPolicyConfig{Disabled: disableNetworkPolicyConfig},
+	addons := config.Spec.ClusterAddons
+	if addons.HTTPLoadBalancing != nil {
+		request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !*addons.HTTPLoadBalancing}
+	}
+	if addons.HorizontalPodAutoscaling != nil {
+		request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !*addons.HorizontalPodAutoscaling}
+	}
+	if addons.NetworkPolicyConfig != nil {
+		request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !*addons.NetworkPolicyConfig}
 	}
 
 	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
