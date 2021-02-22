@@ -10,7 +10,6 @@ import (
 	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
-	"github.com/rancher/rke/log"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
@@ -24,6 +23,7 @@ const (
 	gkeConfigActivePhase     = "active"
 	gkeConfigUpdatingPhase   = "updating"
 	gkeConfigImportingPhase  = "importing"
+	wait                     = 30
 )
 
 type Handler struct {
@@ -291,32 +291,30 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 }
 
 func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	lastMsg := ""
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	for {
-		svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-		if err != nil {
-			return config, err
-		}
-		cluster, err := svc.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
-		if err != nil {
-			return config, err
-		}
-		if cluster.Status == runningStatus {
-			log.Infof(ctx, "Cluster %v is running", config.Spec.ClusterName)
-			config = config.DeepCopy()
-			config.Status.Phase = gkeConfigActivePhase
-			return h.gkeCC.UpdateStatus(config)
-		}
-		if cluster.Status != lastMsg {
-			log.Infof(ctx, "%v cluster %v......", strings.ToLower(cluster.Status), config.Spec.ClusterName)
-			lastMsg = cluster.Status
-		}
-		time.Sleep(time.Second * 5)
+	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	if err != nil {
+		return config, err
 	}
+	cluster, err := svc.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+	if err != nil {
+		return config, err
+	}
+	if cluster.Status == utils.ClusterStatusError {
+		return config, fmt.Errorf("creation failed for cluster %v", config.Spec.ClusterName)
+	}
+	if cluster.Status == utils.ClusterStatusRunning {
+		logrus.Infof("Cluster %v is running", config.Spec.ClusterName)
+		config = config.DeepCopy()
+		config.Status.Phase = gkeConfigActivePhase
+		return h.gkeCC.UpdateStatus(config)
+	}
+	logrus.Infof("waiting for cluster [%s] to finish creating", config.Name)
+	h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
 
+	return config, nil
 }
 
 func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
