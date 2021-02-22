@@ -174,13 +174,11 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 		utils.LocationRRN(config.Spec.ProjectID, config.Spec.Region),
 		createClusterRequest).Context(ctx).Do()
 
-	if err != nil && !strings.Contains(err.Error(), "alreadyExists") {
+	if err != nil {
 		return config, err
 	}
-	if err == nil {
-		logrus.Debugf("Cluster %s create is called for project %s and region/zone %s. Status Code %v",
-			config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region, operation.HTTPStatusCode)
-	}
+	logrus.Debugf("Cluster %s create is called for project %s and region/zone %s. Status Code %v",
+		config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region, operation.HTTPStatusCode)
 
 	config = config.DeepCopy()
 	config.Status.Phase = gkeConfigCreatingPhase
