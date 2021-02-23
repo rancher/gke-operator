@@ -59,6 +59,18 @@ const (
 	NetworkProviderCalico = "CALICO"
 )
 
+// Logging Services
+const (
+	// CloudLoggingService is the Cloud Logging service with a Kubernetes-native resource model
+	CloudLoggingService = "logging.googleapis.com/kubernetes"
+)
+
+// Monitoring Services
+const (
+	// CloudMonitoringService is the Cloud Monitoring service with a Kubernetes-native resource model
+	CloudMonitoringService = "monitoring.googleapis.com/kubernetes"
+)
+
 // Cluster Status
 const (
 	// ClusterStatusProvisioning The PROVISIONING state indicates the cluster is
@@ -414,6 +426,60 @@ func UpdateCluster(config *gkev1.GKEClusterConfig, updateRequest *gkeapi.UpdateC
 	return err
 }
 
+func UpdateNodePool(name string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.UpdateNodePoolRequest) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	if err != nil {
+		return err
+	}
+	_, err = svc.Projects.Locations.Clusters.NodePools.Update(NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, name), updateRequest).Context(ctx).Do()
+
+	return err
+}
+
+func SetNodePoolSize(name string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.SetNodePoolSizeRequest) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	if err != nil {
+		return err
+	}
+	nodePoolRRN := NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, name)
+	_, err = svc.Projects.Locations.Clusters.NodePools.SetSize(nodePoolRRN, updateRequest).Context(ctx).Do()
+
+	return err
+}
+
+func SetNodePoolAutoscaling(name string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.SetNodePoolAutoscalingRequest) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	if err != nil {
+		return err
+	}
+	nodePoolRRN := NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, name)
+	_, err = svc.Projects.Locations.Clusters.NodePools.SetAutoscaling(nodePoolRRN, updateRequest).Context(ctx).Do()
+
+	return err
+}
+
+func UpdateNetworkPolicy(config *gkev1.GKEClusterConfig, updateRequest *gkeapi.SetNetworkPolicyRequest) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	if err != nil {
+		return err
+	}
+	_, err = svc.Projects.Locations.Clusters.SetNetworkPolicy(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName), updateRequest).Context(ctx).Do()
+
+	return err
+}
+
 // LocationRRN returns a Relative Resource Name representing a location. This
 // RRN can either represent a Region or a Zone. It can be used as the parent
 // attribute during cluster creation to create a zonal or regional cluster, or
@@ -438,8 +504,88 @@ func NodePoolRRN(projectID, location, clusterName, nodePool string) string {
 
 func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
 	newSpec := &gkev1.GKEClusterConfigSpec{
-		KubernetesVersion:  &upstreamSpec.CurrentMasterVersion,
-		EnableAlphaFeature: &upstreamSpec.EnableKubernetesAlpha,
+		KubernetesVersion:       &upstreamSpec.CurrentMasterVersion,
+		EnableAlphaFeature:      &upstreamSpec.EnableKubernetesAlpha,
+		ClusterAddons:           &gkev1.ClusterAddons{},
+		ClusterIpv4CidrBlock:    upstreamSpec.ClusterIpv4Cidr,
+		LoggingService:          &upstreamSpec.LoggingService,
+		MonitoringService:       &upstreamSpec.MonitoringService,
+		GKEClusterNetworkConfig: &gkev1.GKEClusterNetworkConfig{},
+		PrivateClusterConfig:    &gkev1.PrivateClusterConfig{},
+		IPAllocationPolicy:      &gkev1.IPAllocationPolicy{},
+		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
+			Enabled: false,
+		},
+	}
+
+	networkPolicyEnabled := false
+	if upstreamSpec.NetworkPolicy != nil && upstreamSpec.NetworkPolicy.Enabled == true {
+		networkPolicyEnabled = true
+	}
+	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
+
+	if upstreamSpec.NetworkConfig != nil {
+		newSpec.GKEClusterNetworkConfig.Network = &upstreamSpec.NetworkConfig.Network
+		newSpec.GKEClusterNetworkConfig.Subnetwork = &upstreamSpec.NetworkConfig.Subnetwork
+	} else {
+		network := "default"
+		newSpec.GKEClusterNetworkConfig.Network = &network
+		newSpec.GKEClusterNetworkConfig.Subnetwork = &network
+	}
+
+	if upstreamSpec.PrivateClusterConfig != nil {
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &upstreamSpec.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = &upstreamSpec.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.MasterIpv4CidrBlock = upstreamSpec.PrivateClusterConfig.MasterIpv4CidrBlock
+		newSpec.PrivateClusterConfig.PrivateEndpoint = upstreamSpec.PrivateClusterConfig.PrivateEndpoint
+		newSpec.PrivateClusterConfig.PublicEndpoint = upstreamSpec.PrivateClusterConfig.PublicEndpoint
+	} else {
+		enabled := false
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &enabled
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = &enabled
+	}
+
+	// build cluster addons
+	if upstreamSpec.AddonsConfig != nil {
+		lb := true
+		if upstreamSpec.AddonsConfig.HttpLoadBalancing != nil {
+			lb = !upstreamSpec.AddonsConfig.HttpLoadBalancing.Disabled
+		}
+		newSpec.ClusterAddons.HTTPLoadBalancing = lb
+		hpa := true
+		if upstreamSpec.AddonsConfig.HorizontalPodAutoscaling != nil {
+			hpa = !upstreamSpec.AddonsConfig.HorizontalPodAutoscaling.Disabled
+		}
+		newSpec.ClusterAddons.HorizontalPodAutoscaling = hpa
+		npc := true
+		if upstreamSpec.AddonsConfig.NetworkPolicyConfig != nil {
+			npc = !upstreamSpec.AddonsConfig.NetworkPolicyConfig.Disabled
+		}
+		newSpec.ClusterAddons.NetworkPolicyConfig = npc
+	}
+
+	if upstreamSpec.IpAllocationPolicy != nil {
+		newSpec.IPAllocationPolicy.ClusterIpv4CidrBlock = upstreamSpec.IpAllocationPolicy.ClusterIpv4CidrBlock
+		newSpec.IPAllocationPolicy.ClusterSecondaryRangeName = upstreamSpec.IpAllocationPolicy.ClusterSecondaryRangeName
+		newSpec.IPAllocationPolicy.CreateSubnetwork = upstreamSpec.IpAllocationPolicy.CreateSubnetwork
+		newSpec.IPAllocationPolicy.NodeIpv4CidrBlock = upstreamSpec.IpAllocationPolicy.NodeIpv4CidrBlock
+		newSpec.IPAllocationPolicy.ServicesIpv4CidrBlock = upstreamSpec.IpAllocationPolicy.ServicesIpv4CidrBlock
+		newSpec.IPAllocationPolicy.ServicesSecondaryRangeName = upstreamSpec.IpAllocationPolicy.ServicesSecondaryRangeName
+		newSpec.IPAllocationPolicy.SubnetworkName = upstreamSpec.IpAllocationPolicy.SubnetworkName
+		newSpec.IPAllocationPolicy.UseIPAliases = upstreamSpec.IpAllocationPolicy.UseIpAliases
+	}
+
+	if upstreamSpec.MasterAuthorizedNetworksConfig != nil {
+		if upstreamSpec.MasterAuthorizedNetworksConfig.Enabled {
+			newSpec.MasterAuthorizedNetworksConfig.Enabled = upstreamSpec.MasterAuthorizedNetworksConfig.Enabled
+			for _, b := range upstreamSpec.MasterAuthorizedNetworksConfig.CidrBlocks {
+				block := &gkev1.CidrBlock{
+					CidrBlock:   b.CidrBlock,
+					DisplayName: b.DisplayName,
+				}
+				newSpec.MasterAuthorizedNetworksConfig.CidrBlocks = append(newSpec.MasterAuthorizedNetworksConfig.CidrBlocks, block)
+			}
+		}
 	}
 
 	// build node groups
@@ -451,7 +597,10 @@ func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterC
 		}
 
 		newNP := gkev1.NodePoolConfig{
-			Name: &np.Name,
+			Name:              &np.Name,
+			Version:           &np.Version,
+			InitialNodeCount:  &np.InitialNodeCount,
+			MaxPodsConstraint: &np.MaxPodsConstraint.MaxPodsPerNode,
 		}
 
 		if np.Config != nil {
@@ -487,4 +636,26 @@ func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterC
 	}
 
 	return newSpec, nil
+}
+
+func CompareCidrBlockPointerSlices(lh, rh []*gkev1.CidrBlock) bool {
+	if len(lh) != len(rh) {
+		return false
+	}
+
+	lhElements := make(map[gkev1.CidrBlock]struct{})
+	for _, v := range lh {
+		if v != nil {
+			lhElements[*v] = struct{}{}
+		}
+	}
+	for _, v := range rh {
+		if v == nil {
+			continue
+		}
+		if _, ok := lhElements[*v]; !ok {
+			return false
+		}
+	}
+	return true
 }

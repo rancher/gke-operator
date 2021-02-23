@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -266,14 +267,221 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	if config.Spec.KubernetesVersion != nil {
 		if utils.StringValue(upstreamSpec.KubernetesVersion) != utils.StringValue(config.Spec.KubernetesVersion) {
 			logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
-			err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
+			if err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
 				Update: &gkeapi.ClusterUpdate{
 					DesiredMasterVersion: *config.Spec.KubernetesVersion,
-				}})
-			if err != nil {
+				}}); err != nil {
 				return config, err
 			}
 			return h.enqueueUpdate(config)
+		}
+	}
+
+	clusterUpdate := &gkeapi.ClusterUpdate{}
+
+	addons := config.Spec.ClusterAddons
+	addonsNeedUpdate := false
+	if addons != nil {
+		if upstreamSpec.ClusterAddons.HTTPLoadBalancing != addons.HTTPLoadBalancing {
+			clusterUpdate.DesiredAddonsConfig = &gkeapi.AddonsConfig{}
+			clusterUpdate.DesiredAddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{
+				Disabled: !addons.HTTPLoadBalancing,
+			}
+			addonsNeedUpdate = true
+		}
+		if upstreamSpec.ClusterAddons.HorizontalPodAutoscaling != addons.HorizontalPodAutoscaling {
+			if clusterUpdate.DesiredAddonsConfig == nil {
+				clusterUpdate.DesiredAddonsConfig = &gkeapi.AddonsConfig{}
+			}
+			clusterUpdate.DesiredAddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{
+				Disabled: !addons.HorizontalPodAutoscaling,
+			}
+			addonsNeedUpdate = true
+		}
+		if upstreamSpec.ClusterAddons.NetworkPolicyConfig != addons.NetworkPolicyConfig {
+			// If disabling NetworkPolicyConfig for the cluster, NetworkPolicyEnabled
+			// (which affects nodes) needs to be disabled first. If
+			// NetworkPolicyEnabled is already set to false downstream but not yet
+			// complete upstream, that update will be enqueued later in this
+			// sequence and we just need to wait for it to complete.
+			if !addons.NetworkPolicyConfig && (config.Spec.NetworkPolicyEnabled != nil && !*config.Spec.NetworkPolicyEnabled) && *upstreamSpec.NetworkPolicyEnabled {
+				logrus.Infof("waiting to update NetworkPolicyConfig cluster addon")
+			} else {
+				if clusterUpdate.DesiredAddonsConfig == nil {
+					clusterUpdate.DesiredAddonsConfig = &gkeapi.AddonsConfig{}
+				}
+				clusterUpdate.DesiredAddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{
+					Disabled: !addons.NetworkPolicyConfig,
+				}
+				addonsNeedUpdate = true
+			}
+		}
+	}
+	if addonsNeedUpdate {
+		logrus.Infof("updating addon configuration for cluster [%s]", config.Name)
+		err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
+			Update: clusterUpdate,
+		})
+		// In the case of disabling both NetworkPolicyEnabled and NetworkPolicyConfig,
+		// the node pool will automatically be recreated after NetworkPolicyEnabled is
+		// disabled, so we need to wait. Capture this event and log it as Info
+		// rather than an error, since this is a normal but potentially
+		// time-consuming event.
+		if err != nil {
+			matched, matchErr := regexp.MatchString(`Node pool "\S+" requires recreation`, err.Error())
+			if matchErr != nil {
+				return config, fmt.Errorf("programming error: %w", matchErr)
+			}
+			if matched {
+				logrus.Infof("waiting for node pool to finish recreation")
+				h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
+				return config, nil
+			}
+			return config, err
+		}
+		return h.enqueueUpdate(config)
+	}
+
+	clusterUpdate = &gkeapi.ClusterUpdate{}
+	netconfigNeedsUpdate := false
+	if config.Spec.MasterAuthorizedNetworksConfig != nil {
+		if upstreamSpec.MasterAuthorizedNetworksConfig.Enabled != config.Spec.MasterAuthorizedNetworksConfig.Enabled {
+			clusterUpdate.DesiredMasterAuthorizedNetworksConfig = &gkeapi.MasterAuthorizedNetworksConfig{
+				Enabled: config.Spec.MasterAuthorizedNetworksConfig.Enabled,
+			}
+			netconfigNeedsUpdate = true
+		}
+		if config.Spec.MasterAuthorizedNetworksConfig.Enabled && !utils.CompareCidrBlockPointerSlices(
+			upstreamSpec.MasterAuthorizedNetworksConfig.CidrBlocks,
+			config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks) {
+			if clusterUpdate.DesiredMasterAuthorizedNetworksConfig == nil {
+				clusterUpdate.DesiredMasterAuthorizedNetworksConfig = &gkeapi.MasterAuthorizedNetworksConfig{
+					Enabled: true,
+				}
+			}
+			for _, v := range config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks {
+				clusterUpdate.DesiredMasterAuthorizedNetworksConfig.CidrBlocks = append(
+					clusterUpdate.DesiredMasterAuthorizedNetworksConfig.CidrBlocks,
+					&gkeapi.CidrBlock{
+						CidrBlock:   v.CidrBlock,
+						DisplayName: v.DisplayName,
+					})
+			}
+			netconfigNeedsUpdate = true
+		}
+	}
+	if netconfigNeedsUpdate {
+		logrus.Infof("updating master authorized networks configuration for cluster [%s]", config.Name)
+		if err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
+			Update: clusterUpdate,
+		}); err != nil {
+			return config, err
+		}
+		return h.enqueueUpdate(config)
+	}
+
+	clusterUpdate = &gkeapi.ClusterUpdate{}
+	loggingOrMonitoringNeedsUpdate := false
+	if config.Spec.LoggingService != nil {
+		loggingService := *config.Spec.LoggingService
+		if loggingService == "" {
+			loggingService = utils.CloudLoggingService
+		}
+		if *upstreamSpec.LoggingService != loggingService {
+			clusterUpdate.DesiredLoggingService = loggingService
+			loggingOrMonitoringNeedsUpdate = true
+		}
+	}
+	if config.Spec.MonitoringService != nil {
+		monitoringService := *config.Spec.MonitoringService
+		if monitoringService == "" {
+			monitoringService = utils.CloudMonitoringService
+		}
+		if *upstreamSpec.MonitoringService != monitoringService {
+			clusterUpdate.DesiredMonitoringService = monitoringService
+			loggingOrMonitoringNeedsUpdate = true
+		}
+	}
+	if loggingOrMonitoringNeedsUpdate {
+		logrus.Infof("updating logging and monitoring configuration for cluster [%s]", config.Name)
+		if err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
+			Update: clusterUpdate,
+		}); err != nil {
+			return config, err
+		}
+		return h.enqueueUpdate(config)
+	}
+
+	if config.Spec.NetworkPolicyEnabled != nil {
+		if *upstreamSpec.NetworkPolicyEnabled != *config.Spec.NetworkPolicyEnabled {
+			logrus.Infof("updating network policy for cluster [%s]", config.Name)
+			if err := utils.UpdateNetworkPolicy(config, &gkeapi.SetNetworkPolicyRequest{
+				NetworkPolicy: &gkeapi.NetworkPolicy{
+					Enabled:  *config.Spec.NetworkPolicyEnabled,
+					Provider: utils.NetworkProviderCalico,
+				},
+			}); err != nil {
+				return config, err
+			}
+			return h.enqueueUpdate(config)
+		}
+	}
+
+	if config.Spec.NodePools != nil {
+		updateNodePoolRequest := &gkeapi.UpdateNodePoolRequest{}
+		needsUpdate := false
+		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
+		for _, np := range config.Spec.NodePools {
+			upstreamNodePool := upstreamNodePools[*np.Name]
+			if utils.StringValue(upstreamNodePool.Version) != utils.StringValue(np.Version) {
+				updateNodePoolRequest.NodeVersion = *np.Version
+				needsUpdate = true
+			}
+			if strings.ToLower(upstreamNodePool.Config.ImageType) != strings.ToLower(np.Config.ImageType) {
+				updateNodePoolRequest.ImageType = np.Config.ImageType
+				needsUpdate = true
+			}
+			if needsUpdate {
+				logrus.Infof("updating nodepool [%s] on cluster [%s]", *np.Name, config.Name)
+				if err := utils.UpdateNodePool(*np.Name, config, updateNodePoolRequest); err != nil {
+					return config, err
+				}
+				return h.enqueueUpdate(config)
+			}
+			if *upstreamNodePool.InitialNodeCount != *np.InitialNodeCount {
+				logrus.Infof("updating size of nodepool [%s] on cluster [%s]", *np.Name, config.Name)
+				if err := utils.SetNodePoolSize(*np.Name, config, &gkeapi.SetNodePoolSizeRequest{
+					NodeCount: *np.InitialNodeCount,
+				}); err != nil {
+					return config, err
+				}
+				return h.enqueueUpdate(config)
+			}
+			autoscalingRequest := &gkeapi.SetNodePoolAutoscalingRequest{
+				Autoscaling: &gkeapi.NodePoolAutoscaling{},
+			}
+			needsUpdate := false
+			if np.Autoscaling != nil {
+				if upstreamNodePool.Autoscaling.Enabled != np.Autoscaling.Enabled {
+					autoscalingRequest.Autoscaling.Enabled = np.Autoscaling.Enabled
+					needsUpdate = true
+				}
+				if np.Autoscaling.Enabled && upstreamNodePool.Autoscaling.MaxNodeCount != np.Autoscaling.MaxNodeCount {
+					autoscalingRequest.Autoscaling.MaxNodeCount = np.Autoscaling.MaxNodeCount
+					needsUpdate = true
+				}
+				if np.Autoscaling.Enabled && upstreamNodePool.Autoscaling.MinNodeCount != np.Autoscaling.MinNodeCount {
+					autoscalingRequest.Autoscaling.MinNodeCount = np.Autoscaling.MinNodeCount
+					needsUpdate = true
+				}
+			}
+			if needsUpdate {
+				logrus.Infof("updating autoscaling config of nodepool [%s] on cluster [%s]", *np.Name, config.Name)
+				if err := utils.SetNodePoolAutoscaling(*np.Name, config, autoscalingRequest); err != nil {
+					return config, err
+				}
+				return h.enqueueUpdate(config)
+			}
 		}
 	}
 
@@ -353,4 +561,14 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 		return fmt.Errorf(strings.Join(errors, ";"))
 	}
 	return nil
+}
+
+func buildNodePoolMap(nodePools []gkev1.NodePoolConfig) map[string]*gkev1.NodePoolConfig {
+	ret := make(map[string]*gkev1.NodePoolConfig)
+	for i := range nodePools {
+		if nodePools[i].Name != nil {
+			ret[*nodePools[i].Name] = &nodePools[i]
+		}
+	}
+	return ret
 }
