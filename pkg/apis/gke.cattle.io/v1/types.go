@@ -47,7 +47,7 @@ type GKEClusterConfigSpec struct {
 	LoggingService                 *string                         `json:"loggingService"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
 	GKEClusterNetworkConfig        *GKEClusterNetworkConfig        `json:"gkeClusterNetworkConfig,omitempty"`
-	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`
+	NetworkPolicyEnabled           *bool                           `json:"networkPolicyEnabled,omitempty"`
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
 	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
@@ -67,11 +67,6 @@ type IPAllocationPolicy struct {
 type GKEClusterNetworkConfig struct {
 	Network    *string `json:"network,omitempty"`
 	Subnetwork *string `json:"subnetwork,omitempty"`
-}
-
-type NetworkPolicy struct {
-	Enabled  *bool   `json:"enabled,omitempty"`
-	Provider *string `json:"provider,omitempty"`
 }
 
 type PrivateClusterConfig struct {

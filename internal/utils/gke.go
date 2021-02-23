@@ -194,10 +194,9 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 		}
 	}
 
-	if config.Spec.NetworkPolicy != nil {
+	if config.Spec.NetworkPolicyEnabled != nil {
 		request.Cluster.NetworkPolicy = &gkeapi.NetworkPolicy{
-			Enabled:  *config.Spec.NetworkPolicy.Enabled,
-			Provider: *config.Spec.NetworkPolicy.Provider,
+			Enabled: *config.Spec.NetworkPolicyEnabled,
 		}
 	}
 
@@ -341,8 +340,8 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	if config.Spec.GKEClusterNetworkConfig == nil {
 		return fmt.Errorf(cannotBeNilError, "gkeClusterNetworkConfig", config.Name)
 	}
-	if config.Spec.NetworkPolicy == nil {
-		return fmt.Errorf(cannotBeNilError, "networkPolicy", config.Name)
+	if config.Spec.NetworkPolicyEnabled == nil {
+		return fmt.Errorf(cannotBeNilError, "networkPolicyEnabled", config.Name)
 	}
 	if config.Spec.PrivateClusterConfig == nil {
 		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Name)
