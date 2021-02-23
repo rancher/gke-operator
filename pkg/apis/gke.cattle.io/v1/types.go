@@ -88,9 +88,9 @@ type GKEClusterConfigStatus struct {
 }
 
 type ClusterAddons struct {
-	HTTPLoadBalancing        *bool `json:"httpLoadBalancing`
-	HorizontalPodAutoscaling *bool `json:"horizontalPodAutoscaling"`
-	NetworkPolicyConfig      *bool `json:"networkPolicyConfig"`
+	HTTPLoadBalancing        *bool `json:"httpLoadBalancing,omitempty"`
+	HorizontalPodAutoscaling *bool `json:"horizontalPodAutoscaling,omitempty"`
+	NetworkPolicyConfig      *bool `json:"networkPolicyConfig,omitempty"`
 }
 
 type NodePoolConfig struct {
