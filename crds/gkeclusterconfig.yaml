@@ -80,7 +80,7 @@ spec:
             loggingService:
               nullable: true
               type: string
-            masterAuthorizedNetowrks:
+            masterAuthorizedNetworks:
               nullable: true
               properties:
                 cidrBlocks:

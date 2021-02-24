@@ -50,7 +50,7 @@ type GKEClusterConfigSpec struct {
 	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
-	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetowrks,omitempty" norman:"noupdate"`
+	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
 }
 
 type IPAllocationPolicy struct {
