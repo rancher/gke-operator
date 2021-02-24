@@ -110,6 +110,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 			InitialClusterVersion: *config.Spec.KubernetesVersion,
 			EnableKubernetesAlpha: enableAlphaFeatures,
 			LoggingService:        *config.Spec.LoggingService,
+			MonitoringService:     *config.Spec.MonitoringService,
 			IpAllocationPolicy: &gkeapi.IPAllocationPolicy{
 				ClusterIpv4CidrBlock:       config.Spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
 				ClusterSecondaryRangeName:  config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName,
@@ -159,6 +160,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 				ImageType:   np.Config.ImageType,
 				Labels:      np.Config.Labels,
 				MachineType: np.Config.MachineType,
+				OauthScopes: np.Config.OauthScopes,
 				Taints:      taints,
 				Preemptible: np.Config.Preemptible,
 			},
@@ -348,6 +350,9 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	}
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
 		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Name)
+	}
+	if config.Spec.MonitoringService == nil {
+		return fmt.Errorf(cannotBeNilError, "monitoringService", config.Name)
 	}
 
 	for _, np := range config.Spec.NodePools {

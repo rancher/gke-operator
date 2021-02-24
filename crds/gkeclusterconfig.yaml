@@ -106,6 +106,9 @@ spec:
                 enabled:
                   type: boolean
               type: object
+            monitoringService:
+              nullable: true
+              type: string
             networkPolicyEnabled:
               nullable: true
               type: boolean
@@ -144,6 +147,12 @@ spec:
                       machineType:
                         nullable: true
                         type: string
+                      oauthScopes:
+                        items:
+                          nullable: true
+                          type: string
+                        nullable: true
+                        type: array
                       preemptible:
                         type: boolean
                       taints:

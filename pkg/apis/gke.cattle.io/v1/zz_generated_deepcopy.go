@@ -140,6 +140,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.MonitoringService != nil {
+		in, out := &in.MonitoringService, &out.MonitoringService
+		*out = new(string)
+		**out = **in
+	}
 	if in.NodePools != nil {
 		in, out := &in.NodePools, &out.NodePools
 		*out = make([]NodePoolConfig, len(*in))
@@ -279,6 +284,11 @@ func (in *NodeConfig) DeepCopyInto(out *NodeConfig) {
 		for key, val := range *in {
 			(*out)[key] = val
 		}
+	}
+	if in.OauthScopes != nil {
+		in, out := &in.OauthScopes, &out.OauthScopes
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.Taints != nil {
 		in, out := &in.Taints, &out.Taints

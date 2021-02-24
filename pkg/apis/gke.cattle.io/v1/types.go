@@ -45,6 +45,7 @@ type GKEClusterConfigSpec struct {
 	ClusterName                    string                          `json:"clusterName"`
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
 	LoggingService                 *string                         `json:"loggingService"`
+	MonitoringService              *string                         `json:"monitoringService"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
 	GKEClusterNetworkConfig        *GKEClusterNetworkConfig        `json:"gkeClusterNetworkConfig,omitempty"`
 	NetworkPolicyEnabled           *bool                           `json:"networkPolicyEnabled,omitempty"`
@@ -110,6 +111,7 @@ type NodeConfig struct {
 	Labels        map[string]string `json:"labels,omitempty"`
 	LocalSsdCount int64             `json:"localSsdCount,omitempty"`
 	MachineType   string            `json:"machineType,omitempty"`
+	OauthScopes   []string          `json:"oauthScopes,omitempty"`
 	Preemptible   bool              `json:"preemptible,omitempty"`
 	Taints        []NodeTaintConfig `json:"taints,omitempty"`
 }
