@@ -149,7 +149,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 			})
 		}
 
-		asEnabled := np.Autoscaling.Enabled != nil && !*np.Autoscaling.Enabled
+		asEnabled := np.Autoscaling.Enabled != nil && *np.Autoscaling.Enabled
 
 		as := &gkeapi.NodePoolAutoscaling{}
 		if asEnabled {
