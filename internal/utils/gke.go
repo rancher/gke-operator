@@ -50,27 +50,6 @@ const (
 	NodePoolStatusError = "ERROR"
 )
 
-// Network Providers
-const (
-	// NetworkProviderUnspecified is an unspecified netowrk provider
-	NetworkProviderUnspecified = "PROVIDER_UNSPECIFIED"
-
-	// NetworkProviderCalico describes the calico provider
-	NetworkProviderCalico = "CALICO"
-)
-
-// Logging Services
-const (
-	// CloudLoggingService is the Cloud Logging service with a Kubernetes-native resource model
-	CloudLoggingService = "logging.googleapis.com/kubernetes"
-)
-
-// Monitoring Services
-const (
-	// CloudMonitoringService is the Cloud Monitoring service with a Kubernetes-native resource model
-	CloudMonitoringService = "monitoring.googleapis.com/kubernetes"
-)
-
 // Cluster Status
 const (
 	// ClusterStatusProvisioning The PROVISIONING state indicates the cluster is
@@ -412,74 +391,6 @@ func GetTokenSource(ctx context.Context, credential string) (oauth2.TokenSource,
 	return ts.TokenSource, nil
 }
 
-func UpdateCluster(config *gkev1.GKEClusterConfig, updateRequest *gkeapi.UpdateClusterRequest) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return err
-	}
-
-	_, err = svc.Projects.Locations.Clusters.Update(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName), updateRequest).Context(ctx).Do()
-
-	return err
-}
-
-func UpdateNodePool(name string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.UpdateNodePoolRequest) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return err
-	}
-	_, err = svc.Projects.Locations.Clusters.NodePools.Update(NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, name), updateRequest).Context(ctx).Do()
-
-	return err
-}
-
-func SetNodePoolSize(name string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.SetNodePoolSizeRequest) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return err
-	}
-	nodePoolRRN := NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, name)
-	_, err = svc.Projects.Locations.Clusters.NodePools.SetSize(nodePoolRRN, updateRequest).Context(ctx).Do()
-
-	return err
-}
-
-func SetNodePoolAutoscaling(name string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.SetNodePoolAutoscalingRequest) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return err
-	}
-	nodePoolRRN := NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, name)
-	_, err = svc.Projects.Locations.Clusters.NodePools.SetAutoscaling(nodePoolRRN, updateRequest).Context(ctx).Do()
-
-	return err
-}
-
-func UpdateNetworkPolicy(config *gkev1.GKEClusterConfig, updateRequest *gkeapi.SetNetworkPolicyRequest) error {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return err
-	}
-	_, err = svc.Projects.Locations.Clusters.SetNetworkPolicy(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName), updateRequest).Context(ctx).Do()
-
-	return err
-}
-
 // LocationRRN returns a Relative Resource Name representing a location. This
 // RRN can either represent a Region or a Zone. It can be used as the parent
 // attribute during cluster creation to create a zonal or regional cluster, or
@@ -636,26 +547,4 @@ func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterC
 	}
 
 	return newSpec, nil
-}
-
-func CompareCidrBlockPointerSlices(lh, rh []*gkev1.CidrBlock) bool {
-	if len(lh) != len(rh) {
-		return false
-	}
-
-	lhElements := make(map[gkev1.CidrBlock]struct{})
-	for _, v := range lh {
-		if v != nil {
-			lhElements[*v] = struct{}{}
-		}
-	}
-	for _, v := range rh {
-		if v == nil {
-			continue
-		}
-		if _, ok := lhElements[*v]; !ok {
-			return false
-		}
-	}
-	return true
 }
