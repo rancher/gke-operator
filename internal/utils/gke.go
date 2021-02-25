@@ -90,7 +90,8 @@ const (
 
 // Errors
 const (
-	cannotBeNilError = "field [%s] cannot be nil for non-import cluster [%s]"
+	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s]"
+	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s]"
 )
 
 // GenerateGkeClusterCreateRequest creates a request
@@ -342,8 +343,20 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 		return nil
 	}
 
+	if config.Spec.EnableAlphaFeature == nil {
+		return fmt.Errorf(cannotBeNilError, "enableAlphaFeature", config.Name)
+	}
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+	}
+	if config.Spec.ClusterAddons.HTTPLoadBalancing == nil {
+		return fmt.Errorf(cannotBeNilError, "clusterAddons.httpLoadBalancing", config.Name)
+	}
+	if config.Spec.ClusterAddons.HorizontalPodAutoscaling == nil {
+		return fmt.Errorf(cannotBeNilError, "clusterAddons.horizontalPodAutoscaling", config.Name)
+	}
+	if config.Spec.ClusterAddons.NetworkPolicyConfig == nil {
+		return fmt.Errorf(cannotBeNilError, "clusterAddons.networkPolicyConfig", config.Name)
 	}
 	if config.Spec.IPAllocationPolicy == nil {
 		return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
@@ -351,38 +364,65 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	if config.Spec.LoggingService == nil {
 		return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
 	}
+	if config.Spec.NetworkConfig == nil {
+		return fmt.Errorf(cannotBeNilError, "networkConfig", config.Name)
+	}
+	if config.Spec.NetworkPolicy == nil {
+		return fmt.Errorf(cannotBeNilError, "networkPolicy", config.Name)
+	}
+	if config.Spec.PrivateClusterConfig == nil {
+		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Name)
+	}
+	if config.Spec.MasterAuthorizedNetworksConfig == nil {
+		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Name)
+	}
 
 	for _, np := range config.Spec.NodePools {
-		cannotBeNilForNodePoolError := "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s]"
 		if np.Name == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "name", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Name)
 		}
+		cannotBeNil := cannotBeNilForNodePoolError
 		if np.Version == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "version", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "version", *np.Name, config.Name)
+		}
+		if np.Autoscaling == nil {
+			return fmt.Errorf(cannotBeNil, "autoscaling", *np.Name, config.Name)
 		}
 		if np.Autoscaling.MinNodeCount == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "minNodeCount", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "autoscaling.minNodeCount", *np.Name, config.Name)
 		}
 		if np.Autoscaling.MaxNodeCount == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "maxNodeCount", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "autoscaling.maxNodeCount", *np.Name, config.Name)
 		}
 		if np.InitialNodeCount == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "initialNodeCount", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "initialNodeCount", *np.Name, config.Name)
+		}
+		if np.MaxPodsConstraint == nil {
+			return fmt.Errorf(cannotBeNil, "maxPodsConstraint", *np.Name, config.Name)
 		}
 		if np.Config.DiskSizeGb == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "diskSizeGb", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "config.diskSizeGb", *np.Name, config.Name)
 		}
 		if np.Config.DiskType == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "diskType", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "config.diskType", *np.Name, config.Name)
 		}
 		if np.Config.ImageType == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "imageType", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "config.imageType", *np.Name, config.Name)
+		}
+		if np.Config.Labels == nil {
+			return fmt.Errorf(cannotBeNil, "config.labels", *np.Name, config.Name)
+		}
+		if np.Config.LocalSsdCount == nil {
+			return fmt.Errorf(cannotBeNil, "config.localSsdCount", *np.Name, config.Name)
 		}
 		if np.Config.MachineType == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "machineType", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "config.machineType", *np.Name, config.Name)
 		}
 		if np.Config.Preemptible == nil {
-			return fmt.Errorf(cannotBeNilForNodePoolError, "preemptible", np.Name, config.Name)
+			return fmt.Errorf(cannotBeNil, "config.preemptible", *np.Name, config.Name)
+		}
+		if np.Config.Taints == nil {
+			return fmt.Errorf(cannotBeNil, "config.taints", *np.Name, config.Name)
 		}
 	}
 
