@@ -102,7 +102,7 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 		return nil, err
 	}
 
-	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && !*config.Spec.EnableAlphaFeature
+	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && *config.Spec.EnableAlphaFeature
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
