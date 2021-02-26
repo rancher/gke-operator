@@ -38,7 +38,7 @@ type GKEClusterConfigSpec struct {
 	Imported                       bool                            `json:"imported" norman:"noupdate"`
 	Description                    string                          `json:"description"`
 	EnableAlphaFeature             *bool                           `json:"enableAlphaFeature"`
-	ClusterAddons                  ClusterAddons                   `json:"clusterAddons"`
+	ClusterAddons                  *ClusterAddons                  `json:"clusterAddons"`
 	ClusterIpv4CidrBlock           string                          `json:"clusterIpv4Cidr"`
 	ProjectID                      string                          `json:"projectID"`
 	CredentialContent              string                          `json:"credentialContent"`
@@ -88,9 +88,9 @@ type GKEClusterConfigStatus struct {
 }
 
 type ClusterAddons struct {
-	HTTPLoadBalancing        *bool `json:"httpLoadBalancing,omitempty"`
-	HorizontalPodAutoscaling *bool `json:"horizontalPodAutoscaling,omitempty"`
-	NetworkPolicyConfig      *bool `json:"networkPolicyConfig,omitempty"`
+	HTTPLoadBalancing        bool `json:"httpLoadBalancing,omitempty"`
+	HorizontalPodAutoscaling bool `json:"horizontalPodAutoscaling,omitempty"`
+	NetworkPolicyConfig      bool `json:"networkPolicyConfig,omitempty"`
 }
 
 type NodePoolConfig struct {
@@ -103,19 +103,19 @@ type NodePoolConfig struct {
 }
 
 type NodePoolAutoscaling struct {
-	Enabled      *bool  `json:"enabled,omitempty"`
-	MaxNodeCount *int64 `json:"maxNodeCount,omitempty"`
-	MinNodeCount *int64 `json:"minNodeCount,omitempty"`
+	Enabled      bool  `json:"enabled,omitempty"`
+	MaxNodeCount int64 `json:"maxNodeCount,omitempty"`
+	MinNodeCount int64 `json:"minNodeCount,omitempty"`
 }
 
 type NodeConfig struct {
-	DiskSizeGb    *int64            `json:"diskSizeGb,omitempty"`
-	DiskType      *string           `json:"diskType,omitempty"`
-	ImageType     *string           `json:"imageType,omitempty"`
+	DiskSizeGb    int64             `json:"diskSizeGb,omitempty"`
+	DiskType      string            `json:"diskType,omitempty"`
+	ImageType     string            `json:"imageType,omitempty"`
 	Labels        map[string]string `json:"labels,omitempty"`
-	LocalSsdCount *int64            `json:"localSsdCount,omitempty"`
-	MachineType   *string           `json:"machineType,omitempty"`
-	Preemptible   *bool             `json:"preemptible,omitempty"`
+	LocalSsdCount int64             `json:"localSsdCount,omitempty"`
+	MachineType   string            `json:"machineType,omitempty"`
+	Preemptible   bool              `json:"preemptible,omitempty"`
 	Taints        []NodeTaintConfig `json:"taints,omitempty"`
 }
 

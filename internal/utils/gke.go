@@ -126,14 +126,10 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 	}
 
 	addons := config.Spec.ClusterAddons
-	if addons.HTTPLoadBalancing != nil {
-		request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !*addons.HTTPLoadBalancing}
-	}
-	if addons.HorizontalPodAutoscaling != nil {
-		request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !*addons.HorizontalPodAutoscaling}
-	}
-	if addons.NetworkPolicyConfig != nil {
-		request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !*addons.NetworkPolicyConfig}
+	if addons != nil {
+		request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !addons.HTTPLoadBalancing}
+		request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !addons.HorizontalPodAutoscaling}
+		request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !addons.NetworkPolicyConfig}
 	}
 
 	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
@@ -149,35 +145,22 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 			})
 		}
 
-		asEnabled := np.Autoscaling.Enabled != nil && *np.Autoscaling.Enabled
-
-		as := &gkeapi.NodePoolAutoscaling{}
-		if asEnabled {
-			as.Enabled = asEnabled
-
-			if np.Autoscaling.MaxNodeCount == nil {
-				return nil, fmt.Errorf("max node count cant be nil")
-			}
-			as.MaxNodeCount = *np.Autoscaling.MaxNodeCount
-
-			if np.Autoscaling.MinNodeCount == nil {
-				return nil, fmt.Errorf("min node count cant be nil")
-			}
-			as.MinNodeCount = *np.Autoscaling.MinNodeCount
-		}
-
 		nodePool := &gkeapi.NodePool{
-			Name:             *np.Name,
-			Autoscaling:      as,
+			Name: *np.Name,
+			Autoscaling: &gkeapi.NodePoolAutoscaling{
+				Enabled:      np.Autoscaling.Enabled,
+				MaxNodeCount: np.Autoscaling.MaxNodeCount,
+				MinNodeCount: np.Autoscaling.MinNodeCount,
+			},
 			InitialNodeCount: *np.InitialNodeCount,
 			Config: &gkeapi.NodeConfig{
-				DiskSizeGb:  *np.Config.DiskSizeGb,
-				DiskType:    *np.Config.DiskType,
-				ImageType:   *np.Config.ImageType,
+				DiskSizeGb:  np.Config.DiskSizeGb,
+				DiskType:    np.Config.DiskType,
+				ImageType:   np.Config.ImageType,
 				Labels:      np.Config.Labels,
-				MachineType: *np.Config.MachineType,
+				MachineType: np.Config.MachineType,
 				Taints:      taints,
-				Preemptible: *np.Config.Preemptible,
+				Preemptible: np.Config.Preemptible,
 			},
 		}
 		// If nil, use default
@@ -311,11 +294,8 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	}
 
 	for _, np := range config.Spec.NodePools {
-		if np.Autoscaling.Enabled != nil && *np.Autoscaling.Enabled {
-			if np.Autoscaling.MaxNodeCount == nil || np.Autoscaling.MinNodeCount == nil {
-				return fmt.Errorf("min and maxNodeCount can't be nil")
-			}
-			if *np.Autoscaling.MinNodeCount < 1 || *np.Autoscaling.MaxNodeCount < *np.Autoscaling.MinNodeCount {
+		if np.Autoscaling != nil && np.Autoscaling.Enabled {
+			if np.Autoscaling.MinNodeCount < 1 || np.Autoscaling.MaxNodeCount < np.Autoscaling.MinNodeCount {
 				return fmt.Errorf("minNodeCount in the NodePool must be >= 1 and <= maxNodeCount")
 			}
 		}
@@ -349,14 +329,8 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
 	}
-	if config.Spec.ClusterAddons.HTTPLoadBalancing == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterAddons.httpLoadBalancing", config.Name)
-	}
-	if config.Spec.ClusterAddons.HorizontalPodAutoscaling == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterAddons.horizontalPodAutoscaling", config.Name)
-	}
-	if config.Spec.ClusterAddons.NetworkPolicyConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterAddons.networkPolicyConfig", config.Name)
+	if config.Spec.ClusterAddons == nil {
+		return fmt.Errorf(cannotBeNilError, "clusterAddons", config.Name)
 	}
 	if config.Spec.IPAllocationPolicy == nil {
 		return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
@@ -388,41 +362,14 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 		if np.Autoscaling == nil {
 			return fmt.Errorf(cannotBeNil, "autoscaling", *np.Name, config.Name)
 		}
-		if np.Autoscaling.MinNodeCount == nil {
-			return fmt.Errorf(cannotBeNil, "autoscaling.minNodeCount", *np.Name, config.Name)
-		}
-		if np.Autoscaling.MaxNodeCount == nil {
-			return fmt.Errorf(cannotBeNil, "autoscaling.maxNodeCount", *np.Name, config.Name)
-		}
 		if np.InitialNodeCount == nil {
 			return fmt.Errorf(cannotBeNil, "initialNodeCount", *np.Name, config.Name)
 		}
 		if np.MaxPodsConstraint == nil {
 			return fmt.Errorf(cannotBeNil, "maxPodsConstraint", *np.Name, config.Name)
 		}
-		if np.Config.DiskSizeGb == nil {
-			return fmt.Errorf(cannotBeNil, "config.diskSizeGb", *np.Name, config.Name)
-		}
-		if np.Config.DiskType == nil {
-			return fmt.Errorf(cannotBeNil, "config.diskType", *np.Name, config.Name)
-		}
-		if np.Config.ImageType == nil {
-			return fmt.Errorf(cannotBeNil, "config.imageType", *np.Name, config.Name)
-		}
-		if np.Config.Labels == nil {
-			return fmt.Errorf(cannotBeNil, "config.labels", *np.Name, config.Name)
-		}
-		if np.Config.LocalSsdCount == nil {
-			return fmt.Errorf(cannotBeNil, "config.localSsdCount", *np.Name, config.Name)
-		}
-		if np.Config.MachineType == nil {
-			return fmt.Errorf(cannotBeNil, "config.machineType", *np.Name, config.Name)
-		}
-		if np.Config.Preemptible == nil {
-			return fmt.Errorf(cannotBeNil, "config.preemptible", *np.Name, config.Name)
-		}
-		if np.Config.Taints == nil {
-			return fmt.Errorf(cannotBeNil, "config.taints", *np.Name, config.Name)
+		if np.Config == nil {
+			return fmt.Errorf(cannotBeNil, "config", *np.Name, config.Name)
 		}
 	}
 
@@ -505,13 +452,13 @@ func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterC
 
 		if np.Config != nil {
 			newNP.Config = &gkev1.NodeConfig{
-				DiskSizeGb:    &np.Config.DiskSizeGb,
-				DiskType:      &np.Config.DiskType,
-				ImageType:     &np.Config.ImageType,
+				DiskSizeGb:    np.Config.DiskSizeGb,
+				DiskType:      np.Config.DiskType,
+				ImageType:     np.Config.ImageType,
 				Labels:        np.Config.Labels,
-				LocalSsdCount: &np.Config.LocalSsdCount,
-				MachineType:   &np.Config.MachineType,
-				Preemptible:   &np.Config.Preemptible,
+				LocalSsdCount: np.Config.LocalSsdCount,
+				MachineType:   np.Config.MachineType,
+				Preemptible:   np.Config.Preemptible,
 			}
 
 			newNP.Config.Taints = make([]gkev1.NodeTaintConfig, 0, len(np.Config.Taints))
@@ -526,9 +473,9 @@ func BuildUpstreamClusterState(upstreamSpec *gkeapi.Cluster) (*gkev1.GKEClusterC
 
 		if np.Autoscaling != nil {
 			newNP.Autoscaling = &gkev1.NodePoolAutoscaling{
-				Enabled:      &np.Autoscaling.Enabled,
-				MaxNodeCount: &np.Autoscaling.MaxNodeCount,
-				MinNodeCount: &np.Autoscaling.MinNodeCount,
+				Enabled:      np.Autoscaling.Enabled,
+				MaxNodeCount: np.Autoscaling.MaxNodeCount,
+				MinNodeCount: np.Autoscaling.MinNodeCount,
 			}
 		}
 

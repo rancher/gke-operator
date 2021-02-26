@@ -20,15 +20,13 @@ spec:
         spec:
           properties:
             clusterAddons:
+              nullable: true
               properties:
                 horizontalPodAutoscaling:
-                  nullable: true
                   type: boolean
                 httpLoadBalancing:
-                  nullable: true
                   type: boolean
                 networkPolicyConfig:
-                  nullable: true
                   type: boolean
               type: object
             clusterIpv4Cidr:
@@ -125,20 +123,16 @@ spec:
                     nullable: true
                     properties:
                       enabled:
-                        nullable: true
                         type: boolean
                       maxNodeCount:
-                        nullable: true
                         type: integer
                       minNodeCount:
-                        nullable: true
                         type: integer
                     type: object
                   config:
                     nullable: true
                     properties:
                       diskSizeGb:
-                        nullable: true
                         type: integer
                       diskType:
                         nullable: true
@@ -153,13 +147,11 @@ spec:
                         nullable: true
                         type: object
                       localSsdCount:
-                        nullable: true
                         type: integer
                       machineType:
                         nullable: true
                         type: string
                       preemptible:
-                        nullable: true
                         type: boolean
                       taints:
                         items:
