@@ -132,7 +132,11 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := h.getSecret(ctx, config)
+	if err != nil {
+		return config, err
+	}
+	svc, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -160,12 +164,16 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := h.getSecret(ctx, config)
+	if err != nil {
+		return config, err
+	}
+	svc, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
 
-	createClusterRequest, err := utils.GenerateGkeClusterCreateRequest(config)
+	createClusterRequest, err := utils.GenerateGkeClusterCreateRequest(cred, config)
 	if err != nil {
 		return config, err
 	}
@@ -200,7 +208,11 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := h.getSecret(ctx, config)
+	if err != nil {
+		return config, err
+	}
+	svc, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -263,10 +275,17 @@ func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 
 func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec, svc *gkeapi.Service) (*gkev1.GKEClusterConfig, error) {
 
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	cred, err := h.getSecret(ctx, config)
+	if err != nil {
+		return config, err
+	}
+
 	if config.Spec.KubernetesVersion != nil {
 		if utils.StringValue(upstreamSpec.KubernetesVersion) != utils.StringValue(config.Spec.KubernetesVersion) {
 			logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
-			err := utils.UpdateCluster(config, &gkeapi.UpdateClusterRequest{
+			err := utils.UpdateCluster(cred, config, &gkeapi.UpdateClusterRequest{
 				Update: &gkeapi.ClusterUpdate{
 					DesiredMasterVersion: *config.Spec.KubernetesVersion,
 				}})
@@ -292,7 +311,11 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := h.getSecret(ctx, config)
+	if err != nil {
+		return config, err
+	}
+	svc, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -353,4 +376,17 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 		return fmt.Errorf(strings.Join(errors, ";"))
 	}
 	return nil
+}
+
+func (h *Handler) getSecret(ctx context.Context, config *gkev1.GKEClusterConfig) (string, error) {
+	ns, id := utils.ParseCredential(config.Spec.CredentialContent)
+	secret, err := h.secretsCache.Get(ns, id)
+	if err != nil {
+		return "", err
+	}
+	dataBytes, ok := secret.Data["googlecredentialConfig-authEncodedJson"]
+	if !ok {
+		return "", fmt.Errorf("could not read malformed cloud credential secret %s from namespace %s", id, ns)
+	}
+	return string(dataBytes), nil
 }

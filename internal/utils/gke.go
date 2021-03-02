@@ -9,7 +9,6 @@ import (
 	"time"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
-	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	gkeapi "google.golang.org/api/container/v1"
@@ -95,9 +94,9 @@ const (
 )
 
 // GenerateGkeClusterCreateRequest creates a request
-func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.CreateClusterRequest, error) {
+func GenerateGkeClusterCreateRequest(cred string, config *gkev1.GKEClusterConfig) (*gkeapi.CreateClusterRequest, error) {
 
-	err := ValidateCreateRequest(config)
+	err := ValidateCreateRequest(cred, config)
 	if err != nil {
 		return nil, err
 	}
@@ -262,24 +261,8 @@ func GetClientset(cluster *gkeapi.Cluster, ts oauth2.TokenSource) (kubernetes.In
 	return clientset, nil
 }
 
-// GetGKEClient returns a gke client capable of making requests on behalf of the services account
-func GetGKEClient(ctx context.Context, secretsCache wranglerv1.SecretCache, config *gkev1.GKEClusterConfig) (*gkeapi.Service, error) {
-	ns, id := ParseCredential(config.Spec.CredentialContent)
-	secret, err := secretsCache.Get(ns, id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	dataBytes := secret.Data["gkeCredentialConfig-data"]
-
-	data := string(dataBytes)
-
-	return GetServiceClient(ctx, data)
-}
-
 // ValidateCreateRequest checks a config for the ability to generate a create request
-func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
+func ValidateCreateRequest(cred string, config *gkev1.GKEClusterConfig) error {
 	if config.Spec.ProjectID == "" {
 		return fmt.Errorf("project ID is required")
 	}
@@ -305,7 +288,7 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	svc, err := GetGKEClient(ctx, cred)
 	if err != nil {
 		return err
 	}
@@ -376,7 +359,7 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	return nil
 }
 
-func GetServiceClient(ctx context.Context, credential string) (*gkeapi.Service, error) {
+func GetGKEClient(ctx context.Context, credential string) (*gkeapi.Service, error) {
 	ts, err := GetTokenSource(ctx, credential)
 	if err != nil {
 		return nil, err
@@ -396,11 +379,11 @@ func GetTokenSource(ctx context.Context, credential string) (oauth2.TokenSource,
 	return ts.TokenSource, nil
 }
 
-func UpdateCluster(config *gkev1.GKEClusterConfig, updateRequest *gkeapi.UpdateClusterRequest) error {
+func UpdateCluster(cred string, config *gkev1.GKEClusterConfig, updateRequest *gkeapi.UpdateClusterRequest) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	svc, err := GetGKEClient(ctx, cred)
 	if err != nil {
 		return err
 	}
