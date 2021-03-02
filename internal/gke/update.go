@@ -44,19 +44,15 @@ const (
 
 // UpdateMasterKubernetesVersion updates the Kubernetes version for the control plane.
 // This must occur before the Kubernetes version is changed on the nodes.
-func UpdateMasterKubernetesVersion(ctx context.Context, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+func UpdateMasterKubernetesVersion(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.KubernetesVersion == nil {
 		return NotChanged, nil
 	}
 
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
-	}
 	if utils.StringValue(upstreamSpec.KubernetesVersion) != utils.StringValue(config.Spec.KubernetesVersion) {
 		logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
 
-		_, err = client.Projects.
+		_, err := client.Projects.
 			Locations.
 			Clusters.
 			Update(
@@ -78,12 +74,7 @@ func UpdateMasterKubernetesVersion(ctx context.Context, config *gkev1.GKECluster
 
 // UpdateClusterAddons updates the cluster addons.
 // In the case of the NetworkPolicyConfig addon, this may need to be retried after NetworkPolicyEnabled has been updated.
-func UpdateClusterAddons(ctx context.Context, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
-	}
-
+func UpdateClusterAddons(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	clusterUpdate := &gkeapi.ClusterUpdate{}
 	addons := config.Spec.ClusterAddons
 	if addons == nil {
@@ -160,14 +151,13 @@ func UpdateClusterAddons(ctx context.Context, config *gkev1.GKEClusterConfig, up
 }
 
 // UpdateMasterAuthorizedNetworks updates MasterAuthorizedNetworks
-func UpdateMasterAuthorizedNetworks(ctx context.Context, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+func UpdateMasterAuthorizedNetworks(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
 		return NotChanged, nil
-	}
-
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
 	}
 
 	clusterUpdate := &gkeapi.ClusterUpdate{}
@@ -198,7 +188,7 @@ func UpdateMasterAuthorizedNetworks(ctx context.Context, config *gkev1.GKECluste
 	}
 	if needsUpdate {
 		logrus.Infof("updating master authorized networks configuration for cluster [%s]", config.Name)
-		_, err = client.Projects.
+		_, err := client.Projects.
 			Locations.
 			Clusters.
 			Update(
@@ -218,11 +208,11 @@ func UpdateMasterAuthorizedNetworks(ctx context.Context, config *gkev1.GKECluste
 
 // UpdateLoggingMonitoringService updates both LoggingService and MonitoringService.
 // In most cases, updating one requires explicitly updating the other as well, so these are paired.
-func UpdateLoggingMonitoringService(ctx context.Context, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
-	}
+func UpdateLoggingMonitoringService(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 
 	clusterUpdate := &gkeapi.ClusterUpdate{}
 	needsUpdate := false
@@ -248,7 +238,7 @@ func UpdateLoggingMonitoringService(ctx context.Context, config *gkev1.GKECluste
 	}
 	if needsUpdate {
 		logrus.Infof("updating logging and monitoring configuration for cluster [%s]", config.Name)
-		_, err = client.Projects.
+		_, err := client.Projects.
 			Locations.
 			Clusters.
 			Update(
@@ -267,19 +257,18 @@ func UpdateLoggingMonitoringService(ctx context.Context, config *gkev1.GKECluste
 }
 
 // UpdateNetworkPolicyEnabled updates the Cluster NetworkPolicy setting.
-func UpdateNetworkPolicyEnabled(ctx context.Context, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+func UpdateNetworkPolicyEnabled(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.NetworkPolicyEnabled == nil {
 		return NotChanged, nil
 	}
 
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
-	}
-
 	if *upstreamSpec.NetworkPolicyEnabled != *config.Spec.NetworkPolicyEnabled {
 		logrus.Infof("updating network policy for cluster [%s]", config.Name)
-		_, err = client.Projects.
+		_, err := client.Projects.
 			Locations.
 			Clusters.
 			SetNetworkPolicy(
@@ -305,16 +294,12 @@ func UpdateNetworkPolicyEnabled(ctx context.Context, config *gkev1.GKEClusterCon
 // attributes are among the few that can be updated in the same request.
 func UpdateNodePoolKubernetesVersionOrImageType(
 	ctx context.Context,
+	client *gkeapi.Service,
 	nodePool *gkev1.NodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
 	if nodePool.Version == nil {
 		return NotChanged, nil
-	}
-
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
 	}
 
 	updateRequest := &gkeapi.UpdateNodePoolRequest{}
@@ -330,7 +315,7 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 		needsUpdate = true
 	}
 	if needsUpdate {
-		_, err = client.Projects.
+		_, err := client.Projects.
 			Locations.
 			Clusters.
 			NodePools.
@@ -350,6 +335,7 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 // UpdateNodePoolSize sets the size of a given node pool
 func UpdateNodePoolSize(
 	ctx context.Context,
+	client *gkeapi.Service,
 	nodePool *gkev1.NodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
@@ -361,12 +347,8 @@ func UpdateNodePoolSize(
 		return NotChanged, nil
 	}
 
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
-	}
 	logrus.Infof("updating size of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-	_, err = client.Projects.
+	_, err := client.Projects.
 		Locations.
 		Clusters.
 		NodePools.
@@ -386,16 +368,12 @@ func UpdateNodePoolSize(
 // UpdateNodePoolAutoscaling updates the autoscaling parameters for a given node pool
 func UpdateNodePoolAutoscaling(
 	ctx context.Context,
+	client *gkeapi.Service,
 	nodePool *gkev1.NodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
 	if nodePool.Autoscaling == nil {
 		return NotChanged, nil
-	}
-
-	client, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
-	if err != nil {
-		return NotChanged, err
 	}
 
 	updateRequest := &gkeapi.SetNodePoolAutoscalingRequest{
@@ -418,7 +396,7 @@ func UpdateNodePoolAutoscaling(
 	}
 	if needsUpdate {
 		logrus.Infof("updating autoscaling config of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-		_, err = client.Projects.
+		_, err := client.Projects.
 			Locations.
 			Clusters.
 			NodePools.

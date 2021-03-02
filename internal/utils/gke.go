@@ -9,7 +9,6 @@ import (
 	"time"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
-	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	gkeapi "google.golang.org/api/container/v1"
@@ -86,9 +85,9 @@ const (
 )
 
 // GenerateGkeClusterCreateRequest creates a request
-func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.CreateClusterRequest, error) {
+func GenerateGkeClusterCreateRequest(client *gkeapi.Service, config *gkev1.GKEClusterConfig) (*gkeapi.CreateClusterRequest, error) {
 
-	err := ValidateCreateRequest(config)
+	err := ValidateCreateRequest(client, config)
 	if err != nil {
 		return nil, err
 	}
@@ -207,13 +206,13 @@ func GenerateGkeClusterCreateRequest(config *gkev1.GKEClusterConfig) (*gkeapi.Cr
 }
 
 // WaitClusterRemoveExp waits for a cluster to be removed
-func WaitClusterRemoveExp(ctx context.Context, svc *gkeapi.Service, config *gkev1.GKEClusterConfig) (*gkeapi.Operation, error) {
+func WaitClusterRemoveExp(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig) (*gkeapi.Operation, error) {
 	var operation *gkeapi.Operation
 	var err error
 
 	for i := 1; i < 12; i++ {
 		time.Sleep(time.Duration(i*i) * time.Second)
-		operation, err = svc.Projects.Locations.Clusters.Delete(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+		operation, err = client.Projects.Locations.Clusters.Delete(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
 		if err == nil {
 			return operation, nil
 		} else if !strings.Contains(err.Error(), "Please wait and try again once it is done") {
@@ -254,24 +253,8 @@ func GetClientset(cluster *gkeapi.Cluster, ts oauth2.TokenSource) (kubernetes.In
 	return clientset, nil
 }
 
-// GetGKEClient returns a gke client capable of making requests on behalf of the services account
-func GetGKEClient(ctx context.Context, secretsCache wranglerv1.SecretCache, config *gkev1.GKEClusterConfig) (*gkeapi.Service, error) {
-	ns, id := ParseCredential(config.Spec.CredentialContent)
-	secret, err := secretsCache.Get(ns, id)
-
-	if err != nil {
-		return nil, err
-	}
-
-	dataBytes := secret.Data["gkeCredentialConfig-data"]
-
-	data := string(dataBytes)
-
-	return GetServiceClient(ctx, data)
-}
-
 // ValidateCreateRequest checks a config for the ability to generate a create request
-func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
+func ValidateCreateRequest(client *gkeapi.Service, config *gkev1.GKEClusterConfig) error {
 	if config.Spec.ProjectID == "" {
 		return fmt.Errorf("project ID is required")
 	}
@@ -297,12 +280,11 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := GetServiceClient(ctx, config.Spec.CredentialContent)
+	operation, err := client.Projects.Locations.Clusters.List(
+		LocationRRN(config.Spec.ProjectID, config.Spec.Region)).Context(ctx).Do()
 	if err != nil {
 		return err
 	}
-	operation, err := svc.Projects.Locations.Clusters.List(
-		LocationRRN(config.Spec.ProjectID, config.Spec.Region)).Context(ctx).Do()
 
 	for _, cluster := range operation.Clusters {
 		if cluster.Name == config.Spec.ClusterName {
@@ -371,7 +353,7 @@ func ValidateCreateRequest(config *gkev1.GKEClusterConfig) error {
 	return nil
 }
 
-func GetServiceClient(ctx context.Context, credential string) (*gkeapi.Service, error) {
+func GetGKEClient(ctx context.Context, credential string) (*gkeapi.Service, error) {
 	ts, err := GetTokenSource(ctx, credential)
 	if err != nil {
 		return nil, err

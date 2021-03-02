@@ -132,13 +132,17 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	if err != nil {
+		return config, err
+	}
+	client, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
 
 	logrus.Debugf("Removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region)
-	operation, err := utils.WaitClusterRemoveExp(ctx, svc, config)
+	operation, err := utils.WaitClusterRemoveExp(ctx, client, config)
 	if err != nil && !strings.Contains(err.Error(), "notFound") {
 		return config, err
 	} else if err == nil {
@@ -160,17 +164,21 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	if err != nil {
+		return config, err
+	}
+	client, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
 
-	createClusterRequest, err := utils.GenerateGkeClusterCreateRequest(config)
+	createClusterRequest, err := utils.GenerateGkeClusterCreateRequest(client, config)
 	if err != nil {
 		return config, err
 	}
 
-	operation, err := svc.Projects.Locations.Clusters.Create(
+	operation, err := client.Projects.Locations.Clusters.Create(
 		utils.LocationRRN(config.Spec.ProjectID, config.Spec.Region),
 		createClusterRequest).Context(ctx).Do()
 
@@ -200,12 +208,16 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	if err != nil {
+		return config, err
+	}
+	client, err := utils.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
 
-	cluster, err := svc.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+	cluster, err := client.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
 	if err != nil {
 		return config, err
 	}
@@ -266,7 +278,16 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	changed, err := gke.UpdateMasterKubernetesVersion(ctx, config, upstreamSpec)
+	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	if err != nil {
+		return config, err
+	}
+	client, err := utils.GetGKEClient(ctx, cred)
+	if err != nil {
+		return config, err
+	}
+
+	changed, err := gke.UpdateMasterKubernetesVersion(ctx, client, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -274,7 +295,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateClusterAddons(ctx, config, upstreamSpec)
+	changed, err = gke.UpdateClusterAddons(ctx, client, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -286,7 +307,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateMasterAuthorizedNetworks(ctx, config, upstreamSpec)
+	changed, err = gke.UpdateMasterAuthorizedNetworks(ctx, client, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -294,7 +315,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateLoggingMonitoringService(ctx, config, upstreamSpec)
+	changed, err = gke.UpdateLoggingMonitoringService(ctx, client, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -302,7 +323,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateNetworkPolicyEnabled(ctx, config, upstreamSpec)
+	changed, err = gke.UpdateNetworkPolicyEnabled(ctx, client, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -315,7 +336,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		for _, np := range config.Spec.NodePools {
 			upstreamNodePool := upstreamNodePools[*np.Name]
 
-			changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, &np, config, upstreamNodePool)
+			changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, client, &np, config, upstreamNodePool)
 			if err != nil {
 				return config, err
 			}
@@ -323,7 +344,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 				return h.enqueueUpdate(config)
 			}
 
-			changed, err = gke.UpdateNodePoolSize(ctx, &np, config, upstreamNodePool)
+			changed, err = gke.UpdateNodePoolSize(ctx, client, &np, config, upstreamNodePool)
 			if err != nil {
 				return config, err
 			}
@@ -331,7 +352,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 				return h.enqueueUpdate(config)
 			}
 
-			changed, err = gke.UpdateNodePoolAutoscaling(ctx, &np, config, upstreamNodePool)
+			changed, err = gke.UpdateNodePoolAutoscaling(ctx, client, &np, config, upstreamNodePool)
 			if err != nil {
 				return config, err
 			}
@@ -356,11 +377,15 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	svc, err := utils.GetServiceClient(ctx, config.Spec.CredentialContent)
+	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
 	if err != nil {
 		return config, err
 	}
-	cluster, err := svc.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+	client, err := utils.GetGKEClient(ctx, cred)
+	if err != nil {
+		return config, err
+	}
+	cluster, err := client.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
 	if err != nil {
 		return config, err
 	}
@@ -417,6 +442,19 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 		return fmt.Errorf(strings.Join(errors, ";"))
 	}
 	return nil
+}
+
+func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
+	ns, id := utils.ParseCredential(configSpec.CredentialContent)
+	secret, err := secretsCache.Get(ns, id)
+	if err != nil {
+		return "", err
+	}
+	dataBytes, ok := secret.Data["googlecredentialConfig-authEncodedJson"]
+	if !ok {
+		return "", fmt.Errorf("could not read malformed cloud credential secret %s from namespace %s", id, ns)
+	}
+	return string(dataBytes), nil
 }
 
 func buildNodePoolMap(nodePools []gkev1.NodePoolConfig) map[string]*gkev1.NodePoolConfig {
