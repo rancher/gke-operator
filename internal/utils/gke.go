@@ -2,9 +2,7 @@ package utils
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -13,8 +11,6 @@ import (
 	"golang.org/x/oauth2/google"
 	gkeapi "google.golang.org/api/container/v1"
 	"google.golang.org/api/option"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 // Node Pool Status
@@ -220,37 +216,6 @@ func WaitClusterRemoveExp(ctx context.Context, client *gkeapi.Service, config *g
 		}
 	}
 	return operation, err
-}
-
-// GetClientset returns the clientset for a cluster
-func GetClientset(cluster *gkeapi.Cluster, ts oauth2.TokenSource) (kubernetes.Interface, error) {
-	capem, err := base64.StdEncoding.DecodeString(cluster.MasterAuth.ClusterCaCertificate)
-	if err != nil {
-		return nil, err
-	}
-	host := cluster.Endpoint
-	if !strings.HasPrefix(host, "https://") {
-		host = fmt.Sprintf("https://%s", host)
-	}
-
-	config := &rest.Config{
-		Host: host,
-		TLSClientConfig: rest.TLSClientConfig{
-			CAData: capem,
-		},
-		WrapTransport: func(rt http.RoundTripper) http.RoundTripper {
-			return &oauth2.Transport{
-				Source: ts,
-				Base:   rt,
-			}
-		},
-	}
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return clientset, nil
 }
 
 // ValidateCreateRequest checks a config for the ability to generate a create request
