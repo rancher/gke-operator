@@ -13,6 +13,7 @@ import (
 	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
+	gkeapi "google.golang.org/api/container/v1"
 )
 
 const (
@@ -168,7 +169,7 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 	if err != nil {
 		return config, err
 	}
-	client, err := utils.GetGKEClient(ctx, cred)
+	client, err := gke.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -197,16 +198,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
-	if err != nil {
-		return config, err
-	}
-	client, err := gke.GetGKEClient(ctx, cred)
-	if err != nil {
-		return config, err
-	}
-
-	cluster, err := client.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+	cluster, err := GetCluster(ctx, h.secretsCache, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -241,7 +233,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 		}
 	}
 
-	upstreamSpec, err := utils.BuildUpstreamClusterState(cluster)
+	upstreamSpec, err := BuildUpstreamClusterState(cluster)
 	if err != nil {
 		return config, err
 	}
@@ -271,7 +263,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	if err != nil {
 		return config, err
 	}
-	client, err := utils.GetGKEClient(ctx, cred)
+	client, err := gke.GetGKEClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -366,15 +358,7 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
-	if err != nil {
-		return config, err
-	}
-	client, err := gke.GetGKEClient(ctx, cred)
-	if err != nil {
-		return config, err
-	}
-	cluster, err := client.Projects.Locations.Clusters.Get(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
+	cluster, err := GetCluster(ctx, h.secretsCache, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -454,4 +438,159 @@ func buildNodePoolMap(nodePools []gkev1.NodePoolConfig) map[string]*gkev1.NodePo
 		}
 	}
 	return ret
+}
+
+func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
+	cred, err := getSecret(ctx, secretsCache, configSpec)
+	if err != nil {
+		return nil, err
+	}
+	client, err := gke.GetGKEClient(ctx, cred)
+	if err != nil {
+		return nil, err
+	}
+	cluster, err := client.Projects.
+		Locations.
+		Clusters.
+		Get(utils.ClusterRRN(configSpec.ProjectID, configSpec.Region, configSpec.ClusterName)).
+		Context(ctx).
+		Do()
+	if err != nil {
+		return nil, err
+	}
+	return cluster, nil
+}
+
+func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
+	newSpec := &gkev1.GKEClusterConfigSpec{
+		KubernetesVersion:       &cluster.CurrentMasterVersion,
+		EnableAlphaFeature:      &cluster.EnableKubernetesAlpha,
+		ClusterAddons:           &gkev1.ClusterAddons{},
+		ClusterIpv4CidrBlock:    cluster.ClusterIpv4Cidr,
+		LoggingService:          &cluster.LoggingService,
+		MonitoringService:       &cluster.MonitoringService,
+		GKEClusterNetworkConfig: &gkev1.GKEClusterNetworkConfig{},
+		PrivateClusterConfig:    &gkev1.PrivateClusterConfig{},
+		IPAllocationPolicy:      &gkev1.IPAllocationPolicy{},
+		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
+			Enabled: false,
+		},
+	}
+
+	networkPolicyEnabled := false
+	if cluster.NetworkPolicy != nil && cluster.NetworkPolicy.Enabled == true {
+		networkPolicyEnabled = true
+	}
+	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
+
+	if cluster.NetworkConfig != nil {
+		newSpec.GKEClusterNetworkConfig.Network = &cluster.NetworkConfig.Network
+		newSpec.GKEClusterNetworkConfig.Subnetwork = &cluster.NetworkConfig.Subnetwork
+	} else {
+		network := "default"
+		newSpec.GKEClusterNetworkConfig.Network = &network
+		newSpec.GKEClusterNetworkConfig.Subnetwork = &network
+	}
+
+	if cluster.PrivateClusterConfig != nil {
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &cluster.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = &cluster.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.MasterIpv4CidrBlock = cluster.PrivateClusterConfig.MasterIpv4CidrBlock
+		newSpec.PrivateClusterConfig.PrivateEndpoint = cluster.PrivateClusterConfig.PrivateEndpoint
+		newSpec.PrivateClusterConfig.PublicEndpoint = cluster.PrivateClusterConfig.PublicEndpoint
+	} else {
+		enabled := false
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &enabled
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = &enabled
+	}
+
+	// build cluster addons
+	if cluster.AddonsConfig != nil {
+		lb := true
+		if cluster.AddonsConfig.HttpLoadBalancing != nil {
+			lb = !cluster.AddonsConfig.HttpLoadBalancing.Disabled
+		}
+		newSpec.ClusterAddons.HTTPLoadBalancing = lb
+		hpa := true
+		if cluster.AddonsConfig.HorizontalPodAutoscaling != nil {
+			hpa = !cluster.AddonsConfig.HorizontalPodAutoscaling.Disabled
+		}
+		newSpec.ClusterAddons.HorizontalPodAutoscaling = hpa
+		npc := true
+		if cluster.AddonsConfig.NetworkPolicyConfig != nil {
+			npc = !cluster.AddonsConfig.NetworkPolicyConfig.Disabled
+		}
+		newSpec.ClusterAddons.NetworkPolicyConfig = npc
+	}
+
+	if cluster.IpAllocationPolicy != nil {
+		newSpec.IPAllocationPolicy.ClusterIpv4CidrBlock = cluster.IpAllocationPolicy.ClusterIpv4CidrBlock
+		newSpec.IPAllocationPolicy.ClusterSecondaryRangeName = cluster.IpAllocationPolicy.ClusterSecondaryRangeName
+		newSpec.IPAllocationPolicy.CreateSubnetwork = cluster.IpAllocationPolicy.CreateSubnetwork
+		newSpec.IPAllocationPolicy.NodeIpv4CidrBlock = cluster.IpAllocationPolicy.NodeIpv4CidrBlock
+		newSpec.IPAllocationPolicy.ServicesIpv4CidrBlock = cluster.IpAllocationPolicy.ServicesIpv4CidrBlock
+		newSpec.IPAllocationPolicy.ServicesSecondaryRangeName = cluster.IpAllocationPolicy.ServicesSecondaryRangeName
+		newSpec.IPAllocationPolicy.SubnetworkName = cluster.IpAllocationPolicy.SubnetworkName
+		newSpec.IPAllocationPolicy.UseIPAliases = cluster.IpAllocationPolicy.UseIpAliases
+	}
+
+	if cluster.MasterAuthorizedNetworksConfig != nil && cluster.MasterAuthorizedNetworksConfig.Enabled {
+		newSpec.MasterAuthorizedNetworksConfig.Enabled = cluster.MasterAuthorizedNetworksConfig.Enabled
+		for _, b := range cluster.MasterAuthorizedNetworksConfig.CidrBlocks {
+			block := &gkev1.CidrBlock{
+				CidrBlock:   b.CidrBlock,
+				DisplayName: b.DisplayName,
+			}
+			newSpec.MasterAuthorizedNetworksConfig.CidrBlocks = append(newSpec.MasterAuthorizedNetworksConfig.CidrBlocks, block)
+		}
+	}
+
+	// build node groups
+	newSpec.NodePools = make([]gkev1.NodePoolConfig, 0, len(cluster.NodePools))
+
+	for _, np := range cluster.NodePools {
+		if np.Status == utils.NodePoolStatusStopping {
+			continue
+		}
+
+		newNP := gkev1.NodePoolConfig{
+			Name:              &np.Name,
+			Version:           &np.Version,
+			InitialNodeCount:  &np.InitialNodeCount,
+			MaxPodsConstraint: &np.MaxPodsConstraint.MaxPodsPerNode,
+		}
+
+		if np.Config != nil {
+			newNP.Config = &gkev1.NodeConfig{
+				DiskSizeGb:    np.Config.DiskSizeGb,
+				DiskType:      np.Config.DiskType,
+				ImageType:     np.Config.ImageType,
+				Labels:        np.Config.Labels,
+				LocalSsdCount: np.Config.LocalSsdCount,
+				MachineType:   np.Config.MachineType,
+				Preemptible:   np.Config.Preemptible,
+			}
+
+			newNP.Config.Taints = make([]gkev1.NodeTaintConfig, 0, len(np.Config.Taints))
+			for _, t := range np.Config.Taints {
+				newNP.Config.Taints = append(newNP.Config.Taints, gkev1.NodeTaintConfig{
+					Effect: t.Effect,
+					Key:    t.Key,
+					Value:  t.Value,
+				})
+			}
+		}
+
+		if np.Autoscaling != nil {
+			newNP.Autoscaling = &gkev1.NodePoolAutoscaling{
+				Enabled:      np.Autoscaling.Enabled,
+				MaxNodeCount: np.Autoscaling.MaxNodeCount,
+				MinNodeCount: np.Autoscaling.MinNodeCount,
+			}
+		}
+
+		newSpec.NodePools = append(newSpec.NodePools, newNP)
+	}
+
+	return newSpec, nil
 }
