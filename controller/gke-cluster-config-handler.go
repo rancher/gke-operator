@@ -173,20 +173,9 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 		return config, err
 	}
 
-	createClusterRequest, err := utils.GenerateGkeClusterCreateRequest(client, config)
-	if err != nil {
+	if err = gke.Create(ctx, client, config); err != nil {
 		return config, err
 	}
-
-	operation, err := client.Projects.Locations.Clusters.Create(
-		utils.LocationRRN(config.Spec.ProjectID, config.Spec.Region),
-		createClusterRequest).Context(ctx).Do()
-
-	if err != nil {
-		return config, err
-	}
-	logrus.Debugf("Cluster %s create is called for project %s and region/zone %s. Status Code %v",
-		config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region, operation.HTTPStatusCode)
 
 	config = config.DeepCopy()
 	config.Status.Phase = gkeConfigCreatingPhase
