@@ -7,10 +7,7 @@ import (
 	"time"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 	gkeapi "google.golang.org/api/container/v1"
-	"google.golang.org/api/option"
 )
 
 // Node Pool Status
@@ -89,26 +86,6 @@ func WaitClusterRemoveExp(ctx context.Context, client *gkeapi.Service, config *g
 		}
 	}
 	return operation, err
-}
-
-func GetGKEClient(ctx context.Context, credential string) (*gkeapi.Service, error) {
-	ts, err := GetTokenSource(ctx, credential)
-	if err != nil {
-		return nil, err
-	}
-	return GetServiceClientWithTokenSource(ctx, ts)
-}
-
-func GetServiceClientWithTokenSource(ctx context.Context, ts oauth2.TokenSource) (*gkeapi.Service, error) {
-	return gkeapi.NewService(ctx, option.WithHTTPClient(oauth2.NewClient(ctx, ts)))
-}
-
-func GetTokenSource(ctx context.Context, credential string) (oauth2.TokenSource, error) {
-	ts, err := google.CredentialsFromJSON(ctx, []byte(credential), gkeapi.CloudPlatformScope)
-	if err != nil {
-		return nil, err
-	}
-	return ts.TokenSource, nil
 }
 
 // LocationRRN returns a Relative Resource Name representing a location. This

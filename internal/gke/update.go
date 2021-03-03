@@ -213,7 +213,6 @@ func UpdateLoggingMonitoringService(
 	client *gkeapi.Service,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
-
 	clusterUpdate := &gkeapi.ClusterUpdate{}
 	needsUpdate := false
 	if config.Spec.LoggingService != nil {
