@@ -16,54 +16,43 @@ steps:
     - pull_request
     - tag
 
-- name: build
-  image: golang:1.16
-  volumes:
-  - name: dockersock
-    path: /var/run
-  commands:
-  - sleep 20
-  - TAG=${DRONE_TAG} make
+- name: docker-build
+  image: plugins/docker
+  settings:
+    dockerfile: Dockerfile
+    repo: "rancher/gke-operator"
+    tag: "dev"
+    dry_run: true
   when:
     event:
-    - tag
+    - pull_request
 
-- name: push
-  image: rancher/hardened-build-base:v1.15.8b5
-  volumes:
-  - name: dockersock
-    path: /var/run
-  commands:
-  - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
-  - TAG=${DRONE_TAG} make image-push
-  environment:
-    DOCKER_USERNAME:
-      from_secret: docker_username
-    DOCKER_PASSWORD:
+- name: docker-publish
+  image: plugins/docker
+  settings:
+    dockerfile: Dockerfile
+    password:
       from_secret: docker_password
+    username:
+      from_secret: docker_username
+    repo: "rancher/gke-operator"
+    tag: "${DRONE_TAG}"
   when:
     event:
     - tag
 
 - name: manifest
-  image: rancher/hardened-build-base:v1.15.8b5
-  volumes:
-  - name: dockersock
-    path: /var/run
-  commands:
-  - TAG=${DRONE_TAG} make image-manifest
+  image: plugins/manifest
+  settings:
+    dockerfile: Dockerfile
+    password:
+      from_secret: docker_password
+    username:
+      from_secret: docker_username
+    platforms:
+    - linux/amd64
+    target: "rancher/gke-operator:${DRONE_TAG}"
+    template: "rancher/gke-operator:${DRONE_TAG}"
   when:
     event:
     - tag
-
-services:
-- name: docker
-  image: docker:dind
-  privileged: true
-  volumes:
-  - name: dockersock
-    path: /var/run
-
-volumes:
-  - name: dockersock
-    temp: {}
