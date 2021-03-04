@@ -7,7 +7,7 @@ platform:
 
 steps:
 - name: ci
-  image: rancher/hardened-build-base:v1.15.8b5
+  image: golang:1.16
   commands:
   - ./scripts/ci
   when:
@@ -17,7 +17,7 @@ steps:
     - tag
 
 - name: build
-  image: rancher/hardened-build-base:v1.15.8b5
+  image: golang:1.16
   volumes:
   - name: dockersock
     path: /var/run
@@ -41,17 +41,6 @@ steps:
       from_secret: docker_username
     DOCKER_PASSWORD:
       from_secret: docker_password
-  when:
-    event:
-    - tag
-
-- name: scan
-  image: rancher/hardened-build-base:v1.15.8b5
-  volumes:
-  - name: dockersock
-    path: /var/run
-  commands:
-  - TAG=${DRONE_TAG} make image-scan
   when:
     event:
     - tag
