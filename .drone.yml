@@ -16,17 +16,6 @@ steps:
     - pull_request
     - tag
 
-- name: docker-build
-  image: plugins/docker
-  settings:
-    dockerfile: Dockerfile
-    repo: "rancher/gke-operator"
-    tag: "dev"
-    dry_run: true
-  when:
-    event:
-    - pull_request
-
 - name: docker-publish
   image: plugins/docker
   settings:
