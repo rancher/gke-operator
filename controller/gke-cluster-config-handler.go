@@ -444,7 +444,7 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 }
 
 func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
-	ns, id := utils.ParseCredential(configSpec.CredentialContent)
+	ns, id := parseCredential(configSpec.CredentialContent)
 	secret, err := secretsCache.Get(ns, id)
 	if err != nil {
 		return "", err
@@ -454,6 +454,14 @@ func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configS
 		return "", fmt.Errorf("could not read malformed cloud credential secret %s from namespace %s", id, ns)
 	}
 	return string(dataBytes), nil
+}
+
+func parseCredential(ref string) (namespace string, name string) {
+	parts := strings.SplitN(ref, ":", 2)
+	if len(parts) == 1 {
+		return "", parts[0]
+	}
+	return parts[0], parts[1]
 }
 
 func buildNodePoolMap(nodePools []gkev1.NodePoolConfig) map[string]*gkev1.NodePoolConfig {
