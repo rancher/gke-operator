@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	gkeapi "google.golang.org/api/container/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -26,7 +25,7 @@ func RemoveCluster(ctx context.Context, client *gkeapi.Service, config *gkev1.GK
 		_, err := client.Projects.
 			Locations.
 			Clusters.
-			Delete(utils.ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).
+			Delete(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).
 			Context(ctx).
 			Do()
 		if err != nil && strings.Contains(err.Error(), "Please wait and try again once it is done") {

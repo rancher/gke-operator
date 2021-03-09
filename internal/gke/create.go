@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	gkeapi "google.golang.org/api/container/v1"
 )
@@ -28,7 +27,7 @@ func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKECluste
 		Locations.
 		Clusters.
 		Create(
-			utils.LocationRRN(config.Spec.ProjectID, config.Spec.Region),
+			LocationRRN(config.Spec.ProjectID, config.Spec.Region),
 			createClusterRequest).
 		Context(ctx).
 		Do()
@@ -173,7 +172,7 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	operation, err := client.Projects.
 		Locations.
 		Clusters.
-		List(utils.LocationRRN(config.Spec.ProjectID, config.Spec.Region)).
+		List(LocationRRN(config.Spec.ProjectID, config.Spec.Region)).
 		Context(ctx).
 		Do()
 	if err != nil {

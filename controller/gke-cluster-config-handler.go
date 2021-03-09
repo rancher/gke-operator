@@ -478,7 +478,7 @@ func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, config
 	cluster, err := client.Projects.
 		Locations.
 		Clusters.
-		Get(utils.ClusterRRN(configSpec.ProjectID, configSpec.Region, configSpec.ClusterName)).
+		Get(gke.ClusterRRN(configSpec.ProjectID, configSpec.Region, configSpec.ClusterName)).
 		Context(ctx).
 		Do()
 	if err != nil {
