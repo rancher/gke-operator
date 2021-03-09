@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -14,9 +15,12 @@ import (
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
+	gkeClusterConfigKind     = "GKEClusterConfig"
 	controllerName           = "gke-controller"
 	controllerRemoveName     = "gke-controller-remove"
 	gkeConfigCreatingPhase   = "creating"
@@ -143,6 +147,17 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 
 // importCluster cluster returns a spec containing the given config's displayName and region.
 func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	cluster, err := GetCluster(ctx, h.secretsCache, &config.Spec)
+	if err != nil {
+		return config, err
+	}
+	if err := h.createCASecret(config, cluster); err != nil {
+		return config, err
+	}
+
 	config.Status.Phase = gkeConfigActivePhase
 	return h.gkeCC.UpdateStatus(config)
 }
@@ -171,8 +186,7 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 	}
 
 	logrus.Infof("removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region)
-	err = gke.RemoveCluster(ctx, client, config)
-	if err != nil {
+	if err := gke.RemoveCluster(ctx, client, config); err != nil {
 		logrus.Debugf("error deleting cluster %s: %v", config.Spec.ClusterName, err)
 		return config, err
 	}
@@ -392,6 +406,9 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 		return config, fmt.Errorf("creation failed for cluster %v", config.Spec.ClusterName)
 	}
 	if cluster.Status == ClusterStatusRunning {
+		if err := h.createCASecret(config, cluster); err != nil {
+			return config, err
+		}
 		logrus.Infof("Cluster %v is running", config.Spec.ClusterName)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigActivePhase
@@ -627,4 +644,41 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	}
 
 	return newSpec, nil
+}
+
+// createCASecret creates a secret containing a CA and endpoint for use in generating a kubeconfig file.
+func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi.Cluster) error {
+	var err error
+	endpoint := cluster.Endpoint
+	var ca []byte
+	if cluster.MasterAuth != nil {
+		// ClusterCaCertificate is base64-encoded, so it needs to be decoded
+		// before being passed to secrets.Create which will reencode it
+		encodedCA := cluster.MasterAuth.ClusterCaCertificate
+		ca, err = base64.StdEncoding.DecodeString(encodedCA)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = h.secrets.Create(
+		&corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      config.Name,
+				Namespace: config.Namespace,
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: gkev1.SchemeGroupVersion.String(),
+						Kind:       gkeClusterConfigKind,
+						UID:        config.UID,
+						Name:       config.Name,
+					},
+				},
+			},
+			Data: map[string][]byte{
+				"endpoint": []byte(endpoint),
+				"ca":       ca,
+			},
+		})
+	return err
 }
