@@ -39,7 +39,7 @@ type GKEClusterConfigSpec struct {
 	Description                    string                          `json:"description"`
 	EnableAlphaFeature             *bool                           `json:"enableAlphaFeature"`
 	ClusterAddons                  *ClusterAddons                  `json:"clusterAddons"`
-	ClusterIpv4CidrBlock           string                          `json:"clusterIpv4Cidr"`
+	ClusterIpv4CidrBlock           *string                         `json:"clusterIpv4Cidr"`
 	ProjectID                      string                          `json:"projectID"`
 	CredentialContent              string                          `json:"credentialContent"`
 	ClusterName                    string                          `json:"clusterName"`

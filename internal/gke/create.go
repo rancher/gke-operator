@@ -45,6 +45,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			Description:           config.Spec.Description,
 			InitialClusterVersion: *config.Spec.KubernetesVersion,
 			EnableKubernetesAlpha: enableAlphaFeatures,
+			ClusterIpv4Cidr:       *config.Spec.ClusterIpv4CidrBlock,
 			LoggingService:        *config.Spec.LoggingService,
 			MonitoringService:     *config.Spec.MonitoringService,
 			IpAllocationPolicy: &gkeapi.IPAllocationPolicy{
@@ -195,6 +196,9 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+	}
+	if config.Spec.ClusterIpv4CidrBlock == nil {
+		return fmt.Errorf(cannotBeNilError, "clusterIpv4CidrBlock", config.Name)
 	}
 	if config.Spec.ClusterAddons == nil {
 		return fmt.Errorf(cannotBeNilError, "clusterAddons", config.Name)

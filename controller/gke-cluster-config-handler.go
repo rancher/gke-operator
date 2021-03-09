@@ -500,7 +500,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		KubernetesVersion:       &cluster.CurrentMasterVersion,
 		EnableAlphaFeature:      &cluster.EnableKubernetesAlpha,
 		ClusterAddons:           &gkev1.ClusterAddons{},
-		ClusterIpv4CidrBlock:    cluster.ClusterIpv4Cidr,
+		ClusterIpv4CidrBlock:    &cluster.ClusterIpv4Cidr,
 		LoggingService:          &cluster.LoggingService,
 		MonitoringService:       &cluster.MonitoringService,
 		GKEClusterNetworkConfig: &gkev1.GKEClusterNetworkConfig{},

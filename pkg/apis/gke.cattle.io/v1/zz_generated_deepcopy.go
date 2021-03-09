@@ -130,6 +130,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(ClusterAddons)
 		**out = **in
 	}
+	if in.ClusterIpv4CidrBlock != nil {
+		in, out := &in.ClusterIpv4CidrBlock, &out.ClusterIpv4CidrBlock
+		*out = new(string)
+		**out = **in
+	}
 	if in.KubernetesVersion != nil {
 		in, out := &in.KubernetesVersion, &out.KubernetesVersion
 		*out = new(string)
