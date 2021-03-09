@@ -46,7 +46,7 @@ type GKEClusterConfigSpec struct {
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
 	LoggingService                 *string                         `json:"loggingService"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
-	NetworkConfig                  *NetworkConfig                  `json:"networkConfig,omitempty"`
+	GKEClusterNetworkConfig        *GKEClusterNetworkConfig        `json:"gkeClusterNetworkConfig,omitempty"`
 	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
@@ -64,7 +64,7 @@ type IPAllocationPolicy struct {
 	UseIPAliases               bool   `json:"useIpAliases,omitempty"`
 }
 
-type NetworkConfig struct {
+type GKEClusterNetworkConfig struct {
 	Network    *string `json:"network,omitempty"`
 	Subnetwork *string `json:"subnetwork,omitempty"`
 }
