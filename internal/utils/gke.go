@@ -1,13 +1,7 @@
 package utils
 
 import (
-	"context"
 	"fmt"
-	"strings"
-	"time"
-
-	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
-	gkeapi "google.golang.org/api/container/v1"
 )
 
 // Node Pool Status
@@ -70,23 +64,6 @@ const (
 	// action to restore
 	ClusterStatusDegraded = "DEGRADED"
 )
-
-// WaitClusterRemoveExp waits for a cluster to be removed
-func WaitClusterRemoveExp(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig) (*gkeapi.Operation, error) {
-	var operation *gkeapi.Operation
-	var err error
-
-	for i := 1; i < 12; i++ {
-		time.Sleep(time.Duration(i*i) * time.Second)
-		operation, err = client.Projects.Locations.Clusters.Delete(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).Context(ctx).Do()
-		if err == nil {
-			return operation, nil
-		} else if !strings.Contains(err.Error(), "Please wait and try again once it is done") {
-			break
-		}
-	}
-	return operation, err
-}
 
 // LocationRRN returns a Relative Resource Name representing a location. This
 // RRN can either represent a Region or a Zone. It can be used as the parent

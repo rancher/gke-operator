@@ -128,8 +128,6 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 		return config, nil
 	}
 
-	logrus.Infof("deleting cluster [%s]", config.Name)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -142,14 +140,11 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 		return config, err
 	}
 
-	logrus.Debugf("Removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region)
-	operation, err := utils.WaitClusterRemoveExp(ctx, client, config)
-	if err != nil && !strings.Contains(err.Error(), "notFound") {
+	logrus.Infof("removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region)
+	err = gke.RemoveCluster(ctx, client, config)
+	if err != nil {
+		logrus.Debugf("error deleting cluster %s: %v", config.Spec.ClusterName, err)
 		return config, err
-	} else if err == nil {
-		logrus.Debugf("Cluster %v delete is called. Status Code %v", config.Spec.ClusterName, operation.HTTPStatusCode)
-	} else {
-		logrus.Debugf("Cluster %s doesn't exist", config.Spec.ClusterName)
 	}
 
 	return config, nil
@@ -180,7 +175,8 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 
 	config = config.DeepCopy()
 	config.Status.Phase = gkeConfigCreatingPhase
-	return h.gkeCC.UpdateStatus(config)
+	config, err = h.gkeCC.UpdateStatus(config)
+	return config, err
 }
 
 func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
