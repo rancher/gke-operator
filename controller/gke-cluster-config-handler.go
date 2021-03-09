@@ -27,6 +27,36 @@ const (
 	wait                     = 30
 )
 
+// Cluster Status
+const (
+	// ClusterStatusRunning The RUNNING state indicates the cluster has been
+	// created and is fully usable
+	ClusterStatusRunning = "RUNNING"
+
+	// ClusterStatusError The ERROR state indicates the cluster is unusable
+	ClusterStatusError = "ERROR"
+
+	// ClusterStatusReconciling The RECONCILING state indicates that some work is
+	// actively being done on the cluster, such as upgrading the master or
+	// node software.
+	ClusterStatusReconciling = "RECONCILING"
+)
+
+// Node Pool Status
+const (
+	// NodePoolStatusProvisioning The PROVISIONING state indicates the node pool is
+	// being created.
+	NodePoolStatusProvisioning = "PROVISIONING"
+
+	// NodePoolStatusReconciling The RECONCILING state indicates that some work is
+	// actively being done on the node pool, such as upgrading node software.
+	NodePoolStatusReconciling = "RECONCILING"
+
+	//  NodePoolStatusStopping The STOPPING state indicates the node pool is being
+	// deleted.
+	NodePoolStatusStopping = "STOPPING"
+)
+
 type Handler struct {
 	gkeCC           v12.GKEClusterConfigClient
 	gkeEnqueueAfter func(namespace, name string, duration time.Duration)
@@ -199,7 +229,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 		return config, err
 	}
 
-	if cluster.Status == utils.ClusterStatusReconciling {
+	if cluster.Status == ClusterStatusReconciling {
 		// upstream cluster is already updating, must wait until sending next update
 		logrus.Infof("waiting for cluster [%s] to finish updating", config.Name)
 		if config.Status.Phase != gkeConfigUpdatingPhase {
@@ -213,8 +243,8 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 
 	for _, np := range cluster.NodePools {
 
-		if status := np.Status; status == utils.NodePoolStatusReconciling || status == utils.NodePoolStatusStopping ||
-			status == utils.NodePoolStatusProvisioning {
+		if status := np.Status; status == NodePoolStatusReconciling || status == NodePoolStatusStopping ||
+			status == NodePoolStatusProvisioning {
 			if config.Status.Phase != gkeConfigUpdatingPhase {
 				config = config.DeepCopy()
 				config.Status.Phase = gkeConfigUpdatingPhase
@@ -358,10 +388,10 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	if err != nil {
 		return config, err
 	}
-	if cluster.Status == utils.ClusterStatusError {
+	if cluster.Status == ClusterStatusError {
 		return config, fmt.Errorf("creation failed for cluster %v", config.Spec.ClusterName)
 	}
-	if cluster.Status == utils.ClusterStatusRunning {
+	if cluster.Status == ClusterStatusRunning {
 		logrus.Infof("Cluster %v is running", config.Spec.ClusterName)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigActivePhase
@@ -545,7 +575,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	newSpec.NodePools = make([]gkev1.NodePoolConfig, 0, len(cluster.NodePools))
 
 	for _, np := range cluster.NodePools {
-		if np.Status == utils.NodePoolStatusStopping {
+		if np.Status == NodePoolStatusStopping {
 			continue
 		}
 
