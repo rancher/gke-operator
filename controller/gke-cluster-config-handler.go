@@ -256,7 +256,6 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	}
 
 	for _, np := range cluster.NodePools {
-
 		if status := np.Status; status == NodePoolStatusReconciling || status == NodePoolStatusStopping ||
 			status == NodePoolStatusProvisioning {
 			if config.Status.Phase != gkeConfigUpdatingPhase {
@@ -267,7 +266,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 					return config, err
 				}
 			}
-			logrus.Infof("waiting for cluster [%s] to update nodegroups [%s]", config.Name, np.Name)
+			logrus.Infof("waiting for cluster [%s] to update node pool [%s]", config.Name, np.Name)
 			h.gkeEnqueueAfter(config.Namespace, config.Name, 30*time.Second)
 			return config, nil
 		}
@@ -354,32 +353,68 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 
 	if config.Spec.NodePools != nil {
 		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
+		nodePoolsNeedUpdate := false
 		for _, np := range config.Spec.NodePools {
-			upstreamNodePool := upstreamNodePools[*np.Name]
+			upstreamNodePool, ok := upstreamNodePools[*np.Name]
+			if ok {
+				// There is a matching nodepool in the cluster already, so update it if needed
+				changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, client, &np, config, upstreamNodePool)
+				if err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+					// cannot make further updates while an operation is pending,
+					// further updates will be retried if needed on the next reconcile loop
+					continue
+				}
 
-			changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, client, &np, config, upstreamNodePool)
-			if err != nil {
-				return config, err
-			}
-			if changed == gke.Changed {
-				return h.enqueueUpdate(config)
-			}
+				changed, err = gke.UpdateNodePoolSize(ctx, client, &np, config, upstreamNodePool)
+				if err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+					// cannot make further updates while an operation is pending,
+					// further updates will be retried if needed on the next reconcile loop
+					continue
+				}
 
-			changed, err = gke.UpdateNodePoolSize(ctx, client, &np, config, upstreamNodePool)
-			if err != nil {
-				return config, err
+				changed, err = gke.UpdateNodePoolAutoscaling(ctx, client, &np, config, upstreamNodePool)
+				if err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+					// cannot make further updates while an operation is pending,
+					// further updates will be retried if needed on the next reconcile loop
+					continue
+				}
+			} else {
+				// There is no nodepool with this name yet, create it
+				logrus.Infof("adding node pool [%s] to cluster [%s]", *np.Name, config.Name)
+				if changed, err = gke.CreateNodePool(ctx, client, config, &np); err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+				}
 			}
-			if changed == gke.Changed {
-				return h.enqueueUpdate(config)
+		}
+		downstreamNodePools := buildNodePoolMap(config.Spec.NodePools)
+		for _, np := range upstreamSpec.NodePools {
+			if _, ok := downstreamNodePools[*np.Name]; !ok {
+				logrus.Infof("removing node pool [%s] from cluster [%s]", *np.Name, config.Name)
+				if changed, err = gke.RemoveNodePool(ctx, client, config, *np.Name); err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+				}
 			}
-
-			changed, err = gke.UpdateNodePoolAutoscaling(ctx, client, &np, config, upstreamNodePool)
-			if err != nil {
-				return config, err
-			}
-			if changed == gke.Changed {
-				return h.enqueueUpdate(config)
-			}
+		}
+		if nodePoolsNeedUpdate {
+			return h.enqueueUpdate(config)
 		}
 	}
 

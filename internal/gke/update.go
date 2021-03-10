@@ -12,18 +12,6 @@ import (
 	gkeapi "google.golang.org/api/container/v1"
 )
 
-// Status indicates how to handle the response from a request to update a resource
-type Status int
-
-const (
-	// Changed means the request to change resource was accepted and change is in progress
-	Changed Status = iota
-	// Retry means the request to change resource was rejected due to an expected error and should be retried later
-	Retry
-	// NotChanged means the resource was not changed, either due to error or because it was unnecessary
-	NotChanged
-)
-
 // Network Providers
 const (
 	// NetworkProviderCalico describes the calico provider
@@ -291,6 +279,8 @@ func UpdateNetworkPolicyEnabled(
 // UpdateNodePoolKubernetesVersionOrImageType sends a combined request to
 // update either the node pool Kubernetes version or image type or both. These
 // attributes are among the few that can be updated in the same request.
+// If the node pool is busy, it will return a Retry status indicating the operation
+// should be retried later.
 func UpdateNodePoolKubernetesVersionOrImageType(
 	ctx context.Context,
 	client *gkeapi.Service,
@@ -323,6 +313,10 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 				updateRequest,
 			).Context(ctx).
 			Do()
+		if err != nil && strings.Contains(err.Error(), errWait) {
+			logrus.Debugf("error %v updating node pool, will retry", err)
+			return Retry, nil
+		}
 		if err != nil {
 			return NotChanged, err
 		}
@@ -331,7 +325,8 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 	return NotChanged, nil
 }
 
-// UpdateNodePoolSize sets the size of a given node pool
+// UpdateNodePoolSize sets the size of a given node pool.
+// If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
 func UpdateNodePoolSize(
 	ctx context.Context,
 	client *gkeapi.Service,
@@ -358,13 +353,18 @@ func UpdateNodePoolSize(
 			},
 		).Context(ctx).
 		Do()
+	if err != nil && strings.Contains(err.Error(), errWait) {
+		logrus.Debugf("error %v updating node pool, will retry", err)
+		return Retry, nil
+	}
 	if err != nil {
 		return NotChanged, err
 	}
 	return Changed, nil
 }
 
-// UpdateNodePoolAutoscaling updates the autoscaling parameters for a given node pool
+// UpdateNodePoolAutoscaling updates the autoscaling parameters for a given node pool.
+// If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
 func UpdateNodePoolAutoscaling(
 	ctx context.Context,
 	client *gkeapi.Service,
@@ -404,6 +404,10 @@ func UpdateNodePoolAutoscaling(
 				updateRequest,
 			).Context(ctx).
 			Do()
+		if err != nil && strings.Contains(err.Error(), errWait) {
+			logrus.Debugf("error %v updating node pool, will retry", err)
+			return Retry, nil
+		}
 		if err != nil {
 			return NotChanged, err
 		}

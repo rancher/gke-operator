@@ -3,6 +3,7 @@ package gke
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	gkeapi "google.golang.org/api/container/v1"
@@ -33,6 +34,39 @@ func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKECluste
 		Do()
 
 	return err
+}
+
+// CreateNodePool creates an upstream node pool with the given cluster as a parent.
+func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.NodePoolConfig) (Status, error) {
+	err := validateNodePoolCreateRequest(nodePoolConfig)
+	if err != nil {
+		return NotChanged, err
+	}
+
+	createNodePoolRequest, err := newNodePoolCreateRequest(
+		ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+		nodePoolConfig,
+	)
+	if err != nil {
+		return NotChanged, err
+	}
+
+	_, err = client.Projects.
+		Locations.
+		Clusters.
+		NodePools.
+		Create(
+			ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+			createNodePoolRequest,
+		).Context(ctx).Do()
+	if err != nil && strings.Contains(err.Error(), errWait) {
+		return Retry, nil
+	}
+	if err != nil {
+		return NotChanged, err
+	}
+
+	return Changed, nil
 }
 
 // newClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
@@ -71,39 +105,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
 
 	for _, np := range config.Spec.NodePools {
-		taints := make([]*gkeapi.NodeTaint, 0, len(np.Config.Taints))
-		for _, t := range np.Config.Taints {
-			taints = append(taints, &gkeapi.NodeTaint{
-				Effect: t.Effect,
-				Key:    t.Key,
-				Value:  t.Value,
-			})
-		}
-
-		nodePool := &gkeapi.NodePool{
-			Name: *np.Name,
-			Autoscaling: &gkeapi.NodePoolAutoscaling{
-				Enabled:      np.Autoscaling.Enabled,
-				MaxNodeCount: np.Autoscaling.MaxNodeCount,
-				MinNodeCount: np.Autoscaling.MinNodeCount,
-			},
-			InitialNodeCount: *np.InitialNodeCount,
-			Config: &gkeapi.NodeConfig{
-				DiskSizeGb:  np.Config.DiskSizeGb,
-				DiskType:    np.Config.DiskType,
-				ImageType:   np.Config.ImageType,
-				Labels:      np.Config.Labels,
-				MachineType: np.Config.MachineType,
-				OauthScopes: np.Config.OauthScopes,
-				Taints:      taints,
-				Preemptible: np.Config.Preemptible,
-			},
-			MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
-				MaxPodsPerNode: *np.MaxPodsConstraint,
-			},
-			Version: *np.Version,
-		}
-
+		nodePool := newGKENodePoolFromConfig(&np)
 		request.Cluster.NodePools = append(request.Cluster.NodePools, nodePool)
 	}
 
@@ -226,26 +228,77 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 
 	for _, np := range config.Spec.NodePools {
-		if np.Name == nil {
-			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Name)
-		}
-		cannotBeNil := cannotBeNilForNodePoolError
-		if np.Version == nil {
-			return fmt.Errorf(cannotBeNil, "version", *np.Name, config.Name)
-		}
-		if np.Autoscaling == nil {
-			return fmt.Errorf(cannotBeNil, "autoscaling", *np.Name, config.Name)
-		}
-		if np.InitialNodeCount == nil {
-			return fmt.Errorf(cannotBeNil, "initialNodeCount", *np.Name, config.Name)
-		}
-		if np.MaxPodsConstraint == nil {
-			return fmt.Errorf(cannotBeNil, "maxPodsConstraint", *np.Name, config.Name)
-		}
-		if np.Config == nil {
-			return fmt.Errorf(cannotBeNil, "config", *np.Name, config.Name)
+		if err = validateNodePoolCreateRequest(&np); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func validateNodePoolCreateRequest(np *gkev1.NodePoolConfig) error {
+	clusterErr := cannotBeNilError
+	nodePoolErr := cannotBeNilForNodePoolError
+	if np.Name == nil {
+		return fmt.Errorf(clusterErr, "nodePool.name", np.Name)
+	}
+	if np.Version == nil {
+		return fmt.Errorf(nodePoolErr, "version", *np.Name, np.Name)
+	}
+	if np.Autoscaling == nil {
+		return fmt.Errorf(nodePoolErr, "autoscaling", *np.Name, np.Name)
+	}
+	if np.InitialNodeCount == nil {
+		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, np.Name)
+	}
+	if np.MaxPodsConstraint == nil {
+		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, np.Name)
+	}
+	if np.Config == nil {
+		return fmt.Errorf(nodePoolErr, "np", *np.Name, np.Name)
+	}
+	return nil
+}
+
+func newNodePoolCreateRequest(parent string, np *gkev1.NodePoolConfig) (*gkeapi.CreateNodePoolRequest, error) {
+	request := &gkeapi.CreateNodePoolRequest{
+		Parent:   parent,
+		NodePool: newGKENodePoolFromConfig(np),
+	}
+	return request, nil
+}
+
+func newGKENodePoolFromConfig(np *gkev1.NodePoolConfig) *gkeapi.NodePool {
+	taints := make([]*gkeapi.NodeTaint, 0, len(np.Config.Taints))
+	for _, t := range np.Config.Taints {
+		taints = append(taints, &gkeapi.NodeTaint{
+			Effect: t.Effect,
+			Key:    t.Key,
+			Value:  t.Value,
+		})
+	}
+	return &gkeapi.NodePool{
+		Name: *np.Name,
+		Autoscaling: &gkeapi.NodePoolAutoscaling{
+			Enabled:      np.Autoscaling.Enabled,
+			MaxNodeCount: np.Autoscaling.MaxNodeCount,
+			MinNodeCount: np.Autoscaling.MinNodeCount,
+		},
+		InitialNodeCount: *np.InitialNodeCount,
+		Config: &gkeapi.NodeConfig{
+			DiskSizeGb:    np.Config.DiskSizeGb,
+			DiskType:      np.Config.DiskType,
+			ImageType:     np.Config.ImageType,
+			Labels:        np.Config.Labels,
+			LocalSsdCount: np.Config.LocalSsdCount,
+			MachineType:   np.Config.MachineType,
+			OauthScopes:   np.Config.OauthScopes,
+			Preemptible:   np.Config.Preemptible,
+			Taints:        taints,
+		},
+		MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
+			MaxPodsPerNode: *np.MaxPodsConstraint,
+		},
+		Version: *np.Version,
+	}
 }

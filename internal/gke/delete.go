@@ -15,12 +15,13 @@ const (
 	backoffSteps = 12
 )
 
+var backoff = wait.Backoff{
+	Duration: waitSec * time.Second,
+	Steps:    backoffSteps,
+}
+
 // RemoveCluster attempts to delete a cluster and retries the delete request if the cluster is busy.
 func RemoveCluster(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig) error {
-	backoff := wait.Backoff{
-		Duration: waitSec * time.Second,
-		Steps:    backoffSteps,
-	}
 	return wait.ExponentialBackoff(backoff, func() (bool, error) {
 		_, err := client.Projects.
 			Locations.
@@ -28,10 +29,10 @@ func RemoveCluster(ctx context.Context, client *gkeapi.Service, config *gkev1.GK
 			Delete(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).
 			Context(ctx).
 			Do()
-		if err != nil && strings.Contains(err.Error(), "Please wait and try again once it is done") {
+		if err != nil && strings.Contains(err.Error(), errWait) {
 			return false, nil
 		}
-		if err != nil && strings.Contains(err.Error(), "notFound") {
+		if err != nil && strings.Contains(err.Error(), errNotFound) {
 			return true, nil
 		}
 		if err != nil {
@@ -39,4 +40,25 @@ func RemoveCluster(ctx context.Context, client *gkeapi.Service, config *gkev1.GK
 		}
 		return true, nil
 	})
+}
+
+// RemoveNodePool deletes a node pool
+func RemoveNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolName string) (Status, error) {
+	_, err := client.Projects.
+		Locations.
+		Clusters.
+		NodePools.
+		Delete(NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, nodePoolName)).
+		Context(ctx).
+		Do()
+	if err != nil && strings.Contains(err.Error(), errWait) {
+		return Retry, nil
+	}
+	if err != nil && strings.Contains(err.Error(), errNotFound) {
+		return NotChanged, nil
+	}
+	if err != nil {
+		return NotChanged, err
+	}
+	return Changed, nil
 }
