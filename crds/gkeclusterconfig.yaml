@@ -183,10 +183,8 @@ spec:
               nullable: true
               properties:
                 enablePrivateEndpoint:
-                  nullable: true
                   type: boolean
                 enablePrivateNodes:
-                  nullable: true
                   type: boolean
                 masterIpv4CidrBlock:
                   nullable: true

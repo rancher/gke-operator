@@ -138,8 +138,8 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 
 	if config.Spec.PrivateClusterConfig != nil {
 		request.Cluster.PrivateClusterConfig = &gkeapi.PrivateClusterConfig{
-			EnablePrivateEndpoint: *config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
-			EnablePrivateNodes:    *config.Spec.PrivateClusterConfig.EnablePrivateNodes,
+			EnablePrivateEndpoint: config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
+			EnablePrivateNodes:    config.Spec.PrivateClusterConfig.EnablePrivateNodes,
 			MasterIpv4CidrBlock:   config.Spec.PrivateClusterConfig.MasterIpv4CidrBlock,
 			PrivateEndpoint:       config.Spec.PrivateClusterConfig.PrivateEndpoint,
 			PublicEndpoint:        config.Spec.PrivateClusterConfig.PublicEndpoint,

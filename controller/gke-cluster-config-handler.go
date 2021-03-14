@@ -571,15 +571,14 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
 
 	if cluster.PrivateClusterConfig != nil {
-		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &cluster.PrivateClusterConfig.EnablePrivateNodes
-		newSpec.PrivateClusterConfig.EnablePrivateNodes = &cluster.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = cluster.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = cluster.PrivateClusterConfig.EnablePrivateNodes
 		newSpec.PrivateClusterConfig.MasterIpv4CidrBlock = cluster.PrivateClusterConfig.MasterIpv4CidrBlock
 		newSpec.PrivateClusterConfig.PrivateEndpoint = cluster.PrivateClusterConfig.PrivateEndpoint
 		newSpec.PrivateClusterConfig.PublicEndpoint = cluster.PrivateClusterConfig.PublicEndpoint
 	} else {
-		enabled := false
-		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &enabled
-		newSpec.PrivateClusterConfig.EnablePrivateNodes = &enabled
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = false
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = false
 	}
 
 	// build cluster addons

@@ -67,8 +67,8 @@ type IPAllocationPolicy struct {
 }
 
 type PrivateClusterConfig struct {
-	EnablePrivateEndpoint *bool  `json:"enablePrivateEndpoint,omitempty"`
-	EnablePrivateNodes    *bool  `json:"enablePrivateNodes,omitempty"`
+	EnablePrivateEndpoint bool   `json:"enablePrivateEndpoint,omitempty"`
+	EnablePrivateNodes    bool   `json:"enablePrivateNodes,omitempty"`
 	MasterIpv4CidrBlock   string `json:"masterIpv4CidrBlock,omitempty"`
 	PrivateEndpoint       string `json:"privateEndpoint,omitempty"`
 	PublicEndpoint        string `json:"publicEndpoint,omitempty"`
