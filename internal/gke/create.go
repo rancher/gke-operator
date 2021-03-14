@@ -123,11 +123,11 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		}
 	}
 
-	if config.Spec.GKEClusterNetworkConfig != nil {
-		request.Cluster.NetworkConfig = &gkeapi.NetworkConfig{
-			Subnetwork: *config.Spec.GKEClusterNetworkConfig.Subnetwork,
-			Network:    *config.Spec.GKEClusterNetworkConfig.Network,
-		}
+	if config.Spec.Network != nil {
+		request.Cluster.Network = *config.Spec.Network
+	}
+	if config.Spec.Subnetwork != nil {
+		request.Cluster.Subnetwork = *config.Spec.Subnetwork
 	}
 
 	if config.Spec.NetworkPolicyEnabled != nil {
@@ -211,8 +211,11 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	if config.Spec.LoggingService == nil {
 		return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
 	}
-	if config.Spec.GKEClusterNetworkConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "networkConfig", config.Name)
+	if config.Spec.Network == nil {
+		return fmt.Errorf(cannotBeNilError, "network", config.Name)
+	}
+	if config.Spec.Subnetwork == nil {
+		return fmt.Errorf(cannotBeNilError, "subnetwork", config.Name)
 	}
 	if config.Spec.NetworkPolicyEnabled == nil {
 		return fmt.Errorf(cannotBeNilError, "networkPolicyEnabled", config.Name)

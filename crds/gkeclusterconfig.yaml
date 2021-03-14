@@ -44,16 +44,6 @@ spec:
             enableAlphaFeature:
               nullable: true
               type: boolean
-            gkeClusterNetworkConfig:
-              nullable: true
-              properties:
-                network:
-                  nullable: true
-                  type: string
-                subnetwork:
-                  nullable: true
-                  type: string
-              type: object
             imported:
               type: boolean
             ipAllocationPolicy:
@@ -107,6 +97,9 @@ spec:
                   type: boolean
               type: object
             monitoringService:
+              nullable: true
+              type: string
+            network:
               nullable: true
               type: string
             networkPolicyEnabled:
@@ -209,6 +202,9 @@ spec:
               nullable: true
               type: string
             region:
+              nullable: true
+              type: string
+            subnetwork:
               nullable: true
               type: string
             zone:

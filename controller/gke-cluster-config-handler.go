@@ -549,15 +549,16 @@ func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, config
 
 func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
 	newSpec := &gkev1.GKEClusterConfigSpec{
-		KubernetesVersion:       &cluster.CurrentMasterVersion,
-		EnableAlphaFeature:      &cluster.EnableKubernetesAlpha,
-		ClusterAddons:           &gkev1.ClusterAddons{},
-		ClusterIpv4CidrBlock:    &cluster.ClusterIpv4Cidr,
-		LoggingService:          &cluster.LoggingService,
-		MonitoringService:       &cluster.MonitoringService,
-		GKEClusterNetworkConfig: &gkev1.GKEClusterNetworkConfig{},
-		PrivateClusterConfig:    &gkev1.PrivateClusterConfig{},
-		IPAllocationPolicy:      &gkev1.IPAllocationPolicy{},
+		KubernetesVersion:    &cluster.CurrentMasterVersion,
+		EnableAlphaFeature:   &cluster.EnableKubernetesAlpha,
+		ClusterAddons:        &gkev1.ClusterAddons{},
+		ClusterIpv4CidrBlock: &cluster.ClusterIpv4Cidr,
+		LoggingService:       &cluster.LoggingService,
+		MonitoringService:    &cluster.MonitoringService,
+		Network:              &cluster.Network,
+		Subnetwork:           &cluster.Subnetwork,
+		PrivateClusterConfig: &gkev1.PrivateClusterConfig{},
+		IPAllocationPolicy:   &gkev1.IPAllocationPolicy{},
 		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
 			Enabled: false,
 		},
@@ -568,15 +569,6 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		networkPolicyEnabled = true
 	}
 	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
-
-	if cluster.NetworkConfig != nil {
-		newSpec.GKEClusterNetworkConfig.Network = &cluster.NetworkConfig.Network
-		newSpec.GKEClusterNetworkConfig.Subnetwork = &cluster.NetworkConfig.Subnetwork
-	} else {
-		network := "default"
-		newSpec.GKEClusterNetworkConfig.Network = &network
-		newSpec.GKEClusterNetworkConfig.Subnetwork = &network
-	}
 
 	if cluster.PrivateClusterConfig != nil {
 		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &cluster.PrivateClusterConfig.EnablePrivateNodes
