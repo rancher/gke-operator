@@ -39,15 +39,16 @@ type GKEClusterConfigSpec struct {
 	Description                    string                          `json:"description"`
 	EnableAlphaFeature             *bool                           `json:"enableAlphaFeature"`
 	ClusterAddons                  *ClusterAddons                  `json:"clusterAddons"`
-	ClusterIpv4CidrBlock           string                          `json:"clusterIpv4Cidr"`
+	ClusterIpv4CidrBlock           *string                         `json:"clusterIpv4Cidr"`
 	ProjectID                      string                          `json:"projectID"`
 	CredentialContent              string                          `json:"credentialContent"`
 	ClusterName                    string                          `json:"clusterName"`
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
 	LoggingService                 *string                         `json:"loggingService"`
+	MonitoringService              *string                         `json:"monitoringService"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
 	GKEClusterNetworkConfig        *GKEClusterNetworkConfig        `json:"gkeClusterNetworkConfig,omitempty"`
-	NetworkPolicy                  *NetworkPolicy                  `json:"networkPolicy,omitempty"`
+	NetworkPolicyEnabled           *bool                           `json:"networkPolicyEnabled,omitempty"`
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
 	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
@@ -67,11 +68,6 @@ type IPAllocationPolicy struct {
 type GKEClusterNetworkConfig struct {
 	Network    *string `json:"network,omitempty"`
 	Subnetwork *string `json:"subnetwork,omitempty"`
-}
-
-type NetworkPolicy struct {
-	Enabled  *bool   `json:"enabled,omitempty"`
-	Provider *string `json:"provider,omitempty"`
 }
 
 type PrivateClusterConfig struct {
@@ -115,6 +111,7 @@ type NodeConfig struct {
 	Labels        map[string]string `json:"labels,omitempty"`
 	LocalSsdCount int64             `json:"localSsdCount,omitempty"`
 	MachineType   string            `json:"machineType,omitempty"`
+	OauthScopes   []string          `json:"oauthScopes,omitempty"`
 	Preemptible   bool              `json:"preemptible,omitempty"`
 	Taints        []NodeTaintConfig `json:"taints,omitempty"`
 }

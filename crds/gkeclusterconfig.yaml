@@ -106,16 +106,12 @@ spec:
                 enabled:
                   type: boolean
               type: object
-            networkPolicy:
+            monitoringService:
               nullable: true
-              properties:
-                enabled:
-                  nullable: true
-                  type: boolean
-                provider:
-                  nullable: true
-                  type: string
-              type: object
+              type: string
+            networkPolicyEnabled:
+              nullable: true
+              type: boolean
             nodePools:
               items:
                 properties:
@@ -151,6 +147,12 @@ spec:
                       machineType:
                         nullable: true
                         type: string
+                      oauthScopes:
+                        items:
+                          nullable: true
+                          type: string
+                        nullable: true
+                        type: array
                       preemptible:
                         type: boolean
                       taints:
