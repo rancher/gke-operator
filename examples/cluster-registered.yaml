@@ -1,0 +1,10 @@
+apiVersion: gke.cattle.io/v1
+kind: GKEClusterConfig
+metadata:
+  name: example-registered-cluster
+spec:
+  clusterName: "example-registered-cluster"
+  region: "us-west1-a"
+  projectID: "example-project"
+  imported: true
+  googleCredentialSecret: "cattle-global-data:cc-abcde"

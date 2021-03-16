@@ -1,0 +1,47 @@
+apiVersion: gke.cattle.io/v1
+kind: GKEClusterConfig
+metadata:
+  name: example-cluster
+spec:
+  clusterName: "example-cluster"
+  description: "example cluster"
+  region: "us-west1-a"
+  projectID: "example-project"
+  kubernetesVersion: "1.18.15-gke.1100"
+  loggingService: ""
+  monitoringService: ""
+  enableKubernetesAlpha: false
+  clusterIpv4Cidr: "10.42.0.0/16"
+  ipAllocationPolicy:
+    useIpAliases: true
+  nodePools:
+  - name: example-node-pool
+    autoscaling:
+      enabled: false
+    config:
+      diskSizeGb: 50
+      diskType: "pd-standard"
+      imageType: "cos"
+      localSsdCount: 0
+      labels: {}
+      machineType: ""
+      preemptible: false
+      oauthScopes: []
+      taints: []
+    labels: []
+    initialNodeCount: 1
+    maxPodsConstraint: 110
+    version: "1.18.15-gke.1100"
+  clusterAddons:
+    httpLoadBalancing: false
+    networkPolicyConfig: false
+    horizontalPodAutoscaling: false
+  networkPolicyEnabled: false
+  network: default
+  subnetwork: default
+  privateClusterConfig:
+    enablePrivateEndpoint: false
+    enablePrivateNodes: false
+  masterAuthorizedNetworks:
+    enabled: false
+  googleCredentialSecret: "cattle-global-data:cc-abcde"
