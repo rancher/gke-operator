@@ -145,7 +145,8 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 	}
 }
 
-// importCluster cluster returns a spec containing the given config's displayName and region.
+// importCluster returns an active cluster spec containing the given config's clusterName and region/zone
+// and creates a Secret containing the cluster's CA and endpoint retrieved from the cluster object.
 func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
