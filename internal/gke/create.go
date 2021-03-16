@@ -72,13 +72,13 @@ func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 // newClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
 
-	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && *config.Spec.EnableAlphaFeature
+	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
 			Description:           config.Spec.Description,
 			InitialClusterVersion: *config.Spec.KubernetesVersion,
-			EnableKubernetesAlpha: enableAlphaFeatures,
+			EnableKubernetesAlpha: enableKubernetesAlpha,
 			ClusterIpv4Cidr:       *config.Spec.ClusterIpv4CidrBlock,
 			LoggingService:        *config.Spec.LoggingService,
 			MonitoringService:     *config.Spec.MonitoringService,
@@ -193,8 +193,8 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 		return nil
 	}
 
-	if config.Spec.EnableAlphaFeature == nil {
-		return fmt.Errorf(cannotBeNilError, "enableAlphaFeature", config.Name)
+	if config.Spec.EnableKubernetesAlpha == nil {
+		return fmt.Errorf(cannotBeNilError, "enableKubernetesAlpha", config.Name)
 	}
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)

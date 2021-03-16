@@ -549,16 +549,16 @@ func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, config
 
 func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
 	newSpec := &gkev1.GKEClusterConfigSpec{
-		KubernetesVersion:    &cluster.CurrentMasterVersion,
-		EnableAlphaFeature:   &cluster.EnableKubernetesAlpha,
-		ClusterAddons:        &gkev1.ClusterAddons{},
-		ClusterIpv4CidrBlock: &cluster.ClusterIpv4Cidr,
-		LoggingService:       &cluster.LoggingService,
-		MonitoringService:    &cluster.MonitoringService,
-		Network:              &cluster.Network,
-		Subnetwork:           &cluster.Subnetwork,
-		PrivateClusterConfig: &gkev1.PrivateClusterConfig{},
-		IPAllocationPolicy:   &gkev1.IPAllocationPolicy{},
+		KubernetesVersion:     &cluster.CurrentMasterVersion,
+		EnableKubernetesAlpha: &cluster.EnableKubernetesAlpha,
+		ClusterAddons:         &gkev1.ClusterAddons{},
+		ClusterIpv4CidrBlock:  &cluster.ClusterIpv4Cidr,
+		LoggingService:        &cluster.LoggingService,
+		MonitoringService:     &cluster.MonitoringService,
+		Network:               &cluster.Network,
+		Subnetwork:            &cluster.Subnetwork,
+		PrivateClusterConfig:  &gkev1.PrivateClusterConfig{},
+		IPAllocationPolicy:    &gkev1.IPAllocationPolicy{},
 		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
 			Enabled: false,
 		},

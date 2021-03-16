@@ -41,7 +41,7 @@ spec:
             description:
               nullable: true
               type: string
-            enableAlphaFeature:
+            enableKubernetesAlpha:
               nullable: true
               type: boolean
             imported:
