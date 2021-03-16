@@ -35,15 +35,15 @@ spec:
             clusterName:
               nullable: true
               type: string
-            credentialContent:
-              nullable: true
-              type: string
             description:
               nullable: true
               type: string
             enableKubernetesAlpha:
               nullable: true
               type: boolean
+            googleCredentialSecret:
+              nullable: true
+              type: string
             imported:
               type: boolean
             ipAllocationPolicy:

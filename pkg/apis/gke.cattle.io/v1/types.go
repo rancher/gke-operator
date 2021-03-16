@@ -41,7 +41,7 @@ type GKEClusterConfigSpec struct {
 	ClusterAddons                  *ClusterAddons                  `json:"clusterAddons"`
 	ClusterIpv4CidrBlock           *string                         `json:"clusterIpv4Cidr"`
 	ProjectID                      string                          `json:"projectID"`
-	CredentialContent              string                          `json:"credentialContent"`
+	GoogleCredentialSecret         string                          `json:"googleCredentialSecret"`
 	ClusterName                    string                          `json:"clusterName"`
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
 	LoggingService                 *string                         `json:"loggingService"`

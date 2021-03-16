@@ -497,7 +497,7 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 }
 
 func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
-	ns, id := parseCredential(configSpec.CredentialContent)
+	ns, id := parseCredential(configSpec.GoogleCredentialSecret)
 	secret, err := secretsCache.Get(ns, id)
 	if err != nil {
 		return "", err
