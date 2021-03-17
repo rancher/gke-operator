@@ -1,0 +1,87 @@
+apiVersion: gke.cattle.io/v1
+kind: GKEClusterConfig
+metadata:
+  name: example-cluster-b
+spec:
+  clusterName: "example-cluster-b"
+  description: "complex example cluster"
+  region: "us-west1-a"
+  projectID: "example-project"
+  kubernetesVersion: "1.18.15-gke.1100"
+  loggingService: "none"
+  monitoringService: "none"
+  enableKubernetesAlpha: false
+  clusterIpv4Cidr: ""
+  ipAllocationPolicy:
+    clusterIpv4CidrBlock: "10.100.0.0/16"
+    nodeIpv4CidrBlock: "10.101.0.0/16"
+    servicesIpv4CidrBlock: "10.102.0.0/16"
+    useIpAliases: true
+  nodePools: 
+  - name: example-node-pool-1
+    autoscaling:
+      enabled: true
+      maxNodeCount: 3
+      minNodeCount: 1
+    config:
+      diskSizeGb: 50
+      diskType: "pd-standard"
+      imageType: "cos_containerd"
+      localSsdCount: 1
+      labels:
+        color: blue
+        shape: square
+      machineType: "n1-standard-1"
+      preemptible: true
+      oauthScopes:
+      - "https://www.googleapis.com/auth/compute"
+      - "https://www.googleapis.com/auth/devstorage.read_only"
+      - "https://www.googleapis.com/auth/cloud-platform"
+      taints:
+      - effect: NO_SCHEDULE
+        key: group
+        value: examples
+    labels:
+    - "foo"
+    - "bar"
+    initialNodeCount: 3
+    maxPodsConstraint: 55
+    version: "1.18.15-gke.1100"
+  - name: example-node-pool-2
+    autoscaling:
+      enabled: true
+      maxNodeCount: 4
+      minNodeCount: 2
+    config:
+      diskSizeGb: 100
+      diskType: "pd-standard"
+      imageType: "cos"
+      localSsdCount: 0
+      labels: {}
+      machineType: ""
+      preemptible: false
+      oauthScopes: []
+      taints: []
+    labels:
+    - "one"
+    - "two"
+    initialNodeCount: 3
+    maxPodsConstraint: 110
+    version: "1.18.15-gke.1100"
+  clusterAddons:
+    httpLoadBalancing: true
+    networkPolicyConfig: true
+    horizontalPodAutoscaling: true
+  networkPolicyEnabled: true
+  network: example-network
+  subnetwork: example-subnet
+  privateClusterConfig:
+    enablePrivateEndpoint: false
+    enablePrivateNodes: true
+    masterIpv4CidrBlock: "10.77.27.0/28"
+  masterAuthorizedNetworks:
+    enabled: true
+    cidrBlocks:
+    - displayName: office-net
+      cidrBlock: "10.42.42.0/24"
+  googleCredentialSecret: "cattle-global-data:cc-abcde"

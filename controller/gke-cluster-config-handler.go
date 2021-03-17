@@ -145,7 +145,8 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 	}
 }
 
-// importCluster cluster returns a spec containing the given config's displayName and region.
+// importCluster returns an active cluster spec containing the given config's clusterName and region/zone
+// and creates a Secret containing the cluster's CA and endpoint retrieved from the cluster object.
 func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -496,7 +497,7 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 }
 
 func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
-	ns, id := parseCredential(configSpec.CredentialContent)
+	ns, id := parseCredential(configSpec.GoogleCredentialSecret)
 	secret, err := secretsCache.Get(ns, id)
 	if err != nil {
 		return "", err
@@ -549,15 +550,16 @@ func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, config
 
 func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
 	newSpec := &gkev1.GKEClusterConfigSpec{
-		KubernetesVersion:       &cluster.CurrentMasterVersion,
-		EnableAlphaFeature:      &cluster.EnableKubernetesAlpha,
-		ClusterAddons:           &gkev1.ClusterAddons{},
-		ClusterIpv4CidrBlock:    &cluster.ClusterIpv4Cidr,
-		LoggingService:          &cluster.LoggingService,
-		MonitoringService:       &cluster.MonitoringService,
-		GKEClusterNetworkConfig: &gkev1.GKEClusterNetworkConfig{},
-		PrivateClusterConfig:    &gkev1.PrivateClusterConfig{},
-		IPAllocationPolicy:      &gkev1.IPAllocationPolicy{},
+		KubernetesVersion:     &cluster.CurrentMasterVersion,
+		EnableKubernetesAlpha: &cluster.EnableKubernetesAlpha,
+		ClusterAddons:         &gkev1.ClusterAddons{},
+		ClusterIpv4CidrBlock:  &cluster.ClusterIpv4Cidr,
+		LoggingService:        &cluster.LoggingService,
+		MonitoringService:     &cluster.MonitoringService,
+		Network:               &cluster.Network,
+		Subnetwork:            &cluster.Subnetwork,
+		PrivateClusterConfig:  &gkev1.PrivateClusterConfig{},
+		IPAllocationPolicy:    &gkev1.IPAllocationPolicy{},
 		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
 			Enabled: false,
 		},
@@ -569,25 +571,15 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	}
 	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
 
-	if cluster.NetworkConfig != nil {
-		newSpec.GKEClusterNetworkConfig.Network = &cluster.NetworkConfig.Network
-		newSpec.GKEClusterNetworkConfig.Subnetwork = &cluster.NetworkConfig.Subnetwork
-	} else {
-		network := "default"
-		newSpec.GKEClusterNetworkConfig.Network = &network
-		newSpec.GKEClusterNetworkConfig.Subnetwork = &network
-	}
-
 	if cluster.PrivateClusterConfig != nil {
-		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &cluster.PrivateClusterConfig.EnablePrivateNodes
-		newSpec.PrivateClusterConfig.EnablePrivateNodes = &cluster.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = cluster.PrivateClusterConfig.EnablePrivateNodes
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = cluster.PrivateClusterConfig.EnablePrivateNodes
 		newSpec.PrivateClusterConfig.MasterIpv4CidrBlock = cluster.PrivateClusterConfig.MasterIpv4CidrBlock
 		newSpec.PrivateClusterConfig.PrivateEndpoint = cluster.PrivateClusterConfig.PrivateEndpoint
 		newSpec.PrivateClusterConfig.PublicEndpoint = cluster.PrivateClusterConfig.PublicEndpoint
 	} else {
-		enabled := false
-		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = &enabled
-		newSpec.PrivateClusterConfig.EnablePrivateNodes = &enabled
+		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = false
+		newSpec.PrivateClusterConfig.EnablePrivateNodes = false
 	}
 
 	// build cluster addons

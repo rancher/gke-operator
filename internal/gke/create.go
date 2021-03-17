@@ -72,13 +72,13 @@ func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 // newClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
 
-	enableAlphaFeatures := config.Spec.EnableAlphaFeature != nil && *config.Spec.EnableAlphaFeature
+	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
 			Description:           config.Spec.Description,
 			InitialClusterVersion: *config.Spec.KubernetesVersion,
-			EnableKubernetesAlpha: enableAlphaFeatures,
+			EnableKubernetesAlpha: enableKubernetesAlpha,
 			ClusterIpv4Cidr:       *config.Spec.ClusterIpv4CidrBlock,
 			LoggingService:        *config.Spec.LoggingService,
 			MonitoringService:     *config.Spec.MonitoringService,
@@ -123,11 +123,11 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		}
 	}
 
-	if config.Spec.GKEClusterNetworkConfig != nil {
-		request.Cluster.NetworkConfig = &gkeapi.NetworkConfig{
-			Subnetwork: *config.Spec.GKEClusterNetworkConfig.Subnetwork,
-			Network:    *config.Spec.GKEClusterNetworkConfig.Network,
-		}
+	if config.Spec.Network != nil {
+		request.Cluster.Network = *config.Spec.Network
+	}
+	if config.Spec.Subnetwork != nil {
+		request.Cluster.Subnetwork = *config.Spec.Subnetwork
 	}
 
 	if config.Spec.NetworkPolicyEnabled != nil {
@@ -138,8 +138,8 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 
 	if config.Spec.PrivateClusterConfig != nil {
 		request.Cluster.PrivateClusterConfig = &gkeapi.PrivateClusterConfig{
-			EnablePrivateEndpoint: *config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
-			EnablePrivateNodes:    *config.Spec.PrivateClusterConfig.EnablePrivateNodes,
+			EnablePrivateEndpoint: config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
+			EnablePrivateNodes:    config.Spec.PrivateClusterConfig.EnablePrivateNodes,
 			MasterIpv4CidrBlock:   config.Spec.PrivateClusterConfig.MasterIpv4CidrBlock,
 			PrivateEndpoint:       config.Spec.PrivateClusterConfig.PrivateEndpoint,
 			PublicEndpoint:        config.Spec.PrivateClusterConfig.PublicEndpoint,
@@ -193,8 +193,8 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 		return nil
 	}
 
-	if config.Spec.EnableAlphaFeature == nil {
-		return fmt.Errorf(cannotBeNilError, "enableAlphaFeature", config.Name)
+	if config.Spec.EnableKubernetesAlpha == nil {
+		return fmt.Errorf(cannotBeNilError, "enableKubernetesAlpha", config.Name)
 	}
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
@@ -211,8 +211,11 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	if config.Spec.LoggingService == nil {
 		return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
 	}
-	if config.Spec.GKEClusterNetworkConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "networkConfig", config.Name)
+	if config.Spec.Network == nil {
+		return fmt.Errorf(cannotBeNilError, "network", config.Name)
+	}
+	if config.Spec.Subnetwork == nil {
+		return fmt.Errorf(cannotBeNilError, "subnetwork", config.Name)
 	}
 	if config.Spec.NetworkPolicyEnabled == nil {
 		return fmt.Errorf(cannotBeNilError, "networkPolicyEnabled", config.Name)

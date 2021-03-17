@@ -1,0 +1,55 @@
+{
+  "clusterAddons": {
+    "horizontalPodAutoscaling": true,
+    "httpLoadBalancing": true,
+    "networkPolicyConfig": true
+  },
+  "clusterIpv4Cidr": "",
+  "clusterName": "example-cluster",
+  "googleCredentialSecret": "cattle-global-data:cc-abcde",
+  "description": "GKEConfig JSON cluster",
+  "enableKubernetesAlpha": false,
+  "network": "default",
+  "subnetwork": "default",
+  "imported": false,
+  "ipAllocationPolicy": {
+    "useIpAliases": true
+  },
+  "kubernetesVersion": "1.18.15-gke.1100",
+  "loggingService": "",
+  "masterAuthorizedNetworks": {
+    "enabled": false
+  },
+  "monitoringService": "",
+  "networkPolicyEnabled": true,
+  "nodePools": [
+    {
+      "autoscaling": {
+        "enabled": false
+      },
+      "config": {
+        "diskSizeGb": 50,
+        "diskType": "pd-standard",
+        "imageType": "cos",
+        "labels": {},
+        "localSsdCount": 0,
+        "machineType": "",
+        "oauthScopes": [],
+        "preemptible": false,
+        "taints": []
+      },
+      "initialNodeCount": 1,
+      "labels": [],
+      "maxPodsConstraint": 110,
+      "name": "example-node-pool",
+      "version": "1.18.15-gke.1100"
+    }
+  ],
+  "privateClusterConfig": {
+    "enablePrivateEndpoint": false,
+    "enablePrivateNodes": false
+  },
+  "projectID": "example-project",
+  "region": "us-west1-a",
+  "zone": ""
+}

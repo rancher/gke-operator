@@ -37,17 +37,18 @@ type GKEClusterConfigSpec struct {
 	Zone                           string                          `json:"zone" norman:"noupdate"`
 	Imported                       bool                            `json:"imported" norman:"noupdate"`
 	Description                    string                          `json:"description"`
-	EnableAlphaFeature             *bool                           `json:"enableAlphaFeature"`
+	EnableKubernetesAlpha          *bool                           `json:"enableKubernetesAlpha"`
 	ClusterAddons                  *ClusterAddons                  `json:"clusterAddons"`
 	ClusterIpv4CidrBlock           *string                         `json:"clusterIpv4Cidr"`
 	ProjectID                      string                          `json:"projectID"`
-	CredentialContent              string                          `json:"credentialContent"`
+	GoogleCredentialSecret         string                          `json:"googleCredentialSecret"`
 	ClusterName                    string                          `json:"clusterName"`
 	KubernetesVersion              *string                         `json:"kubernetesVersion"`
 	LoggingService                 *string                         `json:"loggingService"`
 	MonitoringService              *string                         `json:"monitoringService"`
 	NodePools                      []NodePoolConfig                `json:"nodePools"`
-	GKEClusterNetworkConfig        *GKEClusterNetworkConfig        `json:"gkeClusterNetworkConfig,omitempty"`
+	Network                        *string                         `json:"network,omitempty"`
+	Subnetwork                     *string                         `json:"subnetwork,omitempty"`
 	NetworkPolicyEnabled           *bool                           `json:"networkPolicyEnabled,omitempty"`
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
@@ -65,14 +66,9 @@ type IPAllocationPolicy struct {
 	UseIPAliases               bool   `json:"useIpAliases,omitempty"`
 }
 
-type GKEClusterNetworkConfig struct {
-	Network    *string `json:"network,omitempty"`
-	Subnetwork *string `json:"subnetwork,omitempty"`
-}
-
 type PrivateClusterConfig struct {
-	EnablePrivateEndpoint *bool  `json:"enablePrivateEndpoint,omitempty"`
-	EnablePrivateNodes    *bool  `json:"enablePrivateNodes,omitempty"`
+	EnablePrivateEndpoint bool   `json:"enablePrivateEndpoint,omitempty"`
+	EnablePrivateNodes    bool   `json:"enablePrivateNodes,omitempty"`
 	MasterIpv4CidrBlock   string `json:"masterIpv4CidrBlock,omitempty"`
 	PrivateEndpoint       string `json:"privateEndpoint,omitempty"`
 	PublicEndpoint        string `json:"publicEndpoint,omitempty"`
