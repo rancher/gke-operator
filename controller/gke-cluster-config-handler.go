@@ -14,6 +14,8 @@ import (
 	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
+
 	gkeapi "google.golang.org/api/container/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -708,4 +710,17 @@ func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi
 			},
 		})
 	return err
+}
+
+func GetTokenSource(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (oauth2.TokenSource, error) {
+
+	cred, err := getSecret(ctx, secretsCache, configSpec)
+	if err != nil {
+		return nil, fmt.Errorf("error getting secret: %w", err)
+	}
+	ts, err := gke.GetTokenSource(ctx, cred)
+	if err != nil {
+		return nil, fmt.Errorf("error getting oauth2 token: %w", err)
+	}
+	return ts, nil
 }
