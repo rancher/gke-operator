@@ -4,6 +4,16 @@ import (
 	"fmt"
 )
 
+// Location returns the region or zone depending on which is not set to empty.
+// Cluster creation validation should ensure that only one of region or zone is set, not both.
+func Location(region, zone string) string {
+	ret := region
+	if zone != "" {
+		ret = zone
+	}
+	return ret
+}
+
 // LocationRRN returns a Relative Resource Name representing a location. This
 // RRN can either represent a Region or a Zone. It can be used as the parent
 // attribute during cluster creation to create a zonal or regional cluster, or

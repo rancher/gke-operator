@@ -28,7 +28,7 @@ func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKECluste
 		Locations.
 		Clusters.
 		Create(
-			LocationRRN(config.Spec.ProjectID, config.Spec.Region),
+			LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
 			createClusterRequest).
 		Context(ctx).
 		Do()
@@ -44,7 +44,7 @@ func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 	}
 
 	createNodePoolRequest, err := newNodePoolCreateRequest(
-		ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 		nodePoolConfig,
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 		Clusters.
 		NodePools.
 		Create(
-			ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 			createNodePoolRequest,
 		).Context(ctx).Do()
 	if err != nil && strings.Contains(err.Error(), errWait) {
@@ -175,7 +175,7 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	operation, err := client.Projects.
 		Locations.
 		Clusters.
-		List(LocationRRN(config.Spec.ProjectID, config.Spec.Region)).
+		List(LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
 		Context(ctx).
 		Do()
 	if err != nil {
