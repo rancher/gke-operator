@@ -461,23 +461,25 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 
 	var clusterVersion *semver.Version
-	if config.Spec.KubernetesVersion != nil {
+	kubeVersion := utils.StringValue(config.Spec.KubernetesVersion)
+	if kubeVersion != "" {
 		var err error
-		clusterVersion, err = semver.New(fmt.Sprintf("%s.0", utils.StringValue(config.Spec.KubernetesVersion)))
+		clusterVersion, err = semver.New(fmt.Sprintf("%s.0", kubeVersion))
 		if err != nil {
-			return fmt.Errorf("improper version format for cluster [%s]: %s", config.Name, utils.StringValue(config.Spec.KubernetesVersion))
+			return fmt.Errorf("improper version format for cluster [%s]: %s", config.Name, kubeVersion)
 		}
 	}
 
 	var errors []string
 	// validate nodegroup versions
 	for _, np := range config.Spec.NodePools {
-		if np.Version == nil {
+		npVersion := utils.StringValue(np.Version)
+		if npVersion == "" {
 			continue
 		}
-		version, err := semver.New(fmt.Sprintf("%s.0", utils.StringValue(np.Version)))
+		version, err := semver.New(fmt.Sprintf("%s.0", npVersion))
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("improper version format for nodegroup [%s]: %s", utils.StringValue(np.Name), utils.StringValue(np.Version)))
+			errors = append(errors, fmt.Sprintf("improper version format for nodegroup [%s]: %s", utils.StringValue(np.Name), npVersion))
 			continue
 		}
 		if clusterVersion == nil {
@@ -490,7 +492,7 @@ func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
 			continue
 		}
 		errors = append(errors, fmt.Sprintf("versions for cluster [%s] and nodegroup [%s] not compatible: all nodegroup kubernetes versions"+
-			"must be equal to or one minor version lower than the cluster kubernetes version", utils.StringValue(config.Spec.KubernetesVersion), utils.StringValue(np.Version)))
+			"must be equal to or one minor version lower than the cluster kubernetes version", kubeVersion, npVersion))
 	}
 	if len(errors) != 0 {
 		return fmt.Errorf(strings.Join(errors, ";"))
