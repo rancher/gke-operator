@@ -416,6 +416,53 @@ func UpdateNodePoolAutoscaling(
 	return NotChanged, nil
 }
 
+// UpdateNodePoolManagement updates the management parameters for a given node pool.
+// If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
+func UpdateNodePoolManagement(
+	ctx context.Context,
+	client *gkeapi.Service,
+	nodePool *gkev1.NodePoolConfig,
+	config *gkev1.GKEClusterConfig,
+	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
+	if nodePool.Management == nil {
+		return NotChanged, nil
+	}
+
+	updateRequest := &gkeapi.SetNodePoolManagementRequest{
+		Management: &gkeapi.NodeManagement{},
+	}
+	needsUpdate := false
+	if upstreamNodePool.Management.AutoRepair != nodePool.Management.AutoRepair {
+		updateRequest.Management.AutoRepair = nodePool.Management.AutoRepair
+		needsUpdate = true
+	}
+	if upstreamNodePool.Management.AutoUpgrade != nodePool.Management.AutoUpgrade {
+		updateRequest.Management.AutoUpgrade = nodePool.Management.AutoUpgrade
+		needsUpdate = true
+	}
+	if needsUpdate {
+		logrus.Infof("updating management config of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
+		_, err := client.Projects.
+			Locations.
+			Clusters.
+			NodePools.
+			SetManagement(
+				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+				updateRequest,
+			).Context(ctx).
+			Do()
+		if err != nil && strings.Contains(err.Error(), errWait) {
+			logrus.Debugf("error %v updating node pool, will retry", err)
+			return Retry, nil
+		}
+		if err != nil {
+			return NotChanged, err
+		}
+		return Changed, nil
+	}
+	return NotChanged, nil
+}
+
 func compareCidrBlockPointerSlices(lh, rh []*gkev1.CidrBlock) bool {
 	if len(lh) != len(rh) {
 		return false

@@ -10,7 +10,7 @@ spec:
   kubernetesVersion: "1.18.15-gke.1100"
   loggingService: "none"
   monitoringService: "none"
-  enableKubernetesAlpha: false
+  enableKubernetesAlpha: true
   clusterIpv4Cidr: ""
   ipAllocationPolicy:
     clusterIpv4CidrBlock: "10.100.0.0/16"
@@ -47,6 +47,9 @@ spec:
     initialNodeCount: 3
     maxPodsConstraint: 55
     version: "1.18.15-gke.1100"
+    management:
+      autoRepair: false
+      autoUpgrade: false
   - name: example-node-pool-2
     autoscaling:
       enabled: true
@@ -68,6 +71,9 @@ spec:
     initialNodeCount: 3
     maxPodsConstraint: 110
     version: "1.18.15-gke.1100"
+    management:
+      autoRepair: false
+      autoUpgrade: false
   clusterAddons:
     httpLoadBalancing: true
     networkPolicyConfig: true

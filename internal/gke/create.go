@@ -260,6 +260,9 @@ func validateNodePoolCreateRequest(clusterName string, np *gkev1.NodePoolConfig)
 	if np.Config == nil {
 		return fmt.Errorf(nodePoolErr, "config", *np.Name, clusterName)
 	}
+	if np.Management == nil {
+		return fmt.Errorf(nodePoolErr, "management", *np.Name, clusterName)
+	}
 	return nil
 }
 
@@ -303,5 +306,9 @@ func newGKENodePoolFromConfig(np *gkev1.NodePoolConfig) *gkeapi.NodePool {
 			MaxPodsPerNode: *np.MaxPodsConstraint,
 		},
 		Version: *np.Version,
+		Management: &gkeapi.NodeManagement{
+			AutoRepair:  np.Management.AutoRepair,
+			AutoUpgrade: np.Management.AutoUpgrade,
+		},
 	}
 }

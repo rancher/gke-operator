@@ -167,6 +167,14 @@ spec:
                   initialNodeCount:
                     nullable: true
                     type: integer
+                  management:
+                    nullable: true
+                    properties:
+                      autoRepair:
+                        type: boolean
+                      autoUpgrade:
+                        type: boolean
+                    type: object
                   maxPodsConstraint:
                     nullable: true
                     type: integer
