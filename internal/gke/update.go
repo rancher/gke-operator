@@ -44,7 +44,7 @@ func UpdateMasterKubernetesVersion(ctx context.Context, client *gkeapi.Service, 
 			Locations.
 			Clusters.
 			Update(
-				ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 				&gkeapi.UpdateClusterRequest{
 					Update: &gkeapi.ClusterUpdate{
 						DesiredMasterVersion: *config.Spec.KubernetesVersion,
@@ -111,7 +111,7 @@ func UpdateClusterAddons(ctx context.Context, client *gkeapi.Service, config *gk
 			Locations.
 			Clusters.
 			Update(
-				ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 				&gkeapi.UpdateClusterRequest{
 					Update: clusterUpdate,
 				},
@@ -180,7 +180,7 @@ func UpdateMasterAuthorizedNetworks(
 			Locations.
 			Clusters.
 			Update(
-				ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 				&gkeapi.UpdateClusterRequest{
 					Update: clusterUpdate,
 				},
@@ -229,7 +229,7 @@ func UpdateLoggingMonitoringService(
 			Locations.
 			Clusters.
 			Update(
-				ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 				&gkeapi.UpdateClusterRequest{
 					Update: clusterUpdate,
 				},
@@ -259,7 +259,7 @@ func UpdateNetworkPolicyEnabled(
 			Locations.
 			Clusters.
 			SetNetworkPolicy(
-				ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName),
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 				&gkeapi.SetNetworkPolicyRequest{
 					NetworkPolicy: &gkeapi.NetworkPolicy{
 						Enabled:  *config.Spec.NetworkPolicyEnabled,
@@ -309,7 +309,7 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 			Clusters.
 			NodePools.
 			Update(
-				NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, *nodePool.Name),
+				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 				updateRequest,
 			).Context(ctx).
 			Do()
@@ -347,7 +347,7 @@ func UpdateNodePoolSize(
 		Clusters.
 		NodePools.
 		SetSize(
-			NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, *nodePool.Name),
+			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 			&gkeapi.SetNodePoolSizeRequest{
 				NodeCount: *nodePool.InitialNodeCount,
 			},
@@ -400,7 +400,7 @@ func UpdateNodePoolAutoscaling(
 			Clusters.
 			NodePools.
 			SetAutoscaling(
-				NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, *nodePool.Name),
+				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 				updateRequest,
 			).Context(ctx).
 			Do()

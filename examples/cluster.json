@@ -50,6 +50,6 @@
     "enablePrivateNodes": false
   },
   "projectID": "example-project",
-  "region": "us-west1-a",
+  "region": "us-west1",
   "zone": ""
 }

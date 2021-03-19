@@ -26,7 +26,7 @@ func RemoveCluster(ctx context.Context, client *gkeapi.Service, config *gkev1.GK
 		_, err := client.Projects.
 			Locations.
 			Clusters.
-			Delete(ClusterRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName)).
+			Delete(ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName)).
 			Context(ctx).
 			Do()
 		if err != nil && strings.Contains(err.Error(), errWait) {
@@ -48,7 +48,7 @@ func RemoveNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 		Locations.
 		Clusters.
 		NodePools.
-		Delete(NodePoolRRN(config.Spec.ProjectID, config.Spec.Region, config.Spec.ClusterName, nodePoolName)).
+		Delete(NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, nodePoolName)).
 		Context(ctx).
 		Do()
 	if err != nil && strings.Contains(err.Error(), errWait) {

@@ -5,7 +5,7 @@ metadata:
 spec:
   clusterName: "example-cluster-b"
   description: "complex example cluster"
-  region: "us-west1-a"
+  zone: "us-west1-a"
   projectID: "example-project"
   kubernetesVersion: "1.18.15-gke.1100"
   loggingService: "none"

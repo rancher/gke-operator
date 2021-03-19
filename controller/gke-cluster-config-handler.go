@@ -188,7 +188,7 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 		return config, err
 	}
 
-	logrus.Infof("removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, config.Spec.Region)
+	logrus.Infof("removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
 	if err := gke.RemoveCluster(ctx, client, config); err != nil {
 		logrus.Debugf("error deleting cluster %s: %v", config.Spec.ClusterName, err)
 		return config, err
@@ -541,7 +541,7 @@ func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, config
 	cluster, err := client.Projects.
 		Locations.
 		Clusters.
-		Get(gke.ClusterRRN(configSpec.ProjectID, configSpec.Region, configSpec.ClusterName)).
+		Get(gke.ClusterRRN(configSpec.ProjectID, gke.Location(configSpec.Region, configSpec.Zone), configSpec.ClusterName)).
 		Context(ctx).
 		Do()
 	if err != nil {
