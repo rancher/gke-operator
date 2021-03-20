@@ -95,6 +95,13 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			AddonsConfig: &gkeapi.AddonsConfig{},
 			NodePools:    []*gkeapi.NodePool{},
 			Locations:    config.Spec.Locations,
+			MaintenancePolicy: &gkeapi.MaintenancePolicy{
+				Window: &gkeapi.MaintenanceWindow{
+					DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
+						StartTime: *config.Spec.MaintenanceWindow,
+					},
+				},
+			},
 		},
 	}
 
@@ -232,6 +239,9 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 	if config.Spec.Locations == nil {
 		return fmt.Errorf(cannotBeNilError, "locations", config.Name)
+	}
+	if config.Spec.MaintenanceWindow == nil {
+		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Name)
 	}
 
 	for _, np := range config.Spec.NodePools {

@@ -362,6 +362,14 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
+	changed, err = gke.UpdateMaintenanceWindow(ctx, client, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
 	if config.Spec.NodePools != nil {
 		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
 		nodePoolsNeedUpdate := false
@@ -643,6 +651,12 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 			}
 			newSpec.MasterAuthorizedNetworksConfig.CidrBlocks = append(newSpec.MasterAuthorizedNetworksConfig.CidrBlocks, block)
 		}
+	}
+
+	window := ""
+	newSpec.MaintenanceWindow = &window
+	if cluster.MaintenancePolicy != nil && cluster.MaintenancePolicy.Window != nil && cluster.MaintenancePolicy.Window.DailyMaintenanceWindow != nil {
+		newSpec.MaintenanceWindow = &cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
 	}
 
 	// build node groups

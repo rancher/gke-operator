@@ -48,4 +48,5 @@ spec:
   masterAuthorizedNetworks:
     enabled: false
   locations: []
+  maintenanceWindow: ""
   googleCredentialSecret: "cattle-global-data:cc-abcde"

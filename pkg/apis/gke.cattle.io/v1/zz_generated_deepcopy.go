@@ -192,6 +192,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.MaintenanceWindow != nil {
+		in, out := &in.MaintenanceWindow, &out.MaintenanceWindow
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

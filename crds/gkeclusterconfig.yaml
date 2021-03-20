@@ -84,6 +84,9 @@ spec:
             loggingService:
               nullable: true
               type: string
+            maintenanceWindow:
+              nullable: true
+              type: string
             masterAuthorizedNetworks:
               nullable: true
               properties:

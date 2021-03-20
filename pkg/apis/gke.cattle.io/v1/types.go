@@ -54,6 +54,7 @@ type GKEClusterConfigSpec struct {
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
 	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
 	Locations                      []string                        `json:"locations,omitempty"`
+	MaintenanceWindow              *string                         `json:"maintenanceWindow,omitempty"`
 }
 
 type IPAllocationPolicy struct {

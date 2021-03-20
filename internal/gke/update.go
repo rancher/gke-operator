@@ -324,6 +324,45 @@ func UpdateLocations(
 	return NotChanged, nil
 }
 
+// UpdateMaintenanceWindow updates Cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
+func UpdateMaintenanceWindow(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.MaintenanceWindow == nil {
+		return NotChanged, nil
+	}
+	window := utils.StringValue(config.Spec.MaintenanceWindow)
+	if utils.StringValue(upstreamSpec.MaintenanceWindow) == window {
+		return NotChanged, nil
+	}
+
+	policy := &gkeapi.MaintenancePolicy{}
+	if window != "" {
+		policy.Window = &gkeapi.MaintenanceWindow{
+			DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
+				StartTime: window,
+			},
+		}
+	}
+	logrus.Infof("updating maintenance window for cluster [%s]", config.Name)
+	_, err := client.Projects.
+		Locations.
+		Clusters.
+		SetMaintenancePolicy(
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.SetMaintenancePolicyRequest{
+				MaintenancePolicy: policy,
+			},
+		).Context(ctx).
+		Do()
+	if err != nil {
+		return NotChanged, err
+	}
+	return Changed, nil
+}
+
 // UpdateNodePoolKubernetesVersionOrImageType sends a combined request to
 // update either the node pool Kubernetes version or image type or both. These
 // attributes are among the few that can be updated in the same request.
