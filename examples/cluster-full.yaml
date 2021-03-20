@@ -90,4 +90,8 @@ spec:
     cidrBlocks:
     - displayName: office-net
       cidrBlock: "10.42.42.0/24"
+  locations:
+  - us-west1-a
+  - us-west1-b
+  - us-west1-c
   googleCredentialSecret: "cattle-global-data:cc-abcde"

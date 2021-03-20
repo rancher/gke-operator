@@ -47,4 +47,5 @@ spec:
     enablePrivateNodes: false
   masterAuthorizedNetworks:
     enabled: false
+  locations: []
   googleCredentialSecret: "cattle-global-data:cc-abcde"

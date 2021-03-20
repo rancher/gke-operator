@@ -187,6 +187,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(MasterAuthorizedNetworksConfig)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Locations != nil {
+		in, out := &in.Locations, &out.Locations
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	return
 }
 

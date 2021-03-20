@@ -3,7 +3,9 @@ package gke
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/rancher/gke-operator/internal/utils"
@@ -273,6 +275,52 @@ func UpdateNetworkPolicyEnabled(
 		}
 		return Changed, nil
 	}
+	return NotChanged, nil
+}
+
+// UpdateLocations updates Locations.
+func UpdateLocations(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.Zone == "" {
+		// Editing default node zones is available only in zonal clusters.
+		return NotChanged, nil
+	}
+
+	clusterUpdate := &gkeapi.ClusterUpdate{}
+
+	locations := config.Spec.Locations
+	sort.Strings(locations)
+	upstreamLocations := upstreamSpec.Locations
+	sort.Strings(upstreamLocations)
+	location := Location(config.Spec.Region, config.Spec.Zone)
+	if len(locations) == 0 && len(upstreamLocations) == 1 && strings.HasPrefix(upstreamLocations[0], location) {
+		// special case: no additional locations specified, upstream locations
+		// was inferred from region or zone, do not try to update
+		return NotChanged, nil
+	}
+
+	if !reflect.DeepEqual(locations, upstreamLocations) {
+		clusterUpdate.DesiredLocations = locations
+		logrus.Infof("updating locations for cluster [%s]", config.Name)
+		_, err := client.Projects.
+			Locations.
+			Clusters.
+			Update(
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: clusterUpdate,
+				},
+			).Context(ctx).
+			Do()
+		if err != nil {
+			return NotChanged, err
+		}
+		return Changed, nil
+	}
+
 	return NotChanged, nil
 }
 

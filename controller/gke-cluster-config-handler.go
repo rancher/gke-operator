@@ -354,6 +354,14 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
+	changed, err = gke.UpdateLocations(ctx, client, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
 	if config.Spec.NodePools != nil {
 		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
 		nodePoolsNeedUpdate := false
@@ -576,6 +584,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
 			Enabled: false,
 		},
+		Locations: cluster.Locations,
 	}
 
 	networkPolicyEnabled := false

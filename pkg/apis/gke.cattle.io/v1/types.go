@@ -53,6 +53,7 @@ type GKEClusterConfigSpec struct {
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
 	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
+	Locations                      []string                        `json:"locations,omitempty"`
 }
 
 type IPAllocationPolicy struct {
