@@ -13,6 +13,8 @@ spec:
   enableKubernetesAlpha: false
   clusterIpv4Cidr: ""
   ipAllocationPolicy:
+    createSubnetwork: true
+    subnetworkName: "new-example-subnet-for-cluster-b"
     clusterIpv4CidrBlock: "10.100.0.0/16"
     nodeIpv4CidrBlock: "10.101.0.0/16"
     servicesIpv4CidrBlock: "10.102.0.0/16"
@@ -74,7 +76,7 @@ spec:
     horizontalPodAutoscaling: true
   networkPolicyEnabled: true
   network: example-network
-  subnetwork: example-subnet
+  subnetwork: ""
   privateClusterConfig:
     enablePrivateEndpoint: false
     enablePrivateNodes: true
