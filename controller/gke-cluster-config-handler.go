@@ -354,6 +354,22 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
+	changed, err = gke.UpdateLocations(ctx, client, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
+	changed, err = gke.UpdateMaintenanceWindow(ctx, client, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
 	if config.Spec.NodePools != nil {
 		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
 		nodePoolsNeedUpdate := false
@@ -384,6 +400,17 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 				}
 
 				changed, err = gke.UpdateNodePoolAutoscaling(ctx, client, &np, config, upstreamNodePool)
+				if err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+					// cannot make further updates while an operation is pending,
+					// further updates will be retried if needed on the next reconcile loop
+					continue
+				}
+
+				changed, err = gke.UpdateNodePoolManagement(ctx, client, &np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -567,6 +594,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
 			Enabled: false,
 		},
+		Locations: cluster.Locations,
 	}
 
 	networkPolicyEnabled := false
@@ -627,6 +655,12 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		}
 	}
 
+	window := ""
+	newSpec.MaintenanceWindow = &window
+	if cluster.MaintenancePolicy != nil && cluster.MaintenancePolicy.Window != nil && cluster.MaintenancePolicy.Window.DailyMaintenanceWindow != nil {
+		newSpec.MaintenanceWindow = &cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
+	}
+
 	// build node groups
 	newSpec.NodePools = make([]gkev1.NodePoolConfig, 0, len(cluster.NodePools))
 
@@ -668,6 +702,13 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 				Enabled:      np.Autoscaling.Enabled,
 				MaxNodeCount: np.Autoscaling.MaxNodeCount,
 				MinNodeCount: np.Autoscaling.MinNodeCount,
+			}
+		}
+
+		if np.Management != nil {
+			newNP.Management = &gkev1.NodePoolManagement{
+				AutoRepair:  np.Management.AutoRepair,
+				AutoUpgrade: np.Management.AutoUpgrade,
 			}
 		}
 

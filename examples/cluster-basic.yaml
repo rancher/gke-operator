@@ -32,6 +32,9 @@ spec:
     initialNodeCount: 1
     maxPodsConstraint: 110
     version: "1.18.15-gke.1100"
+    management:
+      autoRepair: true
+      autoUpgrade: true
   clusterAddons:
     httpLoadBalancing: false
     networkPolicyConfig: false
@@ -44,4 +47,6 @@ spec:
     enablePrivateNodes: false
   masterAuthorizedNetworks:
     enabled: false
+  locations: []
+  maintenanceWindow: ""
   googleCredentialSecret: "cattle-global-data:cc-abcde"

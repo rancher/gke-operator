@@ -3,7 +3,9 @@ package gke
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/rancher/gke-operator/internal/utils"
@@ -277,6 +279,91 @@ func UpdateNetworkPolicyEnabled(
 	return NotChanged, nil
 }
 
+// UpdateLocations updates Locations.
+func UpdateLocations(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.Zone == "" {
+		// Editing default node zones is available only in zonal clusters.
+		return NotChanged, nil
+	}
+
+	clusterUpdate := &gkeapi.ClusterUpdate{}
+
+	locations := config.Spec.Locations
+	sort.Strings(locations)
+	upstreamLocations := upstreamSpec.Locations
+	sort.Strings(upstreamLocations)
+	location := Location(config.Spec.Region, config.Spec.Zone)
+	if len(locations) == 0 && len(upstreamLocations) == 1 && strings.HasPrefix(upstreamLocations[0], location) {
+		// special case: no additional locations specified, upstream locations
+		// was inferred from region or zone, do not try to update
+		return NotChanged, nil
+	}
+
+	if !reflect.DeepEqual(locations, upstreamLocations) {
+		clusterUpdate.DesiredLocations = locations
+		logrus.Infof("updating locations for cluster [%s]", config.Name)
+		_, err := client.Projects.
+			Locations.
+			Clusters.
+			Update(
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: clusterUpdate,
+				},
+			).Context(ctx).
+			Do()
+		if err != nil {
+			return NotChanged, err
+		}
+		return Changed, nil
+	}
+
+	return NotChanged, nil
+}
+
+// UpdateMaintenanceWindow updates Cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
+func UpdateMaintenanceWindow(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.MaintenanceWindow == nil {
+		return NotChanged, nil
+	}
+	window := utils.StringValue(config.Spec.MaintenanceWindow)
+	if utils.StringValue(upstreamSpec.MaintenanceWindow) == window {
+		return NotChanged, nil
+	}
+
+	policy := &gkeapi.MaintenancePolicy{}
+	if window != "" {
+		policy.Window = &gkeapi.MaintenanceWindow{
+			DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
+				StartTime: window,
+			},
+		}
+	}
+	logrus.Infof("updating maintenance window for cluster [%s]", config.Name)
+	_, err := client.Projects.
+		Locations.
+		Clusters.
+		SetMaintenancePolicy(
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.SetMaintenancePolicyRequest{
+				MaintenancePolicy: policy,
+			},
+		).Context(ctx).
+		Do()
+	if err != nil {
+		return NotChanged, err
+	}
+	return Changed, nil
+}
+
 // UpdateNodePoolKubernetesVersionOrImageType sends a combined request to
 // update either the node pool Kubernetes version or image type or both. These
 // attributes are among the few that can be updated in the same request.
@@ -403,6 +490,53 @@ func UpdateNodePoolAutoscaling(
 			Clusters.
 			NodePools.
 			SetAutoscaling(
+				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+				updateRequest,
+			).Context(ctx).
+			Do()
+		if err != nil && strings.Contains(err.Error(), errWait) {
+			logrus.Debugf("error %v updating node pool, will retry", err)
+			return Retry, nil
+		}
+		if err != nil {
+			return NotChanged, err
+		}
+		return Changed, nil
+	}
+	return NotChanged, nil
+}
+
+// UpdateNodePoolManagement updates the management parameters for a given node pool.
+// If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
+func UpdateNodePoolManagement(
+	ctx context.Context,
+	client *gkeapi.Service,
+	nodePool *gkev1.NodePoolConfig,
+	config *gkev1.GKEClusterConfig,
+	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
+	if nodePool.Management == nil {
+		return NotChanged, nil
+	}
+
+	updateRequest := &gkeapi.SetNodePoolManagementRequest{
+		Management: &gkeapi.NodeManagement{},
+	}
+	needsUpdate := false
+	if upstreamNodePool.Management.AutoRepair != nodePool.Management.AutoRepair {
+		updateRequest.Management.AutoRepair = nodePool.Management.AutoRepair
+		needsUpdate = true
+	}
+	if upstreamNodePool.Management.AutoUpgrade != nodePool.Management.AutoUpgrade {
+		updateRequest.Management.AutoUpgrade = nodePool.Management.AutoUpgrade
+		needsUpdate = true
+	}
+	if needsUpdate {
+		logrus.Infof("updating management config of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
+		_, err := client.Projects.
+			Locations.
+			Clusters.
+			NodePools.
+			SetManagement(
 				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 				updateRequest,
 			).Context(ctx).

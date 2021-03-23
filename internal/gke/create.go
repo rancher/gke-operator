@@ -38,7 +38,7 @@ func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKECluste
 
 // CreateNodePool creates an upstream node pool with the given cluster as a parent.
 func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.NodePoolConfig) (Status, error) {
-	err := validateNodePoolCreateRequest(nodePoolConfig)
+	err := validateNodePoolCreateRequest(config.Spec.ClusterName, nodePoolConfig)
 	if err != nil {
 		return NotChanged, err
 	}
@@ -94,6 +94,14 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			},
 			AddonsConfig: &gkeapi.AddonsConfig{},
 			NodePools:    []*gkeapi.NodePool{},
+			Locations:    config.Spec.Locations,
+			MaintenancePolicy: &gkeapi.MaintenancePolicy{
+				Window: &gkeapi.MaintenanceWindow{
+					DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
+						StartTime: *config.Spec.MaintenanceWindow,
+					},
+				},
+			},
 		},
 	}
 
@@ -229,9 +237,15 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	if config.Spec.MonitoringService == nil {
 		return fmt.Errorf(cannotBeNilError, "monitoringService", config.Name)
 	}
+	if config.Spec.Locations == nil {
+		return fmt.Errorf(cannotBeNilError, "locations", config.Name)
+	}
+	if config.Spec.MaintenanceWindow == nil {
+		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Name)
+	}
 
 	for _, np := range config.Spec.NodePools {
-		if err = validateNodePoolCreateRequest(&np); err != nil {
+		if err = validateNodePoolCreateRequest(config.Spec.ClusterName, &np); err != nil {
 			return err
 		}
 	}
@@ -239,26 +253,29 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	return nil
 }
 
-func validateNodePoolCreateRequest(np *gkev1.NodePoolConfig) error {
+func validateNodePoolCreateRequest(clusterName string, np *gkev1.NodePoolConfig) error {
 	clusterErr := cannotBeNilError
 	nodePoolErr := cannotBeNilForNodePoolError
 	if np.Name == nil {
-		return fmt.Errorf(clusterErr, "nodePool.name", np.Name)
+		return fmt.Errorf(clusterErr, "nodePool.name", clusterName)
 	}
 	if np.Version == nil {
-		return fmt.Errorf(nodePoolErr, "version", *np.Name, np.Name)
+		return fmt.Errorf(nodePoolErr, "version", *np.Name, clusterName)
 	}
 	if np.Autoscaling == nil {
-		return fmt.Errorf(nodePoolErr, "autoscaling", *np.Name, np.Name)
+		return fmt.Errorf(nodePoolErr, "autoscaling", *np.Name, clusterName)
 	}
 	if np.InitialNodeCount == nil {
-		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, np.Name)
+		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, clusterName)
 	}
 	if np.MaxPodsConstraint == nil {
-		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, np.Name)
+		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, clusterName)
 	}
 	if np.Config == nil {
-		return fmt.Errorf(nodePoolErr, "np", *np.Name, np.Name)
+		return fmt.Errorf(nodePoolErr, "config", *np.Name, clusterName)
+	}
+	if np.Management == nil {
+		return fmt.Errorf(nodePoolErr, "management", *np.Name, clusterName)
 	}
 	return nil
 }
@@ -303,5 +320,9 @@ func newGKENodePoolFromConfig(np *gkev1.NodePoolConfig) *gkeapi.NodePool {
 			MaxPodsPerNode: *np.MaxPodsConstraint,
 		},
 		Version: *np.Version,
+		Management: &gkeapi.NodeManagement{
+			AutoRepair:  np.Management.AutoRepair,
+			AutoUpgrade: np.Management.AutoUpgrade,
+		},
 	}
 }

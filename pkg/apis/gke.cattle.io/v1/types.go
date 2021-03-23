@@ -53,6 +53,8 @@ type GKEClusterConfigSpec struct {
 	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
 	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
+	Locations                      []string                        `json:"locations,omitempty"`
+	MaintenanceWindow              *string                         `json:"maintenanceWindow,omitempty"`
 }
 
 type IPAllocationPolicy struct {
@@ -92,6 +94,7 @@ type NodePoolConfig struct {
 	MaxPodsConstraint *int64               `json:"maxPodsConstraint,omitempty"`
 	Name              *string              `json:"name,omitempty"`
 	Version           *string              `json:"version,omitempty"`
+	Management        *NodePoolManagement  `json:"management,omitempty"`
 }
 
 type NodePoolAutoscaling struct {
@@ -126,4 +129,9 @@ type MasterAuthorizedNetworksConfig struct {
 type CidrBlock struct {
 	CidrBlock   string `json:"cidrBlock,omitempty"`
 	DisplayName string `json:"displayName,omitempty"`
+}
+
+type NodePoolManagement struct {
+	AutoRepair  bool `json:"autoRepair,omitempty"`
+	AutoUpgrade bool `json:"autoUpgrade,omitempty"`
 }
