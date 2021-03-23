@@ -33,31 +33,32 @@ const (
 // UpdateMasterKubernetesVersion updates the Kubernetes version for the control plane.
 // This must occur before the Kubernetes version is changed on the nodes.
 func UpdateMasterKubernetesVersion(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
-	if config.Spec.KubernetesVersion == nil {
+	kubeVersion := utils.StringValue(config.Spec.KubernetesVersion)
+	if kubeVersion == "" {
 		return NotChanged, nil
 	}
 
-	if utils.StringValue(upstreamSpec.KubernetesVersion) != utils.StringValue(config.Spec.KubernetesVersion) {
-		logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
-
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			Update(
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-				&gkeapi.UpdateClusterRequest{
-					Update: &gkeapi.ClusterUpdate{
-						DesiredMasterVersion: *config.Spec.KubernetesVersion,
-					},
-				},
-			).Context(ctx).
-			Do()
-		if err != nil {
-			return NotChanged, err
-		}
-		return Changed, nil
+	if utils.StringValue(upstreamSpec.KubernetesVersion) == kubeVersion {
+		return NotChanged, nil
 	}
-	return NotChanged, nil
+
+	logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
+	_, err := client.Projects.
+		Locations.
+		Clusters.
+		Update(
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: &gkeapi.ClusterUpdate{
+					DesiredMasterVersion: kubeVersion,
+				},
+			},
+		).Context(ctx).
+		Do()
+	if err != nil {
+		return NotChanged, err
+	}
+	return Changed, nil
 }
 
 // UpdateClusterAddons updates the cluster addons.
@@ -293,14 +294,16 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 
 	updateRequest := &gkeapi.UpdateNodePoolRequest{}
 	needsUpdate := false
-	if utils.StringValue(upstreamNodePool.Version) != utils.StringValue(nodePool.Version) {
+	npVersion := utils.StringValue(nodePool.Version)
+	if npVersion != "" && utils.StringValue(upstreamNodePool.Version) != npVersion {
 		logrus.Infof("updating kubernetes version on node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-		updateRequest.NodeVersion = *nodePool.Version
+		updateRequest.NodeVersion = npVersion
 		needsUpdate = true
 	}
-	if strings.ToLower(upstreamNodePool.Config.ImageType) != strings.ToLower(nodePool.Config.ImageType) {
+	imageType := strings.ToLower(nodePool.Config.ImageType)
+	if imageType != "" && strings.ToLower(upstreamNodePool.Config.ImageType) != imageType {
 		logrus.Infof("updating image type on node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-		updateRequest.ImageType = nodePool.Config.ImageType
+		updateRequest.ImageType = imageType
 		needsUpdate = true
 	}
 	if needsUpdate {
