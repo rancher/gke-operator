@@ -548,8 +548,8 @@ func parseCredential(ref string) (namespace string, name string) {
 	return parts[0], parts[1]
 }
 
-func buildNodePoolMap(nodePools []gkev1.NodePoolConfig) map[string]*gkev1.NodePoolConfig {
-	ret := make(map[string]*gkev1.NodePoolConfig)
+func buildNodePoolMap(nodePools []gkev1.GKENodePoolConfig) map[string]*gkev1.GKENodePoolConfig {
+	ret := make(map[string]*gkev1.GKENodePoolConfig)
 	for i := range nodePools {
 		if nodePools[i].Name != nil {
 			ret[*nodePools[i].Name] = &nodePools[i]
@@ -583,15 +583,15 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	newSpec := &gkev1.GKEClusterConfigSpec{
 		KubernetesVersion:     &cluster.CurrentMasterVersion,
 		EnableKubernetesAlpha: &cluster.EnableKubernetesAlpha,
-		ClusterAddons:         &gkev1.ClusterAddons{},
+		ClusterAddons:         &gkev1.GKEClusterAddons{},
 		ClusterIpv4CidrBlock:  &cluster.ClusterIpv4Cidr,
 		LoggingService:        &cluster.LoggingService,
 		MonitoringService:     &cluster.MonitoringService,
 		Network:               &cluster.Network,
 		Subnetwork:            &cluster.Subnetwork,
-		PrivateClusterConfig:  &gkev1.PrivateClusterConfig{},
-		IPAllocationPolicy:    &gkev1.IPAllocationPolicy{},
-		MasterAuthorizedNetworksConfig: &gkev1.MasterAuthorizedNetworksConfig{
+		PrivateClusterConfig:  &gkev1.GKEPrivateClusterConfig{},
+		IPAllocationPolicy:    &gkev1.GKEIPAllocationPolicy{},
+		MasterAuthorizedNetworksConfig: &gkev1.GKEMasterAuthorizedNetworksConfig{
 			Enabled: false,
 		},
 		Locations: cluster.Locations,
@@ -647,7 +647,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	if cluster.MasterAuthorizedNetworksConfig != nil && cluster.MasterAuthorizedNetworksConfig.Enabled {
 		newSpec.MasterAuthorizedNetworksConfig.Enabled = cluster.MasterAuthorizedNetworksConfig.Enabled
 		for _, b := range cluster.MasterAuthorizedNetworksConfig.CidrBlocks {
-			block := &gkev1.CidrBlock{
+			block := &gkev1.GKECidrBlock{
 				CidrBlock:   b.CidrBlock,
 				DisplayName: b.DisplayName,
 			}
@@ -662,14 +662,14 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	}
 
 	// build node groups
-	newSpec.NodePools = make([]gkev1.NodePoolConfig, 0, len(cluster.NodePools))
+	newSpec.NodePools = make([]gkev1.GKENodePoolConfig, 0, len(cluster.NodePools))
 
 	for _, np := range cluster.NodePools {
 		if np.Status == NodePoolStatusStopping {
 			continue
 		}
 
-		newNP := gkev1.NodePoolConfig{
+		newNP := gkev1.GKENodePoolConfig{
 			Name:              &np.Name,
 			Version:           &np.Version,
 			InitialNodeCount:  &np.InitialNodeCount,
@@ -677,7 +677,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		}
 
 		if np.Config != nil {
-			newNP.Config = &gkev1.NodeConfig{
+			newNP.Config = &gkev1.GKENodeConfig{
 				DiskSizeGb:    np.Config.DiskSizeGb,
 				DiskType:      np.Config.DiskType,
 				ImageType:     np.Config.ImageType,
@@ -687,9 +687,9 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 				Preemptible:   np.Config.Preemptible,
 			}
 
-			newNP.Config.Taints = make([]gkev1.NodeTaintConfig, 0, len(np.Config.Taints))
+			newNP.Config.Taints = make([]gkev1.GKENodeTaintConfig, 0, len(np.Config.Taints))
 			for _, t := range np.Config.Taints {
-				newNP.Config.Taints = append(newNP.Config.Taints, gkev1.NodeTaintConfig{
+				newNP.Config.Taints = append(newNP.Config.Taints, gkev1.GKENodeTaintConfig{
 					Effect: t.Effect,
 					Key:    t.Key,
 					Value:  t.Value,
@@ -698,7 +698,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		}
 
 		if np.Autoscaling != nil {
-			newNP.Autoscaling = &gkev1.NodePoolAutoscaling{
+			newNP.Autoscaling = &gkev1.GKENodePoolAutoscaling{
 				Enabled:      np.Autoscaling.Enabled,
 				MaxNodeCount: np.Autoscaling.MaxNodeCount,
 				MinNodeCount: np.Autoscaling.MinNodeCount,
@@ -706,7 +706,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		}
 
 		if np.Management != nil {
-			newNP.Management = &gkev1.NodePoolManagement{
+			newNP.Management = &gkev1.GKENodePoolManagement{
 				AutoRepair:  np.Management.AutoRepair,
 				AutoUpgrade: np.Management.AutoUpgrade,
 			}

@@ -372,9 +372,9 @@ func UpdateMaintenanceWindow(
 func UpdateNodePoolKubernetesVersionOrImageType(
 	ctx context.Context,
 	client *gkeapi.Service,
-	nodePool *gkev1.NodePoolConfig,
+	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
-	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
+	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
 	if nodePool.Version == nil {
 		return NotChanged, nil
 	}
@@ -420,9 +420,9 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 func UpdateNodePoolSize(
 	ctx context.Context,
 	client *gkeapi.Service,
-	nodePool *gkev1.NodePoolConfig,
+	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
-	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
+	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
 	if nodePool.InitialNodeCount == nil {
 		return NotChanged, nil
 	}
@@ -458,9 +458,9 @@ func UpdateNodePoolSize(
 func UpdateNodePoolAutoscaling(
 	ctx context.Context,
 	client *gkeapi.Service,
-	nodePool *gkev1.NodePoolConfig,
+	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
-	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
+	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
 	if nodePool.Autoscaling == nil {
 		return NotChanged, nil
 	}
@@ -511,9 +511,9 @@ func UpdateNodePoolAutoscaling(
 func UpdateNodePoolManagement(
 	ctx context.Context,
 	client *gkeapi.Service,
-	nodePool *gkev1.NodePoolConfig,
+	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
-	upstreamNodePool *gkev1.NodePoolConfig) (Status, error) {
+	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
 	if nodePool.Management == nil {
 		return NotChanged, nil
 	}
@@ -553,12 +553,12 @@ func UpdateNodePoolManagement(
 	return NotChanged, nil
 }
 
-func compareCidrBlockPointerSlices(lh, rh []*gkev1.CidrBlock) bool {
+func compareCidrBlockPointerSlices(lh, rh []*gkev1.GKECidrBlock) bool {
 	if len(lh) != len(rh) {
 		return false
 	}
 
-	lhElements := make(map[gkev1.CidrBlock]struct{})
+	lhElements := make(map[gkev1.GKECidrBlock]struct{})
 	for _, v := range lh {
 		if v != nil {
 			lhElements[*v] = struct{}{}

@@ -33,31 +33,31 @@ type GKEClusterConfig struct {
 
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
-	Region                         string                          `json:"region" norman:"noupdate"`
-	Zone                           string                          `json:"zone" norman:"noupdate"`
-	Imported                       bool                            `json:"imported" norman:"noupdate"`
-	Description                    string                          `json:"description"`
-	EnableKubernetesAlpha          *bool                           `json:"enableKubernetesAlpha"`
-	ClusterAddons                  *ClusterAddons                  `json:"clusterAddons"`
-	ClusterIpv4CidrBlock           *string                         `json:"clusterIpv4Cidr"`
-	ProjectID                      string                          `json:"projectID"`
-	GoogleCredentialSecret         string                          `json:"googleCredentialSecret"`
-	ClusterName                    string                          `json:"clusterName"`
-	KubernetesVersion              *string                         `json:"kubernetesVersion"`
-	LoggingService                 *string                         `json:"loggingService"`
-	MonitoringService              *string                         `json:"monitoringService"`
-	NodePools                      []NodePoolConfig                `json:"nodePools"`
-	Network                        *string                         `json:"network,omitempty"`
-	Subnetwork                     *string                         `json:"subnetwork,omitempty"`
-	NetworkPolicyEnabled           *bool                           `json:"networkPolicyEnabled,omitempty"`
-	PrivateClusterConfig           *PrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
-	IPAllocationPolicy             *IPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
-	MasterAuthorizedNetworksConfig *MasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
-	Locations                      []string                        `json:"locations,omitempty"`
-	MaintenanceWindow              *string                         `json:"maintenanceWindow,omitempty"`
+	Region                         string                             `json:"region" norman:"noupdate"`
+	Zone                           string                             `json:"zone" norman:"noupdate"`
+	Imported                       bool                               `json:"imported" norman:"noupdate"`
+	Description                    string                             `json:"description"`
+	EnableKubernetesAlpha          *bool                              `json:"enableKubernetesAlpha"`
+	ClusterAddons                  *GKEClusterAddons                  `json:"clusterAddons"`
+	ClusterIpv4CidrBlock           *string                            `json:"clusterIpv4Cidr"`
+	ProjectID                      string                             `json:"projectID"`
+	GoogleCredentialSecret         string                             `json:"googleCredentialSecret"`
+	ClusterName                    string                             `json:"clusterName"`
+	KubernetesVersion              *string                            `json:"kubernetesVersion"`
+	LoggingService                 *string                            `json:"loggingService"`
+	MonitoringService              *string                            `json:"monitoringService"`
+	NodePools                      []GKENodePoolConfig                `json:"nodePools"`
+	Network                        *string                            `json:"network,omitempty"`
+	Subnetwork                     *string                            `json:"subnetwork,omitempty"`
+	NetworkPolicyEnabled           *bool                              `json:"networkPolicyEnabled,omitempty"`
+	PrivateClusterConfig           *GKEPrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
+	IPAllocationPolicy             *GKEIPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
+	MasterAuthorizedNetworksConfig *GKEMasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
+	Locations                      []string                           `json:"locations,omitempty"`
+	MaintenanceWindow              *string                            `json:"maintenanceWindow,omitempty"`
 }
 
-type IPAllocationPolicy struct {
+type GKEIPAllocationPolicy struct {
 	ClusterIpv4CidrBlock       string `json:"clusterIpv4CidrBlock,omitempty"`
 	ClusterSecondaryRangeName  string `json:"clusterSecondaryRangeName,omitempty"`
 	CreateSubnetwork           bool   `json:"createSubnetwork,omitempty"`
@@ -68,7 +68,7 @@ type IPAllocationPolicy struct {
 	UseIPAliases               bool   `json:"useIpAliases,omitempty"`
 }
 
-type PrivateClusterConfig struct {
+type GKEPrivateClusterConfig struct {
 	EnablePrivateEndpoint bool   `json:"enablePrivateEndpoint,omitempty"`
 	EnablePrivateNodes    bool   `json:"enablePrivateNodes,omitempty"`
 	MasterIpv4CidrBlock   string `json:"masterIpv4CidrBlock,omitempty"`
@@ -81,57 +81,57 @@ type GKEClusterConfigStatus struct {
 	FailureMessage string `json:"failureMessage"`
 }
 
-type ClusterAddons struct {
+type GKEClusterAddons struct {
 	HTTPLoadBalancing        bool `json:"httpLoadBalancing,omitempty"`
 	HorizontalPodAutoscaling bool `json:"horizontalPodAutoscaling,omitempty"`
 	NetworkPolicyConfig      bool `json:"networkPolicyConfig,omitempty"`
 }
 
-type NodePoolConfig struct {
-	Autoscaling       *NodePoolAutoscaling `json:"autoscaling,omitempty"`
-	Config            *NodeConfig          `json:"config,omitempty"`
-	InitialNodeCount  *int64               `json:"initialNodeCount,omitempty"`
-	MaxPodsConstraint *int64               `json:"maxPodsConstraint,omitempty"`
-	Name              *string              `json:"name,omitempty"`
-	Version           *string              `json:"version,omitempty"`
-	Management        *NodePoolManagement  `json:"management,omitempty"`
+type GKENodePoolConfig struct {
+	Autoscaling       *GKENodePoolAutoscaling `json:"autoscaling,omitempty"`
+	Config            *GKENodeConfig          `json:"config,omitempty"`
+	InitialNodeCount  *int64                  `json:"initialNodeCount,omitempty"`
+	MaxPodsConstraint *int64                  `json:"maxPodsConstraint,omitempty"`
+	Name              *string                 `json:"name,omitempty"`
+	Version           *string                 `json:"version,omitempty"`
+	Management        *GKENodePoolManagement  `json:"management,omitempty"`
 }
 
-type NodePoolAutoscaling struct {
+type GKENodePoolAutoscaling struct {
 	Enabled      bool  `json:"enabled,omitempty"`
 	MaxNodeCount int64 `json:"maxNodeCount,omitempty"`
 	MinNodeCount int64 `json:"minNodeCount,omitempty"`
 }
 
-type NodeConfig struct {
-	DiskSizeGb    int64             `json:"diskSizeGb,omitempty"`
-	DiskType      string            `json:"diskType,omitempty"`
-	ImageType     string            `json:"imageType,omitempty"`
-	Labels        map[string]string `json:"labels,omitempty"`
-	LocalSsdCount int64             `json:"localSsdCount,omitempty"`
-	MachineType   string            `json:"machineType,omitempty"`
-	OauthScopes   []string          `json:"oauthScopes,omitempty"`
-	Preemptible   bool              `json:"preemptible,omitempty"`
-	Taints        []NodeTaintConfig `json:"taints,omitempty"`
+type GKENodeConfig struct {
+	DiskSizeGb    int64                `json:"diskSizeGb,omitempty"`
+	DiskType      string               `json:"diskType,omitempty"`
+	ImageType     string               `json:"imageType,omitempty"`
+	Labels        map[string]string    `json:"labels,omitempty"`
+	LocalSsdCount int64                `json:"localSsdCount,omitempty"`
+	MachineType   string               `json:"machineType,omitempty"`
+	OauthScopes   []string             `json:"oauthScopes,omitempty"`
+	Preemptible   bool                 `json:"preemptible,omitempty"`
+	Taints        []GKENodeTaintConfig `json:"taints,omitempty"`
 }
 
-type NodeTaintConfig struct {
+type GKENodeTaintConfig struct {
 	Effect string `json:"effect,omitempty"`
 	Key    string `json:"key,omitempty"`
 	Value  string `json:"value,omitempty"`
 }
 
-type MasterAuthorizedNetworksConfig struct {
-	CidrBlocks []*CidrBlock `json:"cidrBlocks,omitempty"`
-	Enabled    bool         `json:"enabled,omitempty"`
+type GKEMasterAuthorizedNetworksConfig struct {
+	CidrBlocks []*GKECidrBlock `json:"cidrBlocks,omitempty"`
+	Enabled    bool            `json:"enabled,omitempty"`
 }
 
-type CidrBlock struct {
+type GKECidrBlock struct {
 	CidrBlock   string `json:"cidrBlock,omitempty"`
 	DisplayName string `json:"displayName,omitempty"`
 }
 
-type NodePoolManagement struct {
+type GKENodePoolManagement struct {
 	AutoRepair  bool `json:"autoRepair,omitempty"`
 	AutoUpgrade bool `json:"autoUpgrade,omitempty"`
 }
