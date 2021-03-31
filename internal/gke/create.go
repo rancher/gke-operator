@@ -37,7 +37,7 @@ func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKECluste
 }
 
 // CreateNodePool creates an upstream node pool with the given cluster as a parent.
-func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.NodePoolConfig) (Status, error) {
+func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.GKENodePoolConfig) (Status, error) {
 	err := validateNodePoolCreateRequest(config.Spec.ClusterName, nodePoolConfig)
 	if err != nil {
 		return NotChanged, err
@@ -253,7 +253,7 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	return nil
 }
 
-func validateNodePoolCreateRequest(clusterName string, np *gkev1.NodePoolConfig) error {
+func validateNodePoolCreateRequest(clusterName string, np *gkev1.GKENodePoolConfig) error {
 	clusterErr := cannotBeNilError
 	nodePoolErr := cannotBeNilForNodePoolError
 	if np.Name == nil {
@@ -280,7 +280,7 @@ func validateNodePoolCreateRequest(clusterName string, np *gkev1.NodePoolConfig)
 	return nil
 }
 
-func newNodePoolCreateRequest(parent string, np *gkev1.NodePoolConfig) (*gkeapi.CreateNodePoolRequest, error) {
+func newNodePoolCreateRequest(parent string, np *gkev1.GKENodePoolConfig) (*gkeapi.CreateNodePoolRequest, error) {
 	request := &gkeapi.CreateNodePoolRequest{
 		Parent:   parent,
 		NodePool: newGKENodePoolFromConfig(np),
@@ -288,7 +288,7 @@ func newNodePoolCreateRequest(parent string, np *gkev1.NodePoolConfig) (*gkeapi.
 	return request, nil
 }
 
-func newGKENodePoolFromConfig(np *gkev1.NodePoolConfig) *gkeapi.NodePool {
+func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig) *gkeapi.NodePool {
 	taints := make([]*gkeapi.NodeTaint, 0, len(np.Config.Taints))
 	for _, t := range np.Config.Taints {
 		taints = append(taints, &gkeapi.NodeTaint{
