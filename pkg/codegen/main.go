@@ -15,13 +15,15 @@ import (
 )
 
 func main() {
+	os.Unsetenv("GOPATH")
+
 	controllergen.Run(args.Options{
 		OutputPackage: "github.com/rancher/gke-operator/pkg/generated",
 		Boilerplate:   "pkg/codegen/boilerplate.go.txt",
 		Groups: map[string]args.Group{
 			"gke.cattle.io": {
 				Types: []interface{}{
-					v12.GKEClusterConfig{},
+					"./pkg/apis/gke.cattle.io/v1",
 				},
 				GenerateTypes: true,
 			},

@@ -1,15 +1,19 @@
 ---
 kind: pipeline
 name: linux-amd64
+
 platform:
   os: linux
   arch: amd64
 
 steps:
 - name: ci
-  image: golang:1.16
+  image: rancher/dapper:v0.5.4
   commands:
-  - ./scripts/ci
+  - dapper ci
+  volumes:
+  - name: docker
+    path: /var/run/docker.sock
   when:
     event:
     - push
@@ -19,29 +23,90 @@ steps:
 - name: docker-publish
   image: plugins/docker
   settings:
-    dockerfile: Dockerfile
-    password:
-      from_secret: docker_password
+    dockerfile: package/Dockerfile
     username:
       from_secret: docker_username
+    password:
+      from_secret: docker_password
     repo: "rancher/gke-operator"
-    tag: "${DRONE_TAG}"
+    tag: "${DRONE_TAG}-amd64"
   when:
     event:
     - tag
 
-- name: manifest
-  image: plugins/manifest
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+
+---
+
+kind: pipeline
+name: linux-arm64
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: ci
+  image: rancher/dapper:v0.5.4
+  commands:
+  - dapper ci
+  volumes:
+  - name: docker
+    path: /var/run/docker.sock
+  when:
+    event:
+    - push
+    - pull_request
+    - tag
+
+- name: docker-publish
+  image: plugins/docker
   settings:
-    dockerfile: Dockerfile
-    password:
-      from_secret: docker_password
+    dockerfile: package/Dockerfile
     username:
       from_secret: docker_username
-    platforms:
-    - linux/amd64
-    target: "rancher/gke-operator:${DRONE_TAG}"
-    template: "rancher/gke-operator:${DRONE_TAG}"
+    password:
+      from_secret: docker_password
+    repo: "rancher/gke-operator"
+    tag: "${DRONE_TAG}-arm64"
   when:
     event:
     - tag
+
+volumes:
+- name: docker
+  host:
+    path: /var/run/docker.sock
+
+---
+
+kind: pipeline
+name: manifest
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+- name: manifest
+  image: plugins/manifest:1.0.2
+  settings:
+    username:
+      from_secret: docker_username
+    password:
+      from_secret: docker_password
+    platforms:
+    - linux/amd64
+    - linux/arm64
+    target: "rancher/gke-operator:${DRONE_TAG}"
+    template: "rancher/gke-operator:${DRONE_TAG}-ARCH"
+  when:
+    event:
+    - tag
+
+depends_on:
+- linux-amd64
+- linux-arm64
