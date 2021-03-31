@@ -124,6 +124,10 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 			// GKE config is likely deleting
 			return config, err
 		}
+		if err != nil {
+			message = err.Error()
+		}
+
 		if config.Status.FailureMessage == message {
 			return config, err
 		}
