@@ -1,16 +1,16 @@
-SEVERITIES = HIGH,CRITICAL
-TAG ?= latest
+TARGETS := $(shell ls scripts)
 
-.PHONY: all
-all:
-	docker build --build-arg TAG=$(TAG) -t rancher/gke-operator:$(TAG) .
+.dapper:
+	@echo Downloading dapper
+	@curl -sL https://releases.rancher.com/dapper/latest/dapper-`uname -s`-`uname -m` > .dapper.tmp
+	@@chmod +x .dapper.tmp
+	@./.dapper.tmp -v
+	@mv .dapper.tmp .dapper
 
-.PHONY: image-push
-image-push:
-	docker push rancher/gke-operator:$(TAG)
+$(TARGETS): .dapper
+	./.dapper $@
 
-.PHONY: image-manifest
-image-manifest:
-	docker image inspect rancher/gke-operator:$(TAG)
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create rancher/gke-operator:$(TAG) \
-		$(shell docker image inspect rancher/gke-operator:$(TAG) | jq -r '.[] | .RepoDigests[0]')
+clean:
+	rm -rf build bin dist
+
+.PHONY: $(TARGETS)
