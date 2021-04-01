@@ -15,7 +15,7 @@
   "ipAllocationPolicy": {
     "useIpAliases": true
   },
-  "kubernetesVersion": "1.18.15-gke.1100",
+  "kubernetesVersion": "1.18.16-gke.302",
   "loggingService": "",
   "masterAuthorizedNetworks": {
     "enabled": false
@@ -42,7 +42,7 @@
       "labels": [],
       "maxPodsConstraint": 110,
       "name": "example-node-pool",
-      "version": "1.18.15-gke.1100"
+      "version": "1.18.16-gke.302"
     }
   ],
   "privateClusterConfig": {
