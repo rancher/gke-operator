@@ -51,5 +51,6 @@
   },
   "projectID": "example-project",
   "region": "us-west1",
-  "zone": ""
+  "zone": "",
+  "locations": []
 }
