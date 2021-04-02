@@ -7,7 +7,7 @@ spec:
   description: "complex example cluster"
   zone: "us-west1-a"
   projectID: "example-project"
-  kubernetesVersion: "1.18.15-gke.1100"
+  kubernetesVersion: "1.18.16-gke.302"
   loggingService: "none"
   monitoringService: "none"
   enableKubernetesAlpha: true
@@ -48,7 +48,7 @@ spec:
     - "bar"
     initialNodeCount: 3
     maxPodsConstraint: 55
-    version: "1.18.15-gke.1100"
+    version: "1.18.16-gke.302"
     management:
       autoRepair: false
       autoUpgrade: false
@@ -72,7 +72,7 @@ spec:
     - "two"
     initialNodeCount: 3
     maxPodsConstraint: 110
-    version: "1.18.15-gke.1100"
+    version: "1.18.16-gke.302"
     management:
       autoRepair: false
       autoUpgrade: false

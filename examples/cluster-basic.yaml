@@ -7,7 +7,7 @@ spec:
   description: "example cluster"
   region: "us-west1"
   projectID: "example-project"
-  kubernetesVersion: "1.18.15-gke.1100"
+  kubernetesVersion: "1.18.16-gke.302"
   loggingService: ""
   monitoringService: ""
   enableKubernetesAlpha: false
@@ -31,7 +31,7 @@ spec:
     labels: []
     initialNodeCount: 1
     maxPodsConstraint: 110
-    version: "1.18.15-gke.1100"
+    version: "1.18.16-gke.302"
     management:
       autoRepair: true
       autoUpgrade: true

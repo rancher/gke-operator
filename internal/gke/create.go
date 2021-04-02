@@ -92,17 +92,19 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 				SubnetworkName:             config.Spec.IPAllocationPolicy.SubnetworkName,
 				UseIpAliases:               config.Spec.IPAllocationPolicy.UseIPAliases,
 			},
-			AddonsConfig: &gkeapi.AddonsConfig{},
-			NodePools:    []*gkeapi.NodePool{},
-			Locations:    config.Spec.Locations,
-			MaintenancePolicy: &gkeapi.MaintenancePolicy{
-				Window: &gkeapi.MaintenanceWindow{
-					DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
-						StartTime: *config.Spec.MaintenanceWindow,
-					},
-				},
-			},
+			AddonsConfig:      &gkeapi.AddonsConfig{},
+			NodePools:         []*gkeapi.NodePool{},
+			Locations:         config.Spec.Locations,
+			MaintenancePolicy: &gkeapi.MaintenancePolicy{},
 		},
+	}
+
+	if *config.Spec.MaintenanceWindow != "" {
+		request.Cluster.MaintenancePolicy.Window = &gkeapi.MaintenanceWindow{
+			DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
+				StartTime: *config.Spec.MaintenanceWindow,
+			},
+		}
 	}
 
 	addons := config.Spec.ClusterAddons
