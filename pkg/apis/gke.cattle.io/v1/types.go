@@ -55,6 +55,7 @@ type GKEClusterConfigSpec struct {
 	MasterAuthorizedNetworksConfig *GKEMasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
 	Locations                      []string                           `json:"locations"`
 	MaintenanceWindow              *string                            `json:"maintenanceWindow,omitempty"`
+	Autopilot                      *bool                              `json:"autopilot,omitempty" norman:"noupdate"`
 }
 
 type GKEIPAllocationPolicy struct {

@@ -197,6 +197,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.Autopilot != nil {
+		in, out := &in.Autopilot, &out.Autopilot
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
