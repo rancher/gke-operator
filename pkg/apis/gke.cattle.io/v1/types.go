@@ -73,8 +73,6 @@ type GKEPrivateClusterConfig struct {
 	EnablePrivateEndpoint bool   `json:"enablePrivateEndpoint,omitempty"`
 	EnablePrivateNodes    bool   `json:"enablePrivateNodes,omitempty"`
 	MasterIpv4CidrBlock   string `json:"masterIpv4CidrBlock,omitempty"`
-	PrivateEndpoint       string `json:"privateEndpoint,omitempty"`
-	PublicEndpoint        string `json:"publicEndpoint,omitempty"`
 }
 
 type GKEClusterConfigStatus struct {
