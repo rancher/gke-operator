@@ -18,16 +18,7 @@ spec:
   - name: example-node-pool
     autoscaling:
       enabled: false
-    config:
-      diskSizeGb: 50
-      diskType: "pd-standard"
-      imageType: "cos"
-      localSsdCount: 0
-      labels: {}
-      machineType: ""
-      preemptible: false
-      oauthScopes: []
-      taints: []
+    config: {}
     labels: []
     initialNodeCount: 1
     maxPodsConstraint: 110
