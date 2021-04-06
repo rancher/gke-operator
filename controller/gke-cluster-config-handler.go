@@ -611,8 +611,6 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = cluster.PrivateClusterConfig.EnablePrivateNodes
 		newSpec.PrivateClusterConfig.EnablePrivateNodes = cluster.PrivateClusterConfig.EnablePrivateNodes
 		newSpec.PrivateClusterConfig.MasterIpv4CidrBlock = cluster.PrivateClusterConfig.MasterIpv4CidrBlock
-		newSpec.PrivateClusterConfig.PrivateEndpoint = cluster.PrivateClusterConfig.PrivateEndpoint
-		newSpec.PrivateClusterConfig.PublicEndpoint = cluster.PrivateClusterConfig.PublicEndpoint
 	} else {
 		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = false
 		newSpec.PrivateClusterConfig.EnablePrivateNodes = false
