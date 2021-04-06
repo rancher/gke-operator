@@ -97,5 +97,4 @@ spec:
   - us-west1-b
   - us-west1-c
   maintenanceWindow: "00:00"
-  autopilot: false
   googleCredentialSecret: "cattle-global-data:cc-abcde"

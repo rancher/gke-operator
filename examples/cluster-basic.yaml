@@ -49,5 +49,4 @@ spec:
     enabled: false
   locations: []
   maintenanceWindow: ""
-  autopilot: false
   googleCredentialSecret: "cattle-global-data:cc-abcde"

@@ -374,7 +374,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	if !isAutopilot(&config.Spec) && config.Spec.NodePools != nil {
+	if config.Spec.NodePools != nil {
 		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
 		nodePoolsNeedUpdate := false
 		for _, np := range config.Spec.NodePools {
@@ -665,12 +665,6 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		newSpec.MaintenanceWindow = &cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
 	}
 
-	autopilot := false
-	if cluster.Autopilot != nil && cluster.Autopilot.Enabled {
-		autopilot = true
-	}
-	newSpec.Autopilot = &autopilot
-
 	// build node groups
 	newSpec.NodePools = make([]gkev1.GKENodePoolConfig, 0, len(cluster.NodePools))
 
@@ -776,8 +770,4 @@ func GetTokenSource(ctx context.Context, secretsCache wranglerv1.SecretCache, co
 		return nil, fmt.Errorf("error getting oauth2 token: %w", err)
 	}
 	return ts, nil
-}
-
-func isAutopilot(configSpec *gkev1.GKEClusterConfigSpec) bool {
-	return configSpec.Autopilot != nil && *configSpec.Autopilot
 }
