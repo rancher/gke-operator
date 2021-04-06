@@ -80,6 +80,7 @@ spec:
     httpLoadBalancing: true
     networkPolicyConfig: true
     horizontalPodAutoscaling: true
+    gkePersistentDiskCsiDriverConfig: true
   networkPolicyEnabled: true
   network: example-network
   subnetwork: ""

@@ -30,6 +30,7 @@ spec:
     httpLoadBalancing: false
     networkPolicyConfig: false
     horizontalPodAutoscaling: false
+    gkePersistentDiskCsiDriverConfig: true
   networkPolicyEnabled: false
   network: default
   subnetwork: default

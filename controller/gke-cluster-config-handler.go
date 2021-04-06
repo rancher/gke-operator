@@ -633,6 +633,11 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 			npc = !cluster.AddonsConfig.NetworkPolicyConfig.Disabled
 		}
 		newSpec.ClusterAddons.NetworkPolicyConfig = npc
+		csi := false
+		if cluster.AddonsConfig.GcePersistentDiskCsiDriverConfig != nil {
+			csi = cluster.AddonsConfig.GcePersistentDiskCsiDriverConfig.Enabled
+		}
+		newSpec.ClusterAddons.GcePersistentDiskCsiDriverConfig = csi
 	}
 
 	if cluster.IpAllocationPolicy != nil {

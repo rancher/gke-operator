@@ -80,9 +80,10 @@ type GKEClusterConfigStatus struct {
 }
 
 type GKEClusterAddons struct {
-	HTTPLoadBalancing        bool `json:"httpLoadBalancing,omitempty"`
-	HorizontalPodAutoscaling bool `json:"horizontalPodAutoscaling,omitempty"`
-	NetworkPolicyConfig      bool `json:"networkPolicyConfig,omitempty"`
+	HTTPLoadBalancing                bool `json:"httpLoadBalancing,omitempty"`
+	HorizontalPodAutoscaling         bool `json:"horizontalPodAutoscaling,omitempty"`
+	NetworkPolicyConfig              bool `json:"networkPolicyConfig,omitempty"`
+	GcePersistentDiskCsiDriverConfig bool `json:"gkePersistentDiskCsiDriverConfig,omitempty"`
 }
 
 type GKENodePoolConfig struct {
