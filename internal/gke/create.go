@@ -96,9 +96,6 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			NodePools:         []*gkeapi.NodePool{},
 			Locations:         config.Spec.Locations,
 			MaintenancePolicy: &gkeapi.MaintenancePolicy{},
-			Autopilot: &gkeapi.Autopilot{
-				Enabled: *config.Spec.Autopilot,
-			},
 		},
 	}
 
@@ -247,9 +244,6 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 	if config.Spec.MaintenanceWindow == nil {
 		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Name)
-	}
-	if config.Spec.Autopilot == nil {
-		return fmt.Errorf(cannotBeNilError, "autopilot", config.Name)
 	}
 
 	for _, np := range config.Spec.NodePools {

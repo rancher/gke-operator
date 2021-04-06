@@ -19,9 +19,6 @@ spec:
       properties:
         spec:
           properties:
-            autopilot:
-              nullable: true
-              type: boolean
             clusterAddons:
               nullable: true
               properties:
