@@ -27,22 +27,13 @@
       "autoscaling": {
         "enabled": false
       },
-      "config": {
-        "diskSizeGb": 50,
-        "diskType": "pd-standard",
-        "imageType": "cos",
-        "labels": {},
-        "localSsdCount": 0,
-        "machineType": "",
-        "oauthScopes": [],
-        "preemptible": false,
-        "taints": []
-      },
+      "config": {},
       "initialNodeCount": 1,
       "labels": [],
       "maxPodsConstraint": 110,
       "name": "example-node-pool",
-      "version": "1.18.16-gke.302"
+      "version": "1.18.16-gke.302",
+      "management": {}
     }
   ],
   "privateClusterConfig": {
@@ -52,5 +43,6 @@
   "projectID": "example-project",
   "region": "us-west1",
   "zone": "",
-  "locations": []
+  "locations": [],
+  "maintenanceWindow": ""
 }
