@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"strings"
 	"time"
@@ -734,13 +733,7 @@ func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi
 	endpoint := cluster.Endpoint
 	var ca []byte
 	if cluster.MasterAuth != nil {
-		// ClusterCaCertificate is base64-encoded, so it needs to be decoded
-		// before being passed to secrets.Create which will reencode it
-		encodedCA := cluster.MasterAuth.ClusterCaCertificate
-		ca, err = base64.StdEncoding.DecodeString(encodedCA)
-		if err != nil {
-			return err
-		}
+		ca = []byte(cluster.MasterAuth.ClusterCaCertificate)
 	}
 
 	_, err = h.secrets.Create(
