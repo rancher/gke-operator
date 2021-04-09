@@ -203,6 +203,7 @@ func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig)
 
 func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
+		logrus.Infof("importing cluster [%s]", config.Name)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigImportingPhase
 		return h.gkeCC.UpdateStatus(config)
