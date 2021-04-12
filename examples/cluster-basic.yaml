@@ -27,9 +27,9 @@ spec:
       autoRepair: true
       autoUpgrade: true
   clusterAddons:
-    httpLoadBalancing: false
+    httpLoadBalancing: true
     networkPolicyConfig: false
-    horizontalPodAutoscaling: false
+    horizontalPodAutoscaling: true
   networkPolicyEnabled: false
   network: default
   subnetwork: default
