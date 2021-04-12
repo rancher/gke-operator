@@ -111,6 +111,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 	request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !addons.HTTPLoadBalancing}
 	request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !addons.HorizontalPodAutoscaling}
 	request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !addons.NetworkPolicyConfig}
+	request.Cluster.AddonsConfig.GcePersistentDiskCsiDriverConfig = &gkeapi.GcePersistentDiskCsiDriverConfig{Enabled: addons.GcePersistentDiskCsiDriverConfig}
 
 	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
 

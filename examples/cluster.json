@@ -2,7 +2,8 @@
   "clusterAddons": {
     "horizontalPodAutoscaling": true,
     "httpLoadBalancing": true,
-    "networkPolicyConfig": true
+    "networkPolicyConfig": true,
+    "gkePersistentDiskCsiDriverConfig": true
   },
   "clusterIpv4Cidr": "",
   "clusterName": "example-cluster",

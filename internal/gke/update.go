@@ -107,6 +107,15 @@ func UpdateClusterAddons(ctx context.Context, client *gkeapi.Service, config *gk
 			needsUpdate = true
 		}
 	}
+	if upstreamSpec.ClusterAddons.GcePersistentDiskCsiDriverConfig != addons.GcePersistentDiskCsiDriverConfig {
+		if clusterUpdate.DesiredAddonsConfig == nil {
+			clusterUpdate.DesiredAddonsConfig = &gkeapi.AddonsConfig{}
+		}
+		clusterUpdate.DesiredAddonsConfig.GcePersistentDiskCsiDriverConfig = &gkeapi.GcePersistentDiskCsiDriverConfig{
+			Enabled: addons.GcePersistentDiskCsiDriverConfig,
+		}
+		needsUpdate = true
+	}
 
 	if needsUpdate {
 		logrus.Infof("updating addon configuration for cluster [%s]", config.Name)

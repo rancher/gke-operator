@@ -22,6 +22,8 @@ spec:
             clusterAddons:
               nullable: true
               properties:
+                gkePersistentDiskCsiDriverConfig:
+                  type: boolean
                 horizontalPodAutoscaling:
                   type: boolean
                 httpLoadBalancing:
