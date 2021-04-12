@@ -2,7 +2,7 @@
   "clusterAddons": {
     "horizontalPodAutoscaling": true,
     "httpLoadBalancing": true,
-    "networkPolicyConfig": true
+    "networkPolicyConfig": false
   },
   "clusterIpv4Cidr": "",
   "clusterName": "example-cluster",
@@ -21,7 +21,7 @@
     "enabled": false
   },
   "monitoringService": "",
-  "networkPolicyEnabled": true,
+  "networkPolicyEnabled": false,
   "nodePools": [
     {
       "autoscaling": {
