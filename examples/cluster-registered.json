@@ -1,0 +1,8 @@
+{
+  "clusterName": "example-cluster",
+  "googleCredentialSecret": "cattle-global-data:cc-abcde",
+  "projectID": "example-project",
+  "region": "us-west1",
+  "zone": "",
+  "imported": true
+}
