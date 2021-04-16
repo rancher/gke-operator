@@ -6,9 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/rancher/gke-operator/internal/gke"
-	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
@@ -232,17 +230,6 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 }
 
 func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	if err := h.validateUpdate(config); err != nil {
-		config = config.DeepCopy()
-		config.Status.Phase = gkeConfigUpdatingPhase
-		var updateErr error
-		config, updateErr = h.gkeCC.UpdateStatus(config)
-		if updateErr != nil {
-			return config, updateErr
-		}
-		return config, err
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -488,48 +475,6 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
 
 	return config, nil
-}
-
-func (h *Handler) validateUpdate(config *gkev1.GKEClusterConfig) error {
-
-	var clusterVersion *semver.Version
-	kubeVersion := utils.StringValue(config.Spec.KubernetesVersion)
-	if kubeVersion != "" {
-		var err error
-		clusterVersion, err = semver.New(fmt.Sprintf("%s.0", kubeVersion))
-		if err != nil {
-			return fmt.Errorf("improper version format for cluster [%s]: %s", config.Name, kubeVersion)
-		}
-	}
-
-	var errors []string
-	// validate nodegroup versions
-	for _, np := range config.Spec.NodePools {
-		npVersion := utils.StringValue(np.Version)
-		if npVersion == "" {
-			continue
-		}
-		version, err := semver.New(fmt.Sprintf("%s.0", npVersion))
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("improper version format for nodegroup [%s]: %s", utils.StringValue(np.Name), npVersion))
-			continue
-		}
-		if clusterVersion == nil {
-			continue
-		}
-		if clusterVersion.EQ(*version) {
-			continue
-		}
-		if clusterVersion.Minor-version.Minor == 1 {
-			continue
-		}
-		errors = append(errors, fmt.Sprintf("versions for cluster [%s] and nodegroup [%s] not compatible: all nodegroup kubernetes versions"+
-			"must be equal to or one minor version lower than the cluster kubernetes version", kubeVersion, npVersion))
-	}
-	if len(errors) != 0 {
-		return fmt.Errorf(strings.Join(errors, ";"))
-	}
-	return nil
 }
 
 func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
