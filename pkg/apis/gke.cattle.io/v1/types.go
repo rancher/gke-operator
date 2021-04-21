@@ -51,8 +51,8 @@ type GKEClusterConfigSpec struct {
 	Subnetwork                     *string                            `json:"subnetwork,omitempty"`
 	NetworkPolicyEnabled           *bool                              `json:"networkPolicyEnabled,omitempty"`
 	PrivateClusterConfig           *GKEPrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
-	IPAllocationPolicy             *GKEIPAllocationPolicy             `json:"ipAllocationPolicy,omitempty" norman:"noupdate"`
-	MasterAuthorizedNetworksConfig *GKEMasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty" norman:"noupdate"`
+	IPAllocationPolicy             *GKEIPAllocationPolicy             `json:"ipAllocationPolicy,omitempty"`
+	MasterAuthorizedNetworksConfig *GKEMasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty"`
 	Locations                      []string                           `json:"locations"`
 	MaintenanceWindow              *string                            `json:"maintenanceWindow,omitempty"`
 }
