@@ -62,7 +62,7 @@ func main() {
 		panic(err)
 	}
 
-	if err := saveCRDYaml("gkeclusterconfig", string(gkeCCYaml)); err != nil {
+	if err := saveCRDYaml("gke-operator-crd", string(gkeCCYaml)); err != nil {
 		panic(err)
 	}
 
@@ -85,7 +85,7 @@ func newCRD(obj interface{}, customize func(crd.CRD) crd.CRD) crd.CRD {
 }
 
 func saveCRDYaml(name, yaml string) error {
-	filename := fmt.Sprintf("./crds/%s.yaml", name)
+	filename := fmt.Sprintf("./charts/%s/templates/crds.yaml", name)
 	save, err := os.Create(filename)
 	if err != nil {
 		return err
