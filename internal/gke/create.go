@@ -192,7 +192,7 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 
 	for _, cluster := range operation.Clusters {
 		if cluster.Name == config.Spec.ClusterName {
-			return fmt.Errorf("cannot create cluster [%s] because a cluster in GKE exists with the same name", config.Spec.ClusterName)
+			return fmt.Errorf("cannot create cluster [%s] because a cluster in GKE exists with the same name, please delete and recreate with a different name", config.Spec.ClusterName)
 		}
 	}
 
