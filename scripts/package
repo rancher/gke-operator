@@ -29,5 +29,3 @@ for i in bin/gke-operator-*; do
 done
 
 build-image gke-operator
-
-./scripts/package-helm
