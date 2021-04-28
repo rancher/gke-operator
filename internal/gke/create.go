@@ -77,6 +77,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
 			Description:           config.Spec.Description,
+			ResourceLabels:        config.Spec.Labels,
 			InitialClusterVersion: *config.Spec.KubernetesVersion,
 			EnableKubernetesAlpha: enableKubernetesAlpha,
 			ClusterIpv4Cidr:       *config.Spec.ClusterIpv4CidrBlock,
@@ -242,6 +243,9 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 	if config.Spec.MaintenanceWindow == nil {
 		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Name)
+	}
+	if config.Spec.Labels == nil {
+		return fmt.Errorf(cannotBeNilError, "labels", config.Name)
 	}
 
 	for _, np := range config.Spec.NodePools {

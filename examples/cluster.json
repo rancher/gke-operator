@@ -44,5 +44,6 @@
   "region": "us-west1",
   "zone": "",
   "locations": [],
-  "maintenanceWindow": ""
+  "maintenanceWindow": "",
+  "labels": {}
 }

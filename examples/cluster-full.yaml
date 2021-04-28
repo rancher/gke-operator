@@ -5,6 +5,8 @@ metadata:
 spec:
   clusterName: "example-cluster-b"
   description: "complex example cluster"
+  labels:
+    foo: bar
   zone: "us-west1-a"
   projectID: "example-project"
   kubernetesVersion: "1.18.16-gke.302"

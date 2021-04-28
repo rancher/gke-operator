@@ -362,6 +362,14 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
+	changed, err = gke.UpdateLabels(ctx, client, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
 	if config.Spec.NodePools != nil {
 		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
 		nodePoolsNeedUpdate := false
@@ -517,16 +525,7 @@ func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, config
 	if err != nil {
 		return nil, err
 	}
-	cluster, err := client.Projects.
-		Locations.
-		Clusters.
-		Get(gke.ClusterRRN(configSpec.ProjectID, gke.Location(configSpec.Region, configSpec.Zone), configSpec.ClusterName)).
-		Context(ctx).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-	return cluster, nil
+	return gke.GetCluster(ctx, client, configSpec)
 }
 
 func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
@@ -545,6 +544,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 			Enabled: false,
 		},
 		Locations: cluster.Locations,
+		Labels:    cluster.ResourceLabels,
 	}
 
 	networkPolicyEnabled := false

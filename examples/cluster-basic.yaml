@@ -5,6 +5,7 @@ metadata:
 spec:
   clusterName: "example-cluster"
   description: "example cluster"
+  labels: {}
   region: "us-west1"
   projectID: "example-project"
   kubernetesVersion: "1.18.16-gke.302"
