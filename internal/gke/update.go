@@ -364,6 +364,37 @@ func UpdateMaintenanceWindow(
 	return Changed, nil
 }
 
+// UpdateLabels updates the cluster labels.
+func UpdateLabels(
+	ctx context.Context,
+	client *gkeapi.Service,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.Labels == nil || reflect.DeepEqual(config.Spec.Labels, upstreamSpec.Labels) || (upstreamSpec.Labels == nil && len(config.Spec.Labels) == 0) {
+		return NotChanged, nil
+	}
+	cluster, err := GetCluster(ctx, client, &config.Spec)
+	if err != nil {
+		return NotChanged, err
+	}
+	logrus.Infof("updating cluster labels for cluster [%s]", config.Name)
+	_, err = client.Projects.
+		Locations.
+		Clusters.
+		SetResourceLabels(
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.SetLabelsRequest{
+				LabelFingerprint: cluster.LabelFingerprint,
+				ResourceLabels:   config.Spec.Labels,
+			},
+		).Context(ctx).
+		Do()
+	if err != nil {
+		return NotChanged, err
+	}
+	return Changed, nil
+}
+
 // UpdateNodePoolKubernetesVersionOrImageType sends a combined request to
 // update either the node pool Kubernetes version or image type or both. These
 // attributes are among the few that can be updated in the same request.
@@ -551,6 +582,15 @@ func UpdateNodePoolManagement(
 		return Changed, nil
 	}
 	return NotChanged, nil
+}
+
+func GetCluster(ctx context.Context, client *gkeapi.Service, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
+	return client.Projects.
+		Locations.
+		Clusters.
+		Get(ClusterRRN(configSpec.ProjectID, Location(configSpec.Region, configSpec.Zone), configSpec.ClusterName)).
+		Context(ctx).
+		Do()
 }
 
 func compareCidrBlockPointerSlices(lh, rh []*gkev1.GKECidrBlock) bool {

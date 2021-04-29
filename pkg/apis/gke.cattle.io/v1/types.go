@@ -37,6 +37,7 @@ type GKEClusterConfigSpec struct {
 	Zone                           string                             `json:"zone" norman:"noupdate"`
 	Imported                       bool                               `json:"imported" norman:"noupdate"`
 	Description                    string                             `json:"description"`
+	Labels                         map[string]string                  `json:"labels"`
 	EnableKubernetesAlpha          *bool                              `json:"enableKubernetesAlpha"`
 	ClusterAddons                  *GKEClusterAddons                  `json:"clusterAddons"`
 	ClusterIpv4CidrBlock           *string                            `json:"clusterIpv4Cidr"`
