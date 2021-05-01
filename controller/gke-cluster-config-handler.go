@@ -289,7 +289,6 @@ func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 }
 
 func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (*gkev1.GKEClusterConfig, error) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -371,13 +370,18 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	}
 
 	if config.Spec.NodePools != nil {
-		upstreamNodePools := buildNodePoolMap(upstreamSpec.NodePools)
+		downstreamNodePools, err := buildNodePoolMap(config.Spec.NodePools, config.Name)
+		if err != nil {
+			return config, err
+		}
+
+		upstreamNodePools, _ := buildNodePoolMap(upstreamSpec.NodePools, config.Name)
 		nodePoolsNeedUpdate := false
-		for _, np := range config.Spec.NodePools {
-			upstreamNodePool, ok := upstreamNodePools[*np.Name]
+		for npName, np := range downstreamNodePools {
+			upstreamNodePool, ok := upstreamNodePools[npName]
 			if ok {
 				// There is a matching nodepool in the cluster already, so update it if needed
-				changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, client, &np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, client, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -388,7 +392,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolSize(ctx, client, &np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolSize(ctx, client, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -399,7 +403,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolAutoscaling(ctx, client, &np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolAutoscaling(ctx, client, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -410,7 +414,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolManagement(ctx, client, &np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolManagement(ctx, client, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -423,7 +427,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 			} else {
 				// There is no nodepool with this name yet, create it
 				logrus.Infof("adding node pool [%s] to cluster [%s]", *np.Name, config.Name)
-				if changed, err = gke.CreateNodePool(ctx, client, config, &np); err != nil {
+				if changed, err = gke.CreateNodePool(ctx, client, config, np); err != nil {
 					return config, err
 				}
 				if changed == gke.Changed || changed == gke.Retry {
@@ -431,11 +435,11 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 				}
 			}
 		}
-		downstreamNodePools := buildNodePoolMap(config.Spec.NodePools)
-		for _, np := range upstreamSpec.NodePools {
-			if _, ok := downstreamNodePools[*np.Name]; !ok {
-				logrus.Infof("removing node pool [%s] from cluster [%s]", *np.Name, config.Name)
-				if changed, err = gke.RemoveNodePool(ctx, client, config, *np.Name); err != nil {
+
+		for npName := range upstreamNodePools {
+			if _, ok := downstreamNodePools[npName]; !ok {
+				logrus.Infof("removing node pool [%s] from cluster [%s]", npName, config.Name)
+				if changed, err = gke.RemoveNodePool(ctx, client, config, npName); err != nil {
 					return config, err
 				}
 				if changed == gke.Changed || changed == gke.Retry {
@@ -506,14 +510,17 @@ func parseCredential(ref string) (namespace string, name string) {
 	return parts[0], parts[1]
 }
 
-func buildNodePoolMap(nodePools []gkev1.GKENodePoolConfig) map[string]*gkev1.GKENodePoolConfig {
-	ret := make(map[string]*gkev1.GKENodePoolConfig)
+func buildNodePoolMap(nodePools []gkev1.GKENodePoolConfig, clusterName string) (map[string]*gkev1.GKENodePoolConfig, error) {
+	ret := make(map[string]*gkev1.GKENodePoolConfig, len(nodePools))
 	for i := range nodePools {
 		if nodePools[i].Name != nil {
+			if _, ok := ret[*nodePools[i].Name]; ok {
+				return nil, fmt.Errorf("cluster [%s] cannot have multiple nodepools with name %s", clusterName, *nodePools[i].Name)
+			}
 			ret[*nodePools[i].Name] = &nodePools[i]
 		}
 	}
-	return ret
+	return ret, nil
 }
 
 func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
