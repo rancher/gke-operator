@@ -12,6 +12,7 @@ import (
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+	"k8s.io/client-go/util/retry"
 
 	gkeapi "google.golang.org/api/container/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -283,9 +284,17 @@ func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 		h.gkeEnqueue(config.Namespace, config.Name)
 		return config, nil
 	}
-	config = config.DeepCopy()
-	config.Status.Phase = gkeConfigUpdatingPhase
-	return h.gkeCC.UpdateStatus(config)
+	err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		var err error
+		config, err = h.gkeCC.Get(config.Namespace, config.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		config.Status.Phase = gkeConfigUpdatingPhase
+		config, err = h.gkeCC.UpdateStatus(config)
+		return err
+	})
+	return config, err
 }
 
 func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (*gkev1.GKEClusterConfig, error) {
