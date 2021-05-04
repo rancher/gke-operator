@@ -560,7 +560,11 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 			Enabled: false,
 		},
 		Locations: cluster.Locations,
-		Labels:    cluster.ResourceLabels,
+	}
+	if cluster.ResourceLabels == nil {
+		newSpec.Labels = make(map[string]string, 0)
+	} else {
+		newSpec.Labels = cluster.ResourceLabels
 	}
 
 	networkPolicyEnabled := false
