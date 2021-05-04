@@ -7,11 +7,13 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Network Providers
@@ -373,22 +375,37 @@ func UpdateLabels(
 	if config.Spec.Labels == nil || reflect.DeepEqual(config.Spec.Labels, upstreamSpec.Labels) || (upstreamSpec.Labels == nil && len(config.Spec.Labels) == 0) {
 		return NotChanged, nil
 	}
-	cluster, err := GetCluster(ctx, client, &config.Spec)
-	if err != nil {
-		return NotChanged, err
-	}
 	logrus.Infof("updating cluster labels for cluster [%s]", config.Name)
-	_, err = client.Projects.
-		Locations.
-		Clusters.
-		SetResourceLabels(
-			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-			&gkeapi.SetLabelsRequest{
-				LabelFingerprint: cluster.LabelFingerprint,
-				ResourceLabels:   config.Spec.Labels,
-			},
-		).Context(ctx).
-		Do()
+	backoff := wait.Backoff{
+		Duration: 5 * time.Second,
+		Steps:    2,
+	}
+	err := wait.ExponentialBackoff(backoff, func() (bool, error) {
+		cluster, err := GetCluster(ctx, client, &config.Spec)
+		if err != nil {
+			return false, err
+		}
+		_, err = client.Projects.
+			Locations.
+			Clusters.
+			SetResourceLabels(
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.SetLabelsRequest{
+					LabelFingerprint: cluster.LabelFingerprint,
+					ResourceLabels:   config.Spec.Labels,
+				},
+			).Context(ctx).
+			Do()
+		if err != nil && strings.Contains(err.Error(), "Labels could not be set due to fingerprint mismatch") {
+			logrus.Debug("retrying label update")
+			return false, nil
+		}
+		if err != nil {
+			logrus.Debugf("error during label update: %v", err)
+			return false, err
+		}
+		return true, nil
+	})
 	if err != nil {
 		return NotChanged, err
 	}
