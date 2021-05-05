@@ -202,6 +202,7 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 		return nil
 	}
 
+	emptyString := ""
 	if config.Spec.EnableKubernetesAlpha == nil {
 		return fmt.Errorf(cannotBeNilError, "enableKubernetesAlpha", config.Name)
 	}
@@ -209,43 +210,43 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
 	}
 	if config.Spec.ClusterIpv4CidrBlock == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterIpv4CidrBlock", config.Name)
+		config.Spec.ClusterIpv4CidrBlock = &emptyString
 	}
 	if config.Spec.ClusterAddons == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterAddons", config.Name)
+		config.Spec.ClusterAddons = &gkev1.GKEClusterAddons{}
 	}
 	if config.Spec.IPAllocationPolicy == nil {
-		return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
+		config.Spec.IPAllocationPolicy = &gkev1.GKEIPAllocationPolicy{}
 	}
 	if config.Spec.LoggingService == nil {
-		return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
+		config.Spec.LoggingService = &emptyString
 	}
 	if config.Spec.Network == nil {
-		return fmt.Errorf(cannotBeNilError, "network", config.Name)
+		config.Spec.Network = &emptyString
 	}
 	if config.Spec.Subnetwork == nil {
-		return fmt.Errorf(cannotBeNilError, "subnetwork", config.Name)
+		config.Spec.Subnetwork = &emptyString
 	}
 	if config.Spec.NetworkPolicyEnabled == nil {
 		return fmt.Errorf(cannotBeNilError, "networkPolicyEnabled", config.Name)
 	}
 	if config.Spec.PrivateClusterConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Name)
+		config.Spec.PrivateClusterConfig = &gkev1.GKEPrivateClusterConfig{}
 	}
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Name)
+		config.Spec.MasterAuthorizedNetworksConfig = &gkev1.GKEMasterAuthorizedNetworksConfig{}
 	}
 	if config.Spec.MonitoringService == nil {
-		return fmt.Errorf(cannotBeNilError, "monitoringService", config.Name)
+		config.Spec.MonitoringService = &emptyString
 	}
 	if config.Spec.Locations == nil {
-		return fmt.Errorf(cannotBeNilError, "locations", config.Name)
+		config.Spec.Locations = []string{}
 	}
 	if config.Spec.MaintenanceWindow == nil {
-		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Name)
+		config.Spec.MaintenanceWindow = &emptyString
 	}
 	if config.Spec.Labels == nil {
-		return fmt.Errorf(cannotBeNilError, "labels", config.Name)
+		config.Spec.Labels = map[string]string{}
 	}
 
 	for _, np := range config.Spec.NodePools {
@@ -267,7 +268,7 @@ func validateNodePoolCreateRequest(clusterName string, np *gkev1.GKENodePoolConf
 		return fmt.Errorf(nodePoolErr, "version", *np.Name, clusterName)
 	}
 	if np.Autoscaling == nil {
-		return fmt.Errorf(nodePoolErr, "autoscaling", *np.Name, clusterName)
+		np.Autoscaling = &gkev1.GKENodePoolAutoscaling{}
 	}
 	if np.InitialNodeCount == nil {
 		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, clusterName)
@@ -276,10 +277,10 @@ func validateNodePoolCreateRequest(clusterName string, np *gkev1.GKENodePoolConf
 		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, clusterName)
 	}
 	if np.Config == nil {
-		return fmt.Errorf(nodePoolErr, "config", *np.Name, clusterName)
+		np.Config = &gkev1.GKENodeConfig{}
 	}
 	if np.Management == nil {
-		return fmt.Errorf(nodePoolErr, "management", *np.Name, clusterName)
+		np.Management = &gkev1.GKENodePoolManagement{}
 	}
 	return nil
 }
