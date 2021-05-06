@@ -38,14 +38,14 @@ func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKECluste
 
 // CreateNodePool creates an upstream node pool with the given cluster as a parent.
 func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.GKENodePoolConfig) (Status, error) {
-	err := validateNodePoolCreateRequest(config.Spec.ClusterName, nodePoolConfig)
+	err := validateNodePoolCreateRequest(nodePoolConfig, config)
 	if err != nil {
 		return NotChanged, err
 	}
 
 	createNodePoolRequest, err := newNodePoolCreateRequest(
-		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 		nodePoolConfig,
+		config,
 	)
 	if err != nil {
 		return NotChanged, err
@@ -116,7 +116,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
 
 	for _, np := range config.Spec.NodePools {
-		nodePool := newGKENodePoolFromConfig(&np)
+		nodePool := newGKENodePoolFromConfig(&np, config)
 		request.Cluster.NodePools = append(request.Cluster.NodePools, nodePool)
 	}
 
@@ -249,7 +249,7 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 
 	for _, np := range config.Spec.NodePools {
-		if err = validateNodePoolCreateRequest(config.Spec.ClusterName, &np); err != nil {
+		if err = validateNodePoolCreateRequest(&np, config); err != nil {
 			return err
 		}
 	}
@@ -257,9 +257,10 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	return nil
 }
 
-func validateNodePoolCreateRequest(clusterName string, np *gkev1.GKENodePoolConfig) error {
+func validateNodePoolCreateRequest(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClusterConfig) error {
 	clusterErr := cannotBeNilError
 	nodePoolErr := cannotBeNilForNodePoolError
+	clusterName := config.Spec.ClusterName
 	if np.Name == nil {
 		return fmt.Errorf(clusterErr, "nodePool.name", clusterName)
 	}
@@ -272,7 +273,7 @@ func validateNodePoolCreateRequest(clusterName string, np *gkev1.GKENodePoolConf
 	if np.InitialNodeCount == nil {
 		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, clusterName)
 	}
-	if np.MaxPodsConstraint == nil {
+	if np.MaxPodsConstraint == nil && config.Spec.IPAllocationPolicy != nil && config.Spec.IPAllocationPolicy.UseIPAliases {
 		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, clusterName)
 	}
 	if np.Config == nil {
@@ -284,15 +285,16 @@ func validateNodePoolCreateRequest(clusterName string, np *gkev1.GKENodePoolConf
 	return nil
 }
 
-func newNodePoolCreateRequest(parent string, np *gkev1.GKENodePoolConfig) (*gkeapi.CreateNodePoolRequest, error) {
+func newNodePoolCreateRequest(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClusterConfig) (*gkeapi.CreateNodePoolRequest, error) {
+	parent := ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName)
 	request := &gkeapi.CreateNodePoolRequest{
 		Parent:   parent,
-		NodePool: newGKENodePoolFromConfig(np),
+		NodePool: newGKENodePoolFromConfig(np, config),
 	}
 	return request, nil
 }
 
-func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig) *gkeapi.NodePool {
+func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClusterConfig) *gkeapi.NodePool {
 	taints := make([]*gkeapi.NodeTaint, 0, len(np.Config.Taints))
 	for _, t := range np.Config.Taints {
 		taints = append(taints, &gkeapi.NodeTaint{
@@ -301,7 +303,7 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig) *gkeapi.NodePool {
 			Value:  t.Value,
 		})
 	}
-	return &gkeapi.NodePool{
+	ret := &gkeapi.NodePool{
 		Name: *np.Name,
 		Autoscaling: &gkeapi.NodePoolAutoscaling{
 			Enabled:      np.Autoscaling.Enabled,
@@ -320,13 +322,16 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig) *gkeapi.NodePool {
 			Preemptible:   np.Config.Preemptible,
 			Taints:        taints,
 		},
-		MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
-			MaxPodsPerNode: *np.MaxPodsConstraint,
-		},
 		Version: *np.Version,
 		Management: &gkeapi.NodeManagement{
 			AutoRepair:  np.Management.AutoRepair,
 			AutoUpgrade: np.Management.AutoUpgrade,
 		},
 	}
+	if config.Spec.IPAllocationPolicy != nil && config.Spec.IPAllocationPolicy.UseIPAliases {
+		ret.MaxPodsConstraint = &gkeapi.MaxPodsConstraint{
+			MaxPodsPerNode: *np.MaxPodsConstraint,
+		}
+	}
+	return ret
 }
