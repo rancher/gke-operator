@@ -371,7 +371,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	if err != nil {
 		return config, err
 	}
-	if changed == gke.Changed {
+	if changed == gke.Changed || changed == gke.Retry {
 		return h.enqueueUpdate(config)
 	}
 
