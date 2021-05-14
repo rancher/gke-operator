@@ -40,22 +40,22 @@ type GKEClusterConfigSpec struct {
 	Labels                         map[string]string                  `json:"labels"`
 	EnableKubernetesAlpha          *bool                              `json:"enableKubernetesAlpha"`
 	ClusterAddons                  *GKEClusterAddons                  `json:"clusterAddons"`
-	ClusterIpv4CidrBlock           *string                            `json:"clusterIpv4Cidr"`
+	ClusterIpv4CidrBlock           *string                            `json:"clusterIpv4Cidr" norman:"type=nullablestring"`
 	ProjectID                      string                             `json:"projectID"`
 	GoogleCredentialSecret         string                             `json:"googleCredentialSecret"`
 	ClusterName                    string                             `json:"clusterName"`
-	KubernetesVersion              *string                            `json:"kubernetesVersion"`
-	LoggingService                 *string                            `json:"loggingService"`
-	MonitoringService              *string                            `json:"monitoringService"`
+	KubernetesVersion              *string                            `json:"kubernetesVersion" norman:"type=nullablestring"`
+	LoggingService                 *string                            `json:"loggingService" norman:"type=nullablestring"`
+	MonitoringService              *string                            `json:"monitoringService" norman:"type=nullablestring"`
 	NodePools                      []GKENodePoolConfig                `json:"nodePools"`
-	Network                        *string                            `json:"network,omitempty"`
-	Subnetwork                     *string                            `json:"subnetwork,omitempty"`
+	Network                        *string                            `json:"network,omitempty" norman:"type=nullablestring"`
+	Subnetwork                     *string                            `json:"subnetwork,omitempty" norman:"type=nullablestring"`
 	NetworkPolicyEnabled           *bool                              `json:"networkPolicyEnabled,omitempty"`
 	PrivateClusterConfig           *GKEPrivateClusterConfig           `json:"privateClusterConfig,omitempty"`
 	IPAllocationPolicy             *GKEIPAllocationPolicy             `json:"ipAllocationPolicy,omitempty"`
 	MasterAuthorizedNetworksConfig *GKEMasterAuthorizedNetworksConfig `json:"masterAuthorizedNetworks,omitempty"`
 	Locations                      []string                           `json:"locations"`
-	MaintenanceWindow              *string                            `json:"maintenanceWindow,omitempty"`
+	MaintenanceWindow              *string                            `json:"maintenanceWindow,omitempty" norman:"type=nullablestring"`
 }
 
 type GKEIPAllocationPolicy struct {
@@ -91,8 +91,8 @@ type GKENodePoolConfig struct {
 	Config            *GKENodeConfig          `json:"config,omitempty"`
 	InitialNodeCount  *int64                  `json:"initialNodeCount,omitempty"`
 	MaxPodsConstraint *int64                  `json:"maxPodsConstraint,omitempty"`
-	Name              *string                 `json:"name,omitempty"`
-	Version           *string                 `json:"version,omitempty"`
+	Name              *string                 `json:"name,omitempty" norman:"type=nullablestring"`
+	Version           *string                 `json:"version,omitempty" norman:"type=nullablestring"`
 	Management        *GKENodePoolManagement  `json:"management,omitempty"`
 }
 
