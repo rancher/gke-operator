@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rancher/gke-operator/internal/gke"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
+	"github.com/rancher/gke-operator/pkg/gke"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"

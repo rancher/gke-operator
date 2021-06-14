@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rancher/gke-operator/internal/utils"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
+	"github.com/rancher/gke-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
 )
