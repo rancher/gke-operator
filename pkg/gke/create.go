@@ -323,6 +323,7 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClus
 			MachineType:   np.Config.MachineType,
 			OauthScopes:   np.Config.OauthScopes,
 			Preemptible:   np.Config.Preemptible,
+			Tags:          np.Config.Tags,
 			Taints:        taints,
 		},
 		Version: *np.Version,

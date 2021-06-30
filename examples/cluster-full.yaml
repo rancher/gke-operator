@@ -41,6 +41,9 @@ spec:
       - "https://www.googleapis.com/auth/compute"
       - "https://www.googleapis.com/auth/devstorage.read_only"
       - "https://www.googleapis.com/auth/cloud-platform"
+      tags:
+      - "red"
+      - "blue"
       taints:
       - effect: NO_SCHEDULE
         key: group
@@ -69,6 +72,9 @@ spec:
       preemptible: false
       oauthScopes: []
       taints: []
+      tags:
+      - "green"
+      - "yellow"
     labels:
     - "one"
     - "two"
