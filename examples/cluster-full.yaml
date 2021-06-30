@@ -9,7 +9,7 @@ spec:
     foo: bar
   zone: "us-west1-a"
   projectID: "example-project"
-  kubernetesVersion: "1.18.16-gke.302"
+  kubernetesVersion: "1.19.10-gke.1600"
   loggingService: "none"
   monitoringService: "none"
   enableKubernetesAlpha: true
@@ -50,7 +50,7 @@ spec:
     - "bar"
     initialNodeCount: 3
     maxPodsConstraint: 55
-    version: "1.18.16-gke.302"
+    version: "1.19.10-gke.1600"
     management:
       autoRepair: false
       autoUpgrade: false
@@ -74,7 +74,7 @@ spec:
     - "two"
     initialNodeCount: 3
     maxPodsConstraint: 110
-    version: "1.18.16-gke.302"
+    version: "1.19.10-gke.1600"
     management:
       autoRepair: false
       autoUpgrade: false
