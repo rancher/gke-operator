@@ -4,4 +4,5 @@ ENV KUBECONFIG /root/.kube/config
 RUN microdnf update -y && \
     rm -rf /var/cache/yum
 COPY bin/gke-operator /usr/bin/
+USER 1001
 ENTRYPOINT ["gke-operator"]
