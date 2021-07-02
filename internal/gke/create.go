@@ -147,7 +147,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		}
 	}
 
-	if config.Spec.PrivateClusterConfig != nil {
+	if config.Spec.PrivateClusterConfig != nil && config.Spec.PrivateClusterConfig.EnablePrivateNodes {
 		request.Cluster.PrivateClusterConfig = &gkeapi.PrivateClusterConfig{
 			EnablePrivateEndpoint: config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
 			EnablePrivateNodes:    config.Spec.PrivateClusterConfig.EnablePrivateNodes,
@@ -231,6 +231,9 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 	}
 	if config.Spec.PrivateClusterConfig == nil {
 		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Name)
+	}
+	if config.Spec.PrivateClusterConfig.EnablePrivateEndpoint && !config.Spec.PrivateClusterConfig.EnablePrivateNodes {
+		return fmt.Errorf("private endpoint requires private nodes for cluster [%s]", config.Name)
 	}
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
 		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Name)
