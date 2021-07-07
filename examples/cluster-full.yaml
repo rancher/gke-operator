@@ -9,7 +9,7 @@ spec:
     foo: bar
   zone: "us-west1-a"
   projectID: "example-project"
-  kubernetesVersion: "1.18.16-gke.302"
+  kubernetesVersion: "1.19.10-gke.1600"
   loggingService: "none"
   monitoringService: "none"
   enableKubernetesAlpha: true
@@ -41,6 +41,9 @@ spec:
       - "https://www.googleapis.com/auth/compute"
       - "https://www.googleapis.com/auth/devstorage.read_only"
       - "https://www.googleapis.com/auth/cloud-platform"
+      tags:
+      - "red"
+      - "blue"
       taints:
       - effect: NO_SCHEDULE
         key: group
@@ -50,7 +53,7 @@ spec:
     - "bar"
     initialNodeCount: 3
     maxPodsConstraint: 55
-    version: "1.18.16-gke.302"
+    version: "1.19.10-gke.1600"
     management:
       autoRepair: false
       autoUpgrade: false
@@ -69,12 +72,15 @@ spec:
       preemptible: false
       oauthScopes: []
       taints: []
+      tags:
+      - "green"
+      - "yellow"
     labels:
     - "one"
     - "two"
     initialNodeCount: 3
     maxPodsConstraint: 110
-    version: "1.18.16-gke.302"
+    version: "1.19.10-gke.1600"
     management:
       autoRepair: false
       autoUpgrade: false
