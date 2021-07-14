@@ -638,9 +638,10 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		}
 
 		newNP := gkev1.GKENodePoolConfig{
-			Name:             &np.Name,
-			Version:          &np.Version,
-			InitialNodeCount: &np.InitialNodeCount,
+			Name:              &np.Name,
+			Version:           &np.Version,
+			InitialNodeCount:  &np.InitialNodeCount,
+			MaxPodsConstraint: &np.MaxPodsConstraint.MaxPodsPerNode,
 		}
 
 		if np.Config != nil {
@@ -679,9 +680,6 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 			}
 		}
 
-		if np.MaxPodsConstraint != nil {
-			newNP.MaxPodsConstraint = &np.MaxPodsConstraint.MaxPodsPerNode
-		}
 		newSpec.NodePools = append(newSpec.NodePools, newNP)
 	}
 
