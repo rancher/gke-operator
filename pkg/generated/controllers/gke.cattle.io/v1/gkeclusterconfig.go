@@ -360,6 +360,10 @@ func (a *gKEClusterConfigGeneratingHandler) Remove(key string, obj *v1.GKECluste
 }
 
 func (a *gKEClusterConfigGeneratingHandler) Handle(obj *v1.GKEClusterConfig, status v1.GKEClusterConfigStatus) (v1.GKEClusterConfigStatus, error) {
+	if !obj.DeletionTimestamp.IsZero() {
+		return status, nil
+	}
+
 	objs, newStatus, err := a.GKEClusterConfigGeneratingHandler(obj, status)
 	if err != nil {
 		return newStatus, err
