@@ -649,6 +649,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 				LocalSsdCount: np.Config.LocalSsdCount,
 				MachineType:   np.Config.MachineType,
 				Preemptible:   np.Config.Preemptible,
+				Tags:          np.Config.Tags,
 			}
 
 			newNP.Config.Taints = make([]gkev1.GKENodeTaintConfig, 0, len(np.Config.Taints))
