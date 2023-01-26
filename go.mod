@@ -6,7 +6,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.21.2
 
 require (
 	github.com/rancher/lasso v0.0.0-20210616224652-fc3ebd901c08
-	github.com/rancher/wrangler v0.8.10
+	github.com/rancher/wrangler v0.8.11
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/sirupsen/logrus v1.6.0
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
