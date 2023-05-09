@@ -71,7 +71,6 @@ func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 
 // newClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
-
 	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
@@ -115,8 +114,8 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 
 	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
 
-	for _, np := range config.Spec.NodePools {
-		nodePool := newGKENodePoolFromConfig(&np, config)
+	for np := range config.Spec.NodePools {
+		nodePool := newGKENodePoolFromConfig(&config.Spec.NodePools[np], config)
 		request.Cluster.NodePools = append(request.Cluster.NodePools, nodePool)
 	}
 
@@ -251,8 +250,8 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 		return fmt.Errorf(cannotBeNilError, "labels", config.Name)
 	}
 
-	for _, np := range config.Spec.NodePools {
-		if err = validateNodePoolCreateRequest(&np, config); err != nil {
+	for np := range config.Spec.NodePools {
+		if err = validateNodePoolCreateRequest(&config.Spec.NodePools[np], config); err != nil {
 			return err
 		}
 	}

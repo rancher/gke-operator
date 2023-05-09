@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	v12 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
+	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	_ "github.com/rancher/wrangler-api/pkg/generated/controllers/apiextensions.k8s.io"
 	controllergen "github.com/rancher/wrangler/pkg/controller-gen"
 	"github.com/rancher/wrangler/pkg/controller-gen/args"
 	"github.com/rancher/wrangler/pkg/crd"
 	"github.com/rancher/wrangler/pkg/yaml"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -33,9 +33,9 @@ func main() {
 			// In this controller we will use wrangler-api for apps api group
 			"": {
 				Types: []interface{}{
-					v1.Pod{},
-					v1.Node{},
-					v1.Secret{},
+					corev1.Pod{},
+					corev1.Node{},
+					corev1.Secret{},
 				},
 				InformersPackage: "k8s.io/client-go/informers",
 				ClientSetPackage: "k8s.io/client-go/kubernetes",
@@ -44,7 +44,7 @@ func main() {
 		},
 	})
 
-	gkeClusterConfig := newCRD(&v12.GKEClusterConfig{}, func(c crd.CRD) crd.CRD {
+	gkeClusterConfig := newCRD(&gkev1.GKEClusterConfig{}, func(c crd.CRD) crd.CRD {
 		c.ShortNames = []string{"gkecc"}
 		return c
 	})
