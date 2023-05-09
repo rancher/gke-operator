@@ -7,7 +7,7 @@ import (
 	"time"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
-	v12 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
+	gkecontrollers "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke"
 	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
@@ -62,7 +62,7 @@ const (
 )
 
 type Handler struct {
-	gkeCC           v12.GKEClusterConfigClient
+	gkeCC           gkecontrollers.GKEClusterConfigClient
 	gkeEnqueueAfter func(namespace, name string, duration time.Duration)
 	gkeEnqueue      func(namespace, name string)
 	secrets         wranglerv1.SecretClient
@@ -72,8 +72,7 @@ type Handler struct {
 func Register(
 	ctx context.Context,
 	secrets wranglerv1.SecretController,
-	gke v12.GKEClusterConfigController) {
-
+	gke gkecontrollers.GKEClusterConfigController) {
 	controller := &Handler{
 		gkeCC:           gke,
 		gkeEnqueue:      gke.Enqueue,
@@ -87,7 +86,7 @@ func Register(
 	gke.OnRemove(ctx, controllerRemoveName, controller.OnGkeConfigRemoved)
 }
 
-func (h *Handler) OnGkeConfigChanged(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+func (h *Handler) OnGkeConfigChanged(_ string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config == nil {
 		return nil, nil
 	}
@@ -173,7 +172,7 @@ func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 	return h.gkeCC.UpdateStatus(config)
 }
 
-func (h *Handler) OnGkeConfigRemoved(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
 		logrus.Infof("cluster [%s] is imported, will not delete GKE cluster", config.Name)
 		return config, nil
@@ -495,7 +494,7 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	return config, nil
 }
 
-func getSecret(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
+func getSecret(_ context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
 	ns, id := parseCredential(configSpec.GoogleCredentialSecret)
 	secret, err := secretsCache.Get(ns, id)
 	if err != nil {
@@ -722,7 +721,6 @@ func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi
 }
 
 func GetTokenSource(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (oauth2.TokenSource, error) {
-
 	cred, err := getSecret(ctx, secretsCache, configSpec)
 	if err != nil {
 		return nil, fmt.Errorf("error getting secret: %w", err)
