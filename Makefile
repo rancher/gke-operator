@@ -36,6 +36,10 @@ generate:
 	$(MAKE) generate-go
 	$(MAKE) generate-crd
 
+.PHONY: operator
+operator:
+	go build -o bin/gke-operator main.go
+
 ALL_VERIFY_CHECKS = generate
 
 .PHONY: verify
