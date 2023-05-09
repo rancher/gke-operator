@@ -9,8 +9,17 @@ MOCKGEN_BIN := mockgen
 MOCKGEN := $(BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 MOCKGEN_PKG := github.com/golang/mock/mockgen
 
+GO_APIDIFF_VER := v0.6.0
+GO_APIDIFF_BIN := go-apidiff
+GO_APIDIFF := $(BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER)
+GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
+
+
 $(MOCKGEN):
 	GOBIN=$(BIN_DIR) $(GO_INSTALL) $(MOCKGEN_PKG) $(MOCKGEN_BIN) $(MOCKGEN_VER)
+
+$(GO_APIDIFF):
+	GOBIN=$(BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
 
 .dapper:
 	@echo Downloading dapper
