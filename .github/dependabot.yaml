@@ -9,8 +9,6 @@ updates:
     interval: "weekly"
   commit-message:
     prefix: ":seedling:"
-  labels:
-    - "ok-to-test"
 # Go
 - package-ecosystem: "gomod"
   directory: "/"
@@ -26,5 +24,3 @@ updates:
     - dependency-name: "github.com/rancher/wrangler"
   commit-message:
     prefix: ":seedling:"
-  labels:
-    - "ok-to-test"
