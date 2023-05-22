@@ -10,7 +10,7 @@ require (
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/sirupsen/logrus v1.9.2
 	golang.org/x/oauth2 v0.8.0
-	google.golang.org/api v0.122.0
+	google.golang.org/api v0.123.0
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
 	k8s.io/client-go v12.0.0+incompatible
