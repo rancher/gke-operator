@@ -10,7 +10,7 @@ require (
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/oauth2 v0.8.0
-	google.golang.org/api v0.126.0
+	google.golang.org/api v0.128.0
 	k8s.io/api v0.25.4
 	k8s.io/apimachinery v0.25.4
 	k8s.io/client-go v12.0.0+incompatible
@@ -37,7 +37,7 @@ require (
 	github.com/google/gofuzz v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.2.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.10.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
