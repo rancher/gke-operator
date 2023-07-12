@@ -429,6 +429,17 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					// further updates will be retried if needed on the next reconcile loop
 					continue
 				}
+
+				changed, err = gke.UpdateNodePoolConfig(ctx, client, np, config, upstreamNodePool)
+				if err != nil {
+					return config, err
+				}
+				if changed == gke.Changed || changed == gke.Retry {
+					nodePoolsNeedUpdate = true
+					// cannot make further updates while an operation is pending,
+					// further updates will be retried if needed on the next reconcile loop
+					continue
+				}
 			} else {
 				// There is no nodepool with this name yet, create it
 				logrus.Infof("adding node pool [%s] to cluster [%s]", *np.Name, config.Name)
