@@ -588,6 +588,43 @@ func UpdateNodePoolManagement(
 	return NotChanged, nil
 }
 
+// UpdateNodePoolConfig updates the configured parameters for a given node pool.
+// If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
+func UpdateNodePoolConfig(
+	ctx context.Context,
+	client *gkeapi.Service,
+	nodePool *gkev1.GKENodePoolConfig,
+	config *gkev1.GKEClusterConfig,
+	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
+	if nodePool.Config.Labels == nil || reflect.DeepEqual(nodePool.Config.Labels, upstreamNodePool.Config.Labels) || (upstreamNodePool.Config.Labels == nil && len(nodePool.Config.Labels) == 0) {
+		return NotChanged, nil
+	}
+
+	updateRequest := &gkeapi.UpdateNodePoolRequest{
+		Labels: &gkeapi.NodeLabels{
+			Labels: nodePool.Config.Labels,
+		},
+	}
+
+	logrus.Infof("updating config for node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
+	_, err := client.Projects.
+		Locations.
+		Clusters.
+		NodePools.Update(
+		NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+		updateRequest,
+	).Context(ctx).
+		Do()
+	if err != nil {
+		if strings.Contains(err.Error(), errWait) {
+			logrus.Debugf("error %v updating node pool, will retry", err)
+			return Retry, nil
+		}
+		return NotChanged, err
+	}
+	return Changed, nil
+}
+
 func GetCluster(ctx context.Context, client *gkeapi.Service, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
 	return client.Projects.
 		Locations.
