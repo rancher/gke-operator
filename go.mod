@@ -5,6 +5,9 @@ go 1.19
 replace k8s.io/client-go => k8s.io/client-go v0.25.4
 
 require (
+	github.com/golang/mock v1.6.0
+	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/onsi/gomega v1.20.1
 	github.com/rancher/lasso v0.0.0-20210616224652-fc3ebd901c08
 	github.com/rancher/wrangler v1.0.2
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
