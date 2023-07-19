@@ -35,6 +35,7 @@ steps:
   when:
     ref:
       - refs/head/master
+      - refs/head/rancher/v2.6
       - refs/tags/*
     event:
       - tag
@@ -107,6 +108,7 @@ steps:
   when:
     ref:
       - refs/head/master
+      - refs/head/rancher/v2.6
       - refs/tags/*
     event:
       - tag

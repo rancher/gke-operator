@@ -542,8 +542,8 @@ github.com/rancher/lasso v0.0.0-20200427171700-e0509f89f319/go.mod h1:6Dw19z1lDI
 github.com/rancher/lasso v0.0.0-20221221222919-b7ec3b315a41 h1:aLrR2YsP7Q9mlclzPOK/5PhyEGn7JIK2Fz0uCaeXEks=
 github.com/rancher/lasso v0.0.0-20221221222919-b7ec3b315a41/go.mod h1:dEfC9eFQigj95lv/JQ8K5e7+qQCacWs1aIA6nLxKzT8=
 github.com/rancher/wrangler v0.6.2-0.20200427172034-da9b142ae061/go.mod h1:n5Du/gGD7WoiqnEo0SHnPirDIp1V9Zu+6guc8lXS2dk=
-github.com/rancher/wrangler v1.0.1-0.20230208234005-a59a11cc3ef5 h1:NrOPBlG0zswdgpAe6Db1rrzNpP2tpJytUiZ25LJHo+k=
-github.com/rancher/wrangler v1.0.1-0.20230208234005-a59a11cc3ef5/go.mod h1:045DEilEDtD9RJLQcChKbI2hAa26MOQ78VJ2yaKihXs=
+github.com/rancher/wrangler v1.0.1 h1:toavOGC1+eaZufcOJD6UyIf+aGM4rlJjPqm511Ls4sI=
+github.com/rancher/wrangler v1.0.1/go.mod h1:Blhan9LdaIJjC9w+xGteSrHHEiIFIdPEHEMrtx82dPk=
 github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e h1:UJpGtw6IKs0dHPTF+6Wd12lskeCZZAejl8/ie/fc1+0=
 github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e/go.mod h1:2lcWR98q8HU3U4mVETnXc8quNG0uXxrt8vKd6cAa/30=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
