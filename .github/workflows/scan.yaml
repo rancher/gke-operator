@@ -1,0 +1,38 @@
+name: Scan
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - rancher/v2.6
+    tags:
+      - "v*"
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Build binary
+        run: make build
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2.9.1
+      - name: Build image
+        uses: docker/build-push-action@v4.1.1
+        with:
+          context: .
+          tags: ghcr.io/rancher/gke-operator:${{ github.sha }}
+          load: true
+          push: false
+          file: package/Dockerfile
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "ghcr.io/rancher/gke-operator:${{ github.sha }}"
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
