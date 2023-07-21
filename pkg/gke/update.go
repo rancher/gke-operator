@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
+	"github.com/rancher/gke-operator/pkg/gke/services"
 	"github.com/rancher/gke-operator/pkg/utils"
 	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
@@ -34,7 +35,7 @@ const (
 
 // UpdateMasterKubernetesVersion updates the Kubernetes version for the control plane.
 // This must occur before the Kubernetes version is changed on the nodes.
-func UpdateMasterKubernetesVersion(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+func UpdateMasterKubernetesVersion(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	kubeVersion := utils.StringValue(config.Spec.KubernetesVersion)
 	if kubeVersion == "" {
 		return NotChanged, nil
@@ -45,18 +46,14 @@ func UpdateMasterKubernetesVersion(ctx context.Context, client *gkeapi.Service, 
 	}
 
 	logrus.Infof("updating kubernetes version for cluster [%s]", config.Name)
-	_, err := client.Projects.
-		Locations.
-		Clusters.
-		Update(
-			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-			&gkeapi.UpdateClusterRequest{
-				Update: &gkeapi.ClusterUpdate{
-					DesiredMasterVersion: kubeVersion,
-				},
+	_, err := gkeClient.ClusterUpdate(ctx,
+		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+		&gkeapi.UpdateClusterRequest{
+			Update: &gkeapi.ClusterUpdate{
+				DesiredMasterVersion: kubeVersion,
 			},
-		).Context(ctx).
-		Do()
+		},
+	)
 	if err != nil {
 		return NotChanged, err
 	}
@@ -65,7 +62,7 @@ func UpdateMasterKubernetesVersion(ctx context.Context, client *gkeapi.Service, 
 
 // UpdateClusterAddons updates the cluster addons.
 // In the case of the NetworkPolicyConfig addon, this may need to be retried after NetworkPolicyEnabled has been updated.
-func UpdateClusterAddons(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+func UpdateClusterAddons(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	clusterUpdate := &gkeapi.ClusterUpdate{}
 	addons := config.Spec.ClusterAddons
 	if addons == nil {
@@ -110,16 +107,12 @@ func UpdateClusterAddons(ctx context.Context, client *gkeapi.Service, config *gk
 
 	if needsUpdate {
 		logrus.Infof("updating addon configuration for cluster [%s]", config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			Update(
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-				&gkeapi.UpdateClusterRequest{
-					Update: clusterUpdate,
-				},
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.ClusterUpdate(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: clusterUpdate,
+			},
+		)
 		// In the case of disabling both NetworkPolicyEnabled and NetworkPolicyConfig,
 		// the node pool will automatically be recreated after NetworkPolicyEnabled is
 		// disabled, so we need to wait. Capture this event and log it as Info
@@ -144,7 +137,7 @@ func UpdateClusterAddons(ctx context.Context, client *gkeapi.Service, config *gk
 // UpdateMasterAuthorizedNetworks updates MasterAuthorizedNetworks
 func UpdateMasterAuthorizedNetworks(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
@@ -179,16 +172,12 @@ func UpdateMasterAuthorizedNetworks(
 	}
 	if needsUpdate {
 		logrus.Infof("updating master authorized networks configuration for cluster [%s]", config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			Update(
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-				&gkeapi.UpdateClusterRequest{
-					Update: clusterUpdate,
-				},
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.ClusterUpdate(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: clusterUpdate,
+			},
+		)
 		if err != nil {
 			return NotChanged, err
 		}
@@ -201,7 +190,7 @@ func UpdateMasterAuthorizedNetworks(
 // In most cases, updating one requires explicitly updating the other as well, so these are paired.
 func UpdateLoggingMonitoringService(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	clusterUpdate := &gkeapi.ClusterUpdate{}
@@ -228,16 +217,12 @@ func UpdateLoggingMonitoringService(
 	}
 	if needsUpdate {
 		logrus.Infof("updating logging and monitoring configuration for cluster [%s]", config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			Update(
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-				&gkeapi.UpdateClusterRequest{
-					Update: clusterUpdate,
-				},
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.ClusterUpdate(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: clusterUpdate,
+			},
+		)
 		if err != nil {
 			return NotChanged, err
 		}
@@ -249,7 +234,7 @@ func UpdateLoggingMonitoringService(
 // UpdateNetworkPolicyEnabled updates the Cluster NetworkPolicy setting.
 func UpdateNetworkPolicyEnabled(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.NetworkPolicyEnabled == nil {
@@ -258,19 +243,15 @@ func UpdateNetworkPolicyEnabled(
 
 	if *upstreamSpec.NetworkPolicyEnabled != *config.Spec.NetworkPolicyEnabled {
 		logrus.Infof("updating network policy for cluster [%s]", config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			SetNetworkPolicy(
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-				&gkeapi.SetNetworkPolicyRequest{
-					NetworkPolicy: &gkeapi.NetworkPolicy{
-						Enabled:  *config.Spec.NetworkPolicyEnabled,
-						Provider: NetworkProviderCalico,
-					},
+		_, err := gkeClient.SetNetworkPolicy(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.SetNetworkPolicyRequest{
+				NetworkPolicy: &gkeapi.NetworkPolicy{
+					Enabled:  *config.Spec.NetworkPolicyEnabled,
+					Provider: NetworkProviderCalico,
 				},
-			).Context(ctx).
-			Do()
+			},
+		)
 		if err != nil {
 			return NotChanged, err
 		}
@@ -282,7 +263,7 @@ func UpdateNetworkPolicyEnabled(
 // UpdateLocations updates Locations.
 func UpdateLocations(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.Zone == "" {
@@ -306,16 +287,12 @@ func UpdateLocations(
 	if !reflect.DeepEqual(locations, upstreamLocations) {
 		clusterUpdate.DesiredLocations = locations
 		logrus.Infof("updating locations for cluster [%s]", config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			Update(
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-				&gkeapi.UpdateClusterRequest{
-					Update: clusterUpdate,
-				},
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.ClusterUpdate(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: clusterUpdate,
+			},
+		)
 		if err != nil {
 			return NotChanged, err
 		}
@@ -328,7 +305,7 @@ func UpdateLocations(
 // UpdateMaintenanceWindow updates Cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
 func UpdateMaintenanceWindow(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.MaintenanceWindow == nil {
@@ -348,16 +325,12 @@ func UpdateMaintenanceWindow(
 		}
 	}
 	logrus.Infof("updating maintenance window for cluster [%s]", config.Name)
-	_, err := client.Projects.
-		Locations.
-		Clusters.
-		SetMaintenancePolicy(
-			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-			&gkeapi.SetMaintenancePolicyRequest{
-				MaintenancePolicy: policy,
-			},
-		).Context(ctx).
-		Do()
+	_, err := gkeClient.SetMaintenancePolicy(ctx,
+		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+		&gkeapi.SetMaintenancePolicyRequest{
+			MaintenancePolicy: policy,
+		},
+	)
 	if err != nil {
 		return NotChanged, err
 	}
@@ -367,28 +340,24 @@ func UpdateMaintenanceWindow(
 // UpdateLabels updates the cluster labels.
 func UpdateLabels(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	config *gkev1.GKEClusterConfig,
 	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
 	if config.Spec.Labels == nil || reflect.DeepEqual(config.Spec.Labels, upstreamSpec.Labels) || (upstreamSpec.Labels == nil && len(config.Spec.Labels) == 0) {
 		return NotChanged, nil
 	}
-	cluster, err := GetCluster(ctx, client, &config.Spec)
+	cluster, err := GetCluster(ctx, gkeClient, &config.Spec)
 	if err != nil {
 		return NotChanged, err
 	}
 	logrus.Infof("updating cluster labels for cluster [%s]", config.Name)
-	_, err = client.Projects.
-		Locations.
-		Clusters.
-		SetResourceLabels(
-			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-			&gkeapi.SetLabelsRequest{
-				LabelFingerprint: cluster.LabelFingerprint,
-				ResourceLabels:   config.Spec.Labels,
-			},
-		).Context(ctx).
-		Do()
+	_, err = gkeClient.SetResourceLabels(ctx,
+		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+		&gkeapi.SetLabelsRequest{
+			LabelFingerprint: cluster.LabelFingerprint,
+			ResourceLabels:   config.Spec.Labels,
+		},
+	)
 	if err != nil {
 		if strings.Contains(err.Error(), "Labels could not be set due to fingerprint mismatch") {
 			logrus.Debugf("got transient error: %v, retrying", err)
@@ -406,7 +375,7 @@ func UpdateLabels(
 // should be retried later.
 func UpdateNodePoolKubernetesVersionOrImageType(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
@@ -429,15 +398,9 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 		needsUpdate = true
 	}
 	if needsUpdate {
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			NodePools.
-			Update(
-				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
-				updateRequest,
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.NodePoolUpdate(ctx,
+			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+			updateRequest)
 		if err != nil && strings.Contains(err.Error(), errWait) {
 			logrus.Debugf("error %v updating node pool, will retry", err)
 			return Retry, nil
@@ -454,7 +417,7 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 // If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
 func UpdateNodePoolSize(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
@@ -467,17 +430,12 @@ func UpdateNodePoolSize(
 	}
 
 	logrus.Infof("updating size of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-	_, err := client.Projects.
-		Locations.
-		Clusters.
-		NodePools.
-		SetSize(
-			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
-			&gkeapi.SetNodePoolSizeRequest{
-				NodeCount: *nodePool.InitialNodeCount,
-			},
-		).Context(ctx).
-		Do()
+	_, err := gkeClient.SetSize(ctx,
+		NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+		&gkeapi.SetNodePoolSizeRequest{
+			NodeCount: *nodePool.InitialNodeCount,
+		},
+	)
 	if err != nil && strings.Contains(err.Error(), errWait) {
 		logrus.Debugf("error %v updating node pool, will retry", err)
 		return Retry, nil
@@ -492,7 +450,7 @@ func UpdateNodePoolSize(
 // If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
 func UpdateNodePoolAutoscaling(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
@@ -520,15 +478,9 @@ func UpdateNodePoolAutoscaling(
 	}
 	if needsUpdate {
 		logrus.Infof("updating autoscaling config of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			NodePools.
-			SetAutoscaling(
-				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
-				updateRequest,
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.SetAutoscaling(ctx,
+			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+			updateRequest)
 		if err != nil && strings.Contains(err.Error(), errWait) {
 			logrus.Debugf("error %v updating node pool, will retry", err)
 			return Retry, nil
@@ -545,7 +497,7 @@ func UpdateNodePoolAutoscaling(
 // If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
 func UpdateNodePoolManagement(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
@@ -567,15 +519,9 @@ func UpdateNodePoolManagement(
 	}
 	if needsUpdate {
 		logrus.Infof("updating management config of node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-		_, err := client.Projects.
-			Locations.
-			Clusters.
-			NodePools.
-			SetManagement(
-				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
-				updateRequest,
-			).Context(ctx).
-			Do()
+		_, err := gkeClient.SetManagement(ctx,
+			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
+			updateRequest)
 		if err != nil && strings.Contains(err.Error(), errWait) {
 			logrus.Debugf("error %v updating node pool, will retry", err)
 			return Retry, nil
@@ -592,7 +538,7 @@ func UpdateNodePoolManagement(
 // If the node pool is busy, it will return a Retry status indicating the operation should be retried later.
 func UpdateNodePoolConfig(
 	ctx context.Context,
-	client *gkeapi.Service,
+	gkeClient services.GKEClusterService,
 	nodePool *gkev1.GKENodePoolConfig,
 	config *gkev1.GKEClusterConfig,
 	upstreamNodePool *gkev1.GKENodePoolConfig) (Status, error) {
@@ -607,14 +553,9 @@ func UpdateNodePoolConfig(
 	}
 
 	logrus.Infof("updating config for node pool [%s] on cluster [%s]", *nodePool.Name, config.Name)
-	_, err := client.Projects.
-		Locations.
-		Clusters.
-		NodePools.Update(
+	_, err := gkeClient.NodePoolUpdate(ctx,
 		NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
-		updateRequest,
-	).Context(ctx).
-		Do()
+		updateRequest)
 	if err != nil {
 		if strings.Contains(err.Error(), errWait) {
 			logrus.Debugf("error %v updating node pool, will retry", err)
@@ -625,13 +566,9 @@ func UpdateNodePoolConfig(
 	return Changed, nil
 }
 
-func GetCluster(ctx context.Context, client *gkeapi.Service, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
-	return client.Projects.
-		Locations.
-		Clusters.
-		Get(ClusterRRN(configSpec.ProjectID, Location(configSpec.Region, configSpec.Zone), configSpec.ClusterName)).
-		Context(ctx).
-		Do()
+func GetCluster(ctx context.Context, gkeClient services.GKEClusterService, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
+	return gkeClient.ClusterGet(ctx,
+		ClusterRRN(configSpec.ProjectID, Location(configSpec.Region, configSpec.Zone), configSpec.ClusterName))
 }
 
 func compareCidrBlockPointerSlices(lh, rh []*gkev1.GKECidrBlock) bool {

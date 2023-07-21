@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
+	"github.com/rancher/gke-operator/pkg/gke/services"
 	gkeapi "google.golang.org/api/container/v1"
 )
 
@@ -16,28 +17,23 @@ const (
 )
 
 // Create creates an upstream GKE cluster.
-func Create(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig) error {
-	err := validateCreateRequest(ctx, client, config)
+func Create(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig) error {
+	err := validateCreateRequest(ctx, gkeClient, config)
 	if err != nil {
 		return err
 	}
 
 	createClusterRequest := newClusterCreateRequest(config)
 
-	_, err = client.Projects.
-		Locations.
-		Clusters.
-		Create(
-			LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
-			createClusterRequest).
-		Context(ctx).
-		Do()
+	_, err = gkeClient.ClusterCreate(ctx,
+		LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
+		createClusterRequest)
 
 	return err
 }
 
 // CreateNodePool creates an upstream node pool with the given cluster as a parent.
-func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.GKENodePoolConfig) (Status, error) {
+func CreateNodePool(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig, nodePoolConfig *gkev1.GKENodePoolConfig) (Status, error) {
 	err := validateNodePoolCreateRequest(nodePoolConfig, config)
 	if err != nil {
 		return NotChanged, err
@@ -51,14 +47,9 @@ func CreateNodePool(ctx context.Context, client *gkeapi.Service, config *gkev1.G
 		return NotChanged, err
 	}
 
-	_, err = client.Projects.
-		Locations.
-		Clusters.
-		NodePools.
-		Create(
-			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
-			createNodePoolRequest,
-		).Context(ctx).Do()
+	_, err = gkeClient.NodePoolCreate(ctx,
+		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+		createNodePoolRequest)
 	if err != nil && strings.Contains(err.Error(), errWait) {
 		return Retry, nil
 	}
@@ -158,7 +149,7 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 }
 
 // validateCreateRequest checks a config for the ability to generate a create request
-func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *gkev1.GKEClusterConfig) error {
+func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig) error {
 	if config.Spec.ProjectID == "" {
 		return fmt.Errorf("project ID is required")
 	}
@@ -180,12 +171,8 @@ func validateCreateRequest(ctx context.Context, client *gkeapi.Service, config *
 		}
 	}
 
-	operation, err := client.Projects.
-		Locations.
-		Clusters.
-		List(LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
-		Context(ctx).
-		Do()
+	operation, err := gkeClient.ClusterList(
+		ctx, LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)))
 	if err != nil {
 		return err
 	}
