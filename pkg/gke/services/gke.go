@@ -9,17 +9,26 @@ import (
 )
 
 type GKEClusterService interface {
-	Create(parent string, cluster *gkeapi.CreateClusterRequest) (*gkeapi.ProjectsLocationsClustersCreateCall, error)
-	List(parent string) (*gkeapi.ProjectsLocationsClustersListCall, error)
-	Get(name string) (*gkeapi.ProjectsLocationsClustersGetCall, error)
-	Delete(name string) (*gkeapi.ProjectsLocationsClustersDeleteCall, error)
-	SetNetworkPolicy(name string, networkPolicy *gkeapi.SetNetworkPolicyRequest) (*gkeapi.ProjectsLocationsClustersSetNetworkPolicyCall, error)
-	SetMaintenancePolicy(name string, maintenancePolicy *gkeapi.SetMaintenancePolicyRequest) (*gkeapi.ProjectsLocationsClustersSetMaintenancePolicyCall, error)
-	SetResourceLabels(name string, resourceLabels *gkeapi.SetLabelsRequest) (*gkeapi.ProjectsLocationsClustersSetResourceLabelsCall, error)
+	ClusterCreate(ctx context.Context, parent string, createclusterrequest *gkeapi.CreateClusterRequest) (*gkeapi.Operation, error)
+	ClusterList(ctx context.Context, parent string) (*gkeapi.ListClustersResponse, error)
+	ClusterGet(ctx context.Context, name string) (*gkeapi.Cluster, error)
+	ClusterUpdate(ctx context.Context, name string, updateclusterrequest *gkeapi.UpdateClusterRequest) (*gkeapi.Operation, error)
+	ClusterDelete(ctx context.Context, name string) (*gkeapi.Operation, error)
+	SetNetworkPolicy(ctx context.Context, name string, networkpolicyrequest *gkeapi.SetNetworkPolicyRequest) (*gkeapi.Operation, error)
+	SetMaintenancePolicy(ctx context.Context, name string, maintenancepolicyrequest *gkeapi.SetMaintenancePolicyRequest) (*gkeapi.Operation, error)
+	SetResourceLabels(ctx context.Context, name string, resourcelabelsrequest *gkeapi.SetLabelsRequest) (*gkeapi.Operation, error)
+	NodePoolCreate(ctx context.Context, parent string, createnodepoolrequest *gkeapi.CreateNodePoolRequest) (*gkeapi.Operation, error)
+	NodePoolList(ctx context.Context, parent string) (*gkeapi.ListNodePoolsResponse, error)
+	NodePoolGet(ctx context.Context, name string) (*gkeapi.NodePool, error)
+	NodePoolUpdate(ctx context.Context, name string, updatenodepoolrequest *gkeapi.UpdateNodePoolRequest) (*gkeapi.Operation, error)
+	NodePoolDelete(ctx context.Context, name string) (*gkeapi.Operation, error)
+	SetSize(ctx context.Context, name string, setnodepoolsizerequest *gkeapi.SetNodePoolSizeRequest) (*gkeapi.Operation, error)
+	SetAutoscaling(ctx context.Context, name string, setnodepoolautoscalingrequest *gkeapi.SetNodePoolAutoscalingRequest) (*gkeapi.Operation, error)
+	SetManagement(ctx context.Context, name string, setnodepoolmanagementrequest *gkeapi.SetNodePoolManagementRequest) (*gkeapi.Operation, error)
 }
 
 type gkeClusterService struct {
-	svc *gkeapi.ProjectsLocationsClustersService
+	svc gkeapi.Service
 }
 
 func NewGKEClusterService(ctx context.Context, ts oauth2.TokenSource) (GKEClusterService, error) {
@@ -28,91 +37,70 @@ func NewGKEClusterService(ctx context.Context, ts oauth2.TokenSource) (GKECluste
 		return nil, err
 	}
 	return &gkeClusterService{
-		svc: svc.Projects.Locations.Clusters,
+		svc: *svc,
 	}, nil
 }
 
-func (g *gkeClusterService) Create(parent string, cluster *gkeapi.CreateClusterRequest) (*gkeapi.ProjectsLocationsClustersCreateCall, error) {
-	return g.svc.Create(parent, cluster), nil
+func (g *gkeClusterService) ClusterCreate(ctx context.Context, parent string, createclusterrequest *gkeapi.CreateClusterRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.Create(parent, createclusterrequest).Context(ctx).Do()
 }
 
-func (g *gkeClusterService) List(parent string) (*gkeapi.ProjectsLocationsClustersListCall, error) {
-	return g.svc.List(parent), nil
+func (g *gkeClusterService) ClusterList(ctx context.Context, parent string) (*gkeapi.ListClustersResponse, error) {
+	return g.svc.Projects.Locations.Clusters.List(parent).Context(ctx).Do()
 }
 
-func (g *gkeClusterService) Get(name string) (*gkeapi.ProjectsLocationsClustersGetCall, error) {
-	return g.svc.Get(name), nil
+func (g *gkeClusterService) ClusterGet(ctx context.Context, name string) (*gkeapi.Cluster, error) {
+	return g.svc.Projects.Locations.Clusters.Get(name).Context(ctx).Do()
 }
 
-func (g *gkeClusterService) Delete(name string) (*gkeapi.ProjectsLocationsClustersDeleteCall, error) {
-	return g.svc.Delete(name), nil
+func (g *gkeClusterService) ClusterUpdate(ctx context.Context, name string, updateclusterrequest *gkeapi.UpdateClusterRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.Update(name, updateclusterrequest).Context(ctx).Do()
 }
 
-func (g *gkeClusterService) SetNetworkPolicy(name string, networkPolicy *gkeapi.SetNetworkPolicyRequest) (*gkeapi.ProjectsLocationsClustersSetNetworkPolicyCall, error) {
-	return g.svc.SetNetworkPolicy(name, networkPolicy), nil
+func (g *gkeClusterService) ClusterDelete(ctx context.Context, name string) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.Delete(name).Context(ctx).Do()
 }
 
-func (g *gkeClusterService) SetMaintenancePolicy(name string, maintenancePolicy *gkeapi.SetMaintenancePolicyRequest) (*gkeapi.ProjectsLocationsClustersSetMaintenancePolicyCall, error) {
-	return g.svc.SetMaintenancePolicy(name, maintenancePolicy), nil
+func (g *gkeClusterService) SetNetworkPolicy(ctx context.Context, name string, networkpolicyrequest *gkeapi.SetNetworkPolicyRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.SetNetworkPolicy(name, networkpolicyrequest).Context(ctx).Do()
 }
 
-func (g *gkeClusterService) SetResourceLabels(name string, resourceLabels *gkeapi.SetLabelsRequest) (*gkeapi.ProjectsLocationsClustersSetResourceLabelsCall, error) {
-	return g.svc.SetResourceLabels(name, resourceLabels), nil
+func (g *gkeClusterService) SetMaintenancePolicy(ctx context.Context, name string, maintenancepolicyrequest *gkeapi.SetMaintenancePolicyRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.SetMaintenancePolicy(name, maintenancepolicyrequest).Context(ctx).Do()
 }
 
-type GKENodePoolService interface {
-	Create(parent string, cluster *gkeapi.CreateNodePoolRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsCreateCall, error)
-	List(parent string) (*gkeapi.ProjectsLocationsClustersNodePoolsListCall, error)
-	Get(name string) (*gkeapi.ProjectsLocationsClustersNodePoolsGetCall, error)
-	Update(name string, nodepool *gkeapi.UpdateNodePoolRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsUpdateCall, error)
-	Delete(name string) (*gkeapi.ProjectsLocationsClustersNodePoolsDeleteCall, error)
-	SetSize(name string, size *gkeapi.SetNodePoolSizeRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsSetSizeCall, error)
-	SetAutoscaling(name string, autoscaling *gkeapi.SetNodePoolAutoscalingRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsSetAutoscalingCall, error)
-	SetManagement(name string, management *gkeapi.SetNodePoolManagementRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsSetManagementCall, error)
+func (g *gkeClusterService) SetResourceLabels(ctx context.Context, name string, resourcelabelsrequest *gkeapi.SetLabelsRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.SetResourceLabels(name, resourcelabelsrequest).Context(ctx).Do()
 }
 
-type gkeNodePoolService struct {
-	svc *gkeapi.ProjectsLocationsClustersNodePoolsService
+func (g *gkeClusterService) NodePoolCreate(ctx context.Context, parent string, createnodepoolrequest *gkeapi.CreateNodePoolRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.Create(parent, createnodepoolrequest).Context(ctx).Do()
 }
 
-func NewGKENodePoolService(ctx context.Context, ts oauth2.TokenSource) (GKENodePoolService, error) {
-	svc, err := gkeapi.NewService(ctx, option.WithHTTPClient(oauth2.NewClient(ctx, ts)))
-	if err != nil {
-		return nil, err
-	}
-	return &gkeNodePoolService{
-		svc: svc.Projects.Locations.Clusters.NodePools,
-	}, nil
+func (g *gkeClusterService) NodePoolList(ctx context.Context, parent string) (*gkeapi.ListNodePoolsResponse, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.List(parent).Context(ctx).Do()
 }
 
-func (g *gkeNodePoolService) Create(parent string, nodepool *gkeapi.CreateNodePoolRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsCreateCall, error) {
-	return g.svc.Create(parent, nodepool), nil
+func (g *gkeClusterService) NodePoolGet(ctx context.Context, name string) (*gkeapi.NodePool, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.Get(name).Context(ctx).Do()
 }
 
-func (g *gkeNodePoolService) List(parent string) (*gkeapi.ProjectsLocationsClustersNodePoolsListCall, error) {
-	return g.svc.List(parent), nil
+func (g *gkeClusterService) NodePoolUpdate(ctx context.Context, name string, updatenodepoolrequest *gkeapi.UpdateNodePoolRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.Update(name, updatenodepoolrequest).Context(ctx).Do()
 }
 
-func (g *gkeNodePoolService) Get(name string) (*gkeapi.ProjectsLocationsClustersNodePoolsGetCall, error) {
-	return g.svc.Get(name), nil
+func (g *gkeClusterService) NodePoolDelete(ctx context.Context, name string) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.Delete(name).Context(ctx).Do()
 }
 
-func (g *gkeNodePoolService) Update(name string, nodepool *gkeapi.UpdateNodePoolRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsUpdateCall, error) {
-	return g.svc.Update(name, nodepool), nil
+func (g *gkeClusterService) SetSize(ctx context.Context, name string, setnodepoolsizerequest *gkeapi.SetNodePoolSizeRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.SetSize(name, setnodepoolsizerequest).Context(ctx).Do()
 }
 
-func (g *gkeNodePoolService) Delete(name string) (*gkeapi.ProjectsLocationsClustersNodePoolsDeleteCall, error) {
-	return g.svc.Delete(name), nil
+func (g *gkeClusterService) SetAutoscaling(ctx context.Context, name string, setnodepoolautoscalingrequest *gkeapi.SetNodePoolAutoscalingRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.SetAutoscaling(name, setnodepoolautoscalingrequest).Context(ctx).Do()
 }
 
-func (g *gkeNodePoolService) SetSize(name string, size *gkeapi.SetNodePoolSizeRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsSetSizeCall, error) {
-	return g.svc.SetSize(name, size), nil
-}
-
-func (g *gkeNodePoolService) SetAutoscaling(name string, autoscaling *gkeapi.SetNodePoolAutoscalingRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsSetAutoscalingCall, error) {
-	return g.svc.SetAutoscaling(name, autoscaling), nil
-}
-
-func (g *gkeNodePoolService) SetManagement(name string, management *gkeapi.SetNodePoolManagementRequest) (*gkeapi.ProjectsLocationsClustersNodePoolsSetManagementCall, error) {
-	return g.svc.SetManagement(name, management), nil
+func (g *gkeClusterService) SetManagement(ctx context.Context, name string, setnodepoolmanagementrequest *gkeapi.SetNodePoolManagementRequest) (*gkeapi.Operation, error) {
+	return g.svc.Projects.Locations.Clusters.NodePools.SetManagement(name, setnodepoolmanagementrequest).Context(ctx).Do()
 }

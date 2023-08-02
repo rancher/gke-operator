@@ -3,6 +3,7 @@ package gke
 import (
 	"context"
 
+	"github.com/rancher/gke-operator/pkg/gke/services"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	gkeapi "google.golang.org/api/container/v1"
@@ -16,6 +17,14 @@ func GetGKEClient(ctx context.Context, credential string) (*gkeapi.Service, erro
 		return nil, err
 	}
 	return getServiceClientWithTokenSource(ctx, ts)
+}
+
+func GetGKEClusterClient(ctx context.Context, credential string) (services.GKEClusterService, error) {
+	ts, err := GetTokenSource(ctx, credential)
+	if err != nil {
+		return nil, err
+	}
+	return services.NewGKEClusterService(ctx, ts)
 }
 
 func getServiceClientWithTokenSource(ctx context.Context, ts oauth2.TokenSource) (*gkeapi.Service, error) {

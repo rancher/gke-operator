@@ -5,6 +5,7 @@
 package mock_services
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -34,250 +35,242 @@ func (m *MockGKEClusterService) EXPECT() *MockGKEClusterServiceMockRecorder {
 	return m.recorder
 }
 
-// Create mocks base method.
-func (m *MockGKEClusterService) Create(parent string, cluster *container.CreateClusterRequest) (*container.ProjectsLocationsClustersCreateCall, error) {
+// ClusterCreate mocks base method.
+func (m *MockGKEClusterService) ClusterCreate(ctx context.Context, parent string, createclusterrequest *container.CreateClusterRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", parent, cluster)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersCreateCall)
+	ret := m.ctrl.Call(m, "ClusterCreate", ctx, parent, createclusterrequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create.
-func (mr *MockGKEClusterServiceMockRecorder) Create(parent, cluster interface{}) *gomock.Call {
+// ClusterCreate indicates an expected call of ClusterCreate.
+func (mr *MockGKEClusterServiceMockRecorder) ClusterCreate(ctx, parent, createclusterrequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockGKEClusterService)(nil).Create), parent, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterCreate", reflect.TypeOf((*MockGKEClusterService)(nil).ClusterCreate), ctx, parent, createclusterrequest)
 }
 
-// Delete mocks base method.
-func (m *MockGKEClusterService) Delete(name string) (*container.ProjectsLocationsClustersDeleteCall, error) {
+// ClusterDelete mocks base method.
+func (m *MockGKEClusterService) ClusterDelete(ctx context.Context, name string) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", name)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersDeleteCall)
+	ret := m.ctrl.Call(m, "ClusterDelete", ctx, name)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete.
-func (mr *MockGKEClusterServiceMockRecorder) Delete(name interface{}) *gomock.Call {
+// ClusterDelete indicates an expected call of ClusterDelete.
+func (mr *MockGKEClusterServiceMockRecorder) ClusterDelete(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockGKEClusterService)(nil).Delete), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterDelete", reflect.TypeOf((*MockGKEClusterService)(nil).ClusterDelete), ctx, name)
 }
 
-// Get mocks base method.
-func (m *MockGKEClusterService) Get(name string) (*container.ProjectsLocationsClustersGetCall, error) {
+// ClusterGet mocks base method.
+func (m *MockGKEClusterService) ClusterGet(ctx context.Context, name string) (*container.Cluster, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", name)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersGetCall)
+	ret := m.ctrl.Call(m, "ClusterGet", ctx, name)
+	ret0, _ := ret[0].(*container.Cluster)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockGKEClusterServiceMockRecorder) Get(name interface{}) *gomock.Call {
+// ClusterGet indicates an expected call of ClusterGet.
+func (mr *MockGKEClusterServiceMockRecorder) ClusterGet(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGKEClusterService)(nil).Get), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterGet", reflect.TypeOf((*MockGKEClusterService)(nil).ClusterGet), ctx, name)
 }
 
-// List mocks base method.
-func (m *MockGKEClusterService) List(parent string) (*container.ProjectsLocationsClustersListCall, error) {
+// ClusterList mocks base method.
+func (m *MockGKEClusterService) ClusterList(ctx context.Context, parent string) (*container.ListClustersResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", parent)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersListCall)
+	ret := m.ctrl.Call(m, "ClusterList", ctx, parent)
+	ret0, _ := ret[0].(*container.ListClustersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// List indicates an expected call of List.
-func (mr *MockGKEClusterServiceMockRecorder) List(parent interface{}) *gomock.Call {
+// ClusterList indicates an expected call of ClusterList.
+func (mr *MockGKEClusterServiceMockRecorder) ClusterList(ctx, parent interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockGKEClusterService)(nil).List), parent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterList", reflect.TypeOf((*MockGKEClusterService)(nil).ClusterList), ctx, parent)
 }
 
-// SetMaintenancePolicy mocks base method.
-func (m *MockGKEClusterService) SetMaintenancePolicy(name string, maintenancePolicy *container.SetMaintenancePolicyRequest) (*container.ProjectsLocationsClustersSetMaintenancePolicyCall, error) {
+// ClusterUpdate mocks base method.
+func (m *MockGKEClusterService) ClusterUpdate(ctx context.Context, name string, updateclusterrequest *container.UpdateClusterRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetMaintenancePolicy", name, maintenancePolicy)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersSetMaintenancePolicyCall)
+	ret := m.ctrl.Call(m, "ClusterUpdate", ctx, name, updateclusterrequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SetMaintenancePolicy indicates an expected call of SetMaintenancePolicy.
-func (mr *MockGKEClusterServiceMockRecorder) SetMaintenancePolicy(name, maintenancePolicy interface{}) *gomock.Call {
+// ClusterUpdate indicates an expected call of ClusterUpdate.
+func (mr *MockGKEClusterServiceMockRecorder) ClusterUpdate(ctx, name, updateclusterrequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaintenancePolicy", reflect.TypeOf((*MockGKEClusterService)(nil).SetMaintenancePolicy), name, maintenancePolicy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ClusterUpdate", reflect.TypeOf((*MockGKEClusterService)(nil).ClusterUpdate), ctx, name, updateclusterrequest)
 }
 
-// SetNetworkPolicy mocks base method.
-func (m *MockGKEClusterService) SetNetworkPolicy(name string, networkPolicy *container.SetNetworkPolicyRequest) (*container.ProjectsLocationsClustersSetNetworkPolicyCall, error) {
+// NodePoolCreate mocks base method.
+func (m *MockGKEClusterService) NodePoolCreate(ctx context.Context, parent string, createnodepoolrequest *container.CreateNodePoolRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetNetworkPolicy", name, networkPolicy)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersSetNetworkPolicyCall)
+	ret := m.ctrl.Call(m, "NodePoolCreate", ctx, parent, createnodepoolrequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SetNetworkPolicy indicates an expected call of SetNetworkPolicy.
-func (mr *MockGKEClusterServiceMockRecorder) SetNetworkPolicy(name, networkPolicy interface{}) *gomock.Call {
+// NodePoolCreate indicates an expected call of NodePoolCreate.
+func (mr *MockGKEClusterServiceMockRecorder) NodePoolCreate(ctx, parent, createnodepoolrequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNetworkPolicy", reflect.TypeOf((*MockGKEClusterService)(nil).SetNetworkPolicy), name, networkPolicy)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodePoolCreate", reflect.TypeOf((*MockGKEClusterService)(nil).NodePoolCreate), ctx, parent, createnodepoolrequest)
 }
 
-// SetResourceLabels mocks base method.
-func (m *MockGKEClusterService) SetResourceLabels(name string, resourceLabels *container.SetLabelsRequest) (*container.ProjectsLocationsClustersSetResourceLabelsCall, error) {
+// NodePoolDelete mocks base method.
+func (m *MockGKEClusterService) NodePoolDelete(ctx context.Context, name string) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetResourceLabels", name, resourceLabels)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersSetResourceLabelsCall)
+	ret := m.ctrl.Call(m, "NodePoolDelete", ctx, name)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SetResourceLabels indicates an expected call of SetResourceLabels.
-func (mr *MockGKEClusterServiceMockRecorder) SetResourceLabels(name, resourceLabels interface{}) *gomock.Call {
+// NodePoolDelete indicates an expected call of NodePoolDelete.
+func (mr *MockGKEClusterServiceMockRecorder) NodePoolDelete(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResourceLabels", reflect.TypeOf((*MockGKEClusterService)(nil).SetResourceLabels), name, resourceLabels)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodePoolDelete", reflect.TypeOf((*MockGKEClusterService)(nil).NodePoolDelete), ctx, name)
 }
 
-// MockGKENodePoolService is a mock of GKENodePoolService interface.
-type MockGKENodePoolService struct {
-	ctrl     *gomock.Controller
-	recorder *MockGKENodePoolServiceMockRecorder
-}
-
-// MockGKENodePoolServiceMockRecorder is the mock recorder for MockGKENodePoolService.
-type MockGKENodePoolServiceMockRecorder struct {
-	mock *MockGKENodePoolService
-}
-
-// NewMockGKENodePoolService creates a new mock instance.
-func NewMockGKENodePoolService(ctrl *gomock.Controller) *MockGKENodePoolService {
-	mock := &MockGKENodePoolService{ctrl: ctrl}
-	mock.recorder = &MockGKENodePoolServiceMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockGKENodePoolService) EXPECT() *MockGKENodePoolServiceMockRecorder {
-	return m.recorder
-}
-
-// Create mocks base method.
-func (m *MockGKENodePoolService) Create(parent string, cluster *container.CreateNodePoolRequest) (*container.ProjectsLocationsClustersNodePoolsCreateCall, error) {
+// NodePoolGet mocks base method.
+func (m *MockGKEClusterService) NodePoolGet(ctx context.Context, name string) (*container.NodePool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", parent, cluster)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsCreateCall)
+	ret := m.ctrl.Call(m, "NodePoolGet", ctx, name)
+	ret0, _ := ret[0].(*container.NodePool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Create indicates an expected call of Create.
-func (mr *MockGKENodePoolServiceMockRecorder) Create(parent, cluster interface{}) *gomock.Call {
+// NodePoolGet indicates an expected call of NodePoolGet.
+func (mr *MockGKEClusterServiceMockRecorder) NodePoolGet(ctx, name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockGKENodePoolService)(nil).Create), parent, cluster)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodePoolGet", reflect.TypeOf((*MockGKEClusterService)(nil).NodePoolGet), ctx, name)
 }
 
-// Delete mocks base method.
-func (m *MockGKENodePoolService) Delete(name string) (*container.ProjectsLocationsClustersNodePoolsDeleteCall, error) {
+// NodePoolList mocks base method.
+func (m *MockGKEClusterService) NodePoolList(ctx context.Context, parent string) (*container.ListNodePoolsResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", name)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsDeleteCall)
+	ret := m.ctrl.Call(m, "NodePoolList", ctx, parent)
+	ret0, _ := ret[0].(*container.ListNodePoolsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Delete indicates an expected call of Delete.
-func (mr *MockGKENodePoolServiceMockRecorder) Delete(name interface{}) *gomock.Call {
+// NodePoolList indicates an expected call of NodePoolList.
+func (mr *MockGKEClusterServiceMockRecorder) NodePoolList(ctx, parent interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockGKENodePoolService)(nil).Delete), name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodePoolList", reflect.TypeOf((*MockGKEClusterService)(nil).NodePoolList), ctx, parent)
 }
 
-// Get mocks base method.
-func (m *MockGKENodePoolService) Get(name string) (*container.ProjectsLocationsClustersNodePoolsGetCall, error) {
+// NodePoolUpdate mocks base method.
+func (m *MockGKEClusterService) NodePoolUpdate(ctx context.Context, name string, updatenodepoolrequest *container.UpdateNodePoolRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", name)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsGetCall)
+	ret := m.ctrl.Call(m, "NodePoolUpdate", ctx, name, updatenodepoolrequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Get indicates an expected call of Get.
-func (mr *MockGKENodePoolServiceMockRecorder) Get(name interface{}) *gomock.Call {
+// NodePoolUpdate indicates an expected call of NodePoolUpdate.
+func (mr *MockGKEClusterServiceMockRecorder) NodePoolUpdate(ctx, name, updatenodepoolrequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockGKENodePoolService)(nil).Get), name)
-}
-
-// List mocks base method.
-func (m *MockGKENodePoolService) List(parent string) (*container.ProjectsLocationsClustersNodePoolsListCall, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", parent)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsListCall)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// List indicates an expected call of List.
-func (mr *MockGKENodePoolServiceMockRecorder) List(parent interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockGKENodePoolService)(nil).List), parent)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodePoolUpdate", reflect.TypeOf((*MockGKEClusterService)(nil).NodePoolUpdate), ctx, name, updatenodepoolrequest)
 }
 
 // SetAutoscaling mocks base method.
-func (m *MockGKENodePoolService) SetAutoscaling(name string, autoscaling *container.SetNodePoolAutoscalingRequest) (*container.ProjectsLocationsClustersNodePoolsSetAutoscalingCall, error) {
+func (m *MockGKEClusterService) SetAutoscaling(ctx context.Context, name string, setnodepoolautoscalingrequest *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetAutoscaling", name, autoscaling)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsSetAutoscalingCall)
+	ret := m.ctrl.Call(m, "SetAutoscaling", ctx, name, setnodepoolautoscalingrequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SetAutoscaling indicates an expected call of SetAutoscaling.
-func (mr *MockGKENodePoolServiceMockRecorder) SetAutoscaling(name, autoscaling interface{}) *gomock.Call {
+func (mr *MockGKEClusterServiceMockRecorder) SetAutoscaling(ctx, name, setnodepoolautoscalingrequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAutoscaling", reflect.TypeOf((*MockGKENodePoolService)(nil).SetAutoscaling), name, autoscaling)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetAutoscaling", reflect.TypeOf((*MockGKEClusterService)(nil).SetAutoscaling), ctx, name, setnodepoolautoscalingrequest)
+}
+
+// SetMaintenancePolicy mocks base method.
+func (m *MockGKEClusterService) SetMaintenancePolicy(ctx context.Context, name string, maintenancepolicyrequest *container.SetMaintenancePolicyRequest) (*container.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetMaintenancePolicy", ctx, name, maintenancepolicyrequest)
+	ret0, _ := ret[0].(*container.Operation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetMaintenancePolicy indicates an expected call of SetMaintenancePolicy.
+func (mr *MockGKEClusterServiceMockRecorder) SetMaintenancePolicy(ctx, name, maintenancepolicyrequest interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMaintenancePolicy", reflect.TypeOf((*MockGKEClusterService)(nil).SetMaintenancePolicy), ctx, name, maintenancepolicyrequest)
 }
 
 // SetManagement mocks base method.
-func (m *MockGKENodePoolService) SetManagement(name string, management *container.SetNodePoolManagementRequest) (*container.ProjectsLocationsClustersNodePoolsSetManagementCall, error) {
+func (m *MockGKEClusterService) SetManagement(ctx context.Context, name string, setnodepoolmanagementrequest *container.SetNodePoolManagementRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetManagement", name, management)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsSetManagementCall)
+	ret := m.ctrl.Call(m, "SetManagement", ctx, name, setnodepoolmanagementrequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SetManagement indicates an expected call of SetManagement.
-func (mr *MockGKENodePoolServiceMockRecorder) SetManagement(name, management interface{}) *gomock.Call {
+func (mr *MockGKEClusterServiceMockRecorder) SetManagement(ctx, name, setnodepoolmanagementrequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetManagement", reflect.TypeOf((*MockGKENodePoolService)(nil).SetManagement), name, management)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetManagement", reflect.TypeOf((*MockGKEClusterService)(nil).SetManagement), ctx, name, setnodepoolmanagementrequest)
+}
+
+// SetNetworkPolicy mocks base method.
+func (m *MockGKEClusterService) SetNetworkPolicy(ctx context.Context, name string, networkpolicyrequest *container.SetNetworkPolicyRequest) (*container.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetNetworkPolicy", ctx, name, networkpolicyrequest)
+	ret0, _ := ret[0].(*container.Operation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetNetworkPolicy indicates an expected call of SetNetworkPolicy.
+func (mr *MockGKEClusterServiceMockRecorder) SetNetworkPolicy(ctx, name, networkpolicyrequest interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetNetworkPolicy", reflect.TypeOf((*MockGKEClusterService)(nil).SetNetworkPolicy), ctx, name, networkpolicyrequest)
+}
+
+// SetResourceLabels mocks base method.
+func (m *MockGKEClusterService) SetResourceLabels(ctx context.Context, name string, resourcelabelsrequest *container.SetLabelsRequest) (*container.Operation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetResourceLabels", ctx, name, resourcelabelsrequest)
+	ret0, _ := ret[0].(*container.Operation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetResourceLabels indicates an expected call of SetResourceLabels.
+func (mr *MockGKEClusterServiceMockRecorder) SetResourceLabels(ctx, name, resourcelabelsrequest interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetResourceLabels", reflect.TypeOf((*MockGKEClusterService)(nil).SetResourceLabels), ctx, name, resourcelabelsrequest)
 }
 
 // SetSize mocks base method.
-func (m *MockGKENodePoolService) SetSize(name string, size *container.SetNodePoolSizeRequest) (*container.ProjectsLocationsClustersNodePoolsSetSizeCall, error) {
+func (m *MockGKEClusterService) SetSize(ctx context.Context, name string, setnodepoolsizerequest *container.SetNodePoolSizeRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SetSize", name, size)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsSetSizeCall)
+	ret := m.ctrl.Call(m, "SetSize", ctx, name, setnodepoolsizerequest)
+	ret0, _ := ret[0].(*container.Operation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // SetSize indicates an expected call of SetSize.
-func (mr *MockGKENodePoolServiceMockRecorder) SetSize(name, size interface{}) *gomock.Call {
+func (mr *MockGKEClusterServiceMockRecorder) SetSize(ctx, name, setnodepoolsizerequest interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSize", reflect.TypeOf((*MockGKENodePoolService)(nil).SetSize), name, size)
-}
-
-// Update mocks base method.
-func (m *MockGKENodePoolService) Update(name string, nodepool *container.UpdateNodePoolRequest) (*container.ProjectsLocationsClustersNodePoolsUpdateCall, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", name, nodepool)
-	ret0, _ := ret[0].(*container.ProjectsLocationsClustersNodePoolsUpdateCall)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Update indicates an expected call of Update.
-func (mr *MockGKENodePoolServiceMockRecorder) Update(name, nodepool interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockGKENodePoolService)(nil).Update), name, nodepool)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetSize", reflect.TypeOf((*MockGKEClusterService)(nil).SetSize), ctx, name, setnodepoolsizerequest)
 }
