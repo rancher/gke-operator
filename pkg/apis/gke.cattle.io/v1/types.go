@@ -22,6 +22,11 @@ import (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:printcolumn:name="ProjectID",type="string",JSONPath=".spec.projectID"
+// +kubebuilder:printcolumn:name="ClusterName",type="string",JSONPath=".spec.clusterName"
+// +kubebuilder:printcolumn:name="KubernetesVersion",type="string",JSONPath=".spec.kubernetesVersion"
+// +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"
+// +kubebuilder:printcolumn:name="FailureMessage",type="string",JSONPath=".status.failureMessage"
 
 type GKEClusterConfig struct {
 	metav1.TypeMeta   `json:",inline"`
