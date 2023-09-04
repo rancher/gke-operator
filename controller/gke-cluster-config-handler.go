@@ -575,7 +575,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	}
 
 	networkPolicyEnabled := false
-	if cluster.NetworkPolicy != nil && cluster.NetworkPolicy.Enabled == true {
+	if cluster.NetworkPolicy != nil && cluster.NetworkPolicy.Enabled {
 		networkPolicyEnabled = true
 	}
 	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
@@ -643,7 +643,7 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 		if np.Status == NodePoolStatusStopping {
 			continue
 		}
-
+		np := np
 		newNP := gkev1.GKENodePoolConfig{
 			Name:             &np.Name,
 			Version:          &np.Version,
