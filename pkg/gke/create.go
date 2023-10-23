@@ -163,7 +163,16 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 		return fmt.Errorf("cluster name is required")
 	}
 
+	nodeP := map[string]bool{}
 	for _, np := range config.Spec.NodePools {
+		if np.Name == nil {
+			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Name)
+		}
+		if nodeP[*np.Name] {
+			return fmt.Errorf("NodePool names must be unique within the [%s] cluster to avoid duplication", config.Spec.ClusterName)
+		}
+		nodeP[*np.Name] = true
+
 		if np.Autoscaling != nil && np.Autoscaling.Enabled {
 			if np.Autoscaling.MinNodeCount < 1 || np.Autoscaling.MaxNodeCount < np.Autoscaling.MinNodeCount {
 				return fmt.Errorf("minNodeCount in the NodePool must be >= 1 and <= maxNodeCount")
