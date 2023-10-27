@@ -20,6 +20,9 @@ var _ = Describe("CreateCluster", func() {
 		subnetworkName     = "test-subnetwork"
 		emptyString        = ""
 		boolTrue           = true
+		nodePoolName       = "test-node-pool"
+		initialNodeCount   = int64(3)
+		maxPodsConstraint  = int64(110)
 		config             = &gkev1.GKEClusterConfig{
 			Spec: gkev1.GKEClusterConfigSpec{
 				Region:                "test-region",
@@ -111,6 +114,45 @@ var _ = Describe("CreateCluster", func() {
 					},
 				}, nil)
 
+		err := Create(ctx, clusterServiceMock, config)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should fail to create cluster with duplicated nodepool names", func() {
+		config.Spec.NodePools = []gkev1.GKENodePoolConfig{
+			{
+				Name:              &nodePoolName,
+				InitialNodeCount:  &initialNodeCount,
+				Version:           &k8sVersion,
+				MaxPodsConstraint: &maxPodsConstraint,
+				Config:            &gkev1.GKENodeConfig{},
+				Autoscaling: &gkev1.GKENodePoolAutoscaling{
+					Enabled:      true,
+					MinNodeCount: 3,
+					MaxNodeCount: 5,
+				},
+				Management: &gkev1.GKENodePoolManagement{
+					AutoRepair:  true,
+					AutoUpgrade: true,
+				},
+			},
+			{
+				Name:              &nodePoolName,
+				InitialNodeCount:  &initialNodeCount,
+				Version:           &k8sVersion,
+				MaxPodsConstraint: &maxPodsConstraint,
+				Config:            &gkev1.GKENodeConfig{},
+				Autoscaling: &gkev1.GKENodePoolAutoscaling{
+					Enabled:      true,
+					MinNodeCount: 3,
+					MaxNodeCount: 5,
+				},
+				Management: &gkev1.GKENodePoolManagement{
+					AutoRepair:  true,
+					AutoUpgrade: true,
+				},
+			},
+		}
 		err := Create(ctx, clusterServiceMock, config)
 		Expect(err).To(HaveOccurred())
 	})
