@@ -21,6 +21,7 @@ package v1
 import (
 	v1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/lasso/pkg/controller"
+	"github.com/rancher/wrangler/pkg/generic"
 	"github.com/rancher/wrangler/pkg/schemes"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -43,6 +44,6 @@ type version struct {
 	controllerFactory controller.SharedControllerFactory
 }
 
-func (c *version) GKEClusterConfig() GKEClusterConfigController {
-	return NewGKEClusterConfigController(schema.GroupVersionKind{Group: "gke.cattle.io", Version: "v1", Kind: "GKEClusterConfig"}, "gkeclusterconfigs", true, c.controllerFactory)
+func (v *version) GKEClusterConfig() GKEClusterConfigController {
+	return generic.NewController[*v1.GKEClusterConfig, *v1.GKEClusterConfigList](schema.GroupVersionKind{Group: "gke.cattle.io", Version: "v1", Kind: "GKEClusterConfig"}, "gkeclusterconfigs", true, v.controllerFactory)
 }
