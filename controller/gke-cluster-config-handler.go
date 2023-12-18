@@ -374,7 +374,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	if config.Spec.NodePools != nil {
+	if config.Spec.NodePools != nil && (config.Spec.AutopilotConfig == nil || !config.Spec.AutopilotConfig.Enabled) {
 		downstreamNodePools, err := buildNodePoolMap(config.Spec.NodePools, config.Name)
 		if err != nil {
 			return config, err
@@ -634,6 +634,12 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 	newSpec.MaintenanceWindow = &window
 	if cluster.MaintenancePolicy != nil && cluster.MaintenancePolicy.Window != nil && cluster.MaintenancePolicy.Window.DailyMaintenanceWindow != nil {
 		newSpec.MaintenanceWindow = &cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime
+	}
+
+	if cluster.Autopilot != nil && cluster.Autopilot.Enabled {
+		newSpec.AutopilotConfig = &gkev1.GKEAutopilotConfig{
+			Enabled: cluster.Autopilot.Enabled,
+		}
 	}
 
 	// build node groups
