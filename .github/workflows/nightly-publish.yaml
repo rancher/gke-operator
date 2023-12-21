@@ -2,30 +2,11 @@ name: Nightly
 on:
   schedule:
     - cron: '0 1 * * *'
+  workflow_dispatch:
 jobs:
-  nightly:
-    env:
-        REPO: ttl.sh/gke-operator-nightly
-        TAG: 1d
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-            fetch-depth: 0
-      - name: Build binary
-        run: make build
-      - name: Set current date as env variable
-        run: echo "NOW=$(date +'%Y%m%d')" >> $GITHUB_ENV
-      - name: Set up Docker Buildx
-        id: buildx
-        uses: docker/setup-buildx-action@v3.0.0
-      - name: Build and push image
-        uses: docker/build-push-action@v5.1.0
-        with:
-          context: .
-          tags: ${{ env.REPO}}-${{ env.NOW }}:${{ env.TAG }}
-          push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          file: package/Dockerfile
+  publish_nightly:
+    uses: rancher-sandbox/highlander-reusable-workflows/.github/workflows/operator-with-latest-rancher-build.yaml@main
+    with:
+      operator_name: gke-operator
+      rancher_ref: release/v2.8
+      operator_commit: ${{ github.sha }}
