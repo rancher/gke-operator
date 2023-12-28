@@ -3,15 +3,15 @@ package controller
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	gkecontrollers "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke"
-	wranglerv1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/core/v1"
+
+	"github.com/rancher/gke-operator/pkg/gke/services"
+	wranglerv1 "github.com/rancher/wrangler/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2"
 
 	gkeapi "google.golang.org/api/container/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,6 +67,7 @@ type Handler struct {
 	gkeEnqueue      func(namespace, name string)
 	secrets         wranglerv1.SecretClient
 	secretsCache    wranglerv1.SecretCache
+	gkeClient       services.GKEClusterService
 }
 
 func Register(
@@ -160,7 +161,7 @@ func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cluster, err := GetCluster(ctx, h.secretsCache, &config.Spec)
+	cluster, err := GetCluster(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -186,7 +187,7 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	cred, err := GetSecret(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -215,7 +216,7 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	cred, err := GetSecret(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -238,7 +239,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cluster, err := GetCluster(ctx, h.secretsCache, &config.Spec)
+	cluster, err := GetCluster(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -272,7 +273,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 		}
 	}
 
-	upstreamSpec, err := BuildUpstreamClusterState(cluster)
+	upstreamSpec, err := h.buildUpstreamClusterState(cluster)
 	if err != nil {
 		return config, err
 	}
@@ -297,7 +298,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cred, err := getSecret(ctx, h.secretsCache, &config.Spec)
+	cred, err := GetSecret(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -483,7 +484,7 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	cluster, err := GetCluster(ctx, h.secretsCache, &config.Spec)
+	cluster, err := GetCluster(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -505,53 +506,7 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 	return config, nil
 }
 
-func getSecret(_ context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (string, error) {
-	ns, id := parseCredential(configSpec.GoogleCredentialSecret)
-	secret, err := secretsCache.Get(ns, id)
-	if err != nil {
-		return "", err
-	}
-	dataBytes, ok := secret.Data["googlecredentialConfig-authEncodedJson"]
-	if !ok {
-		return "", fmt.Errorf("could not read malformed cloud credential secret %s from namespace %s", id, ns)
-	}
-	return string(dataBytes), nil
-}
-
-func parseCredential(ref string) (namespace string, name string) {
-	parts := strings.SplitN(ref, ":", 2)
-	if len(parts) == 1 {
-		return "", parts[0]
-	}
-	return parts[0], parts[1]
-}
-
-func buildNodePoolMap(nodePools []gkev1.GKENodePoolConfig, clusterName string) (map[string]*gkev1.GKENodePoolConfig, error) {
-	ret := make(map[string]*gkev1.GKENodePoolConfig, len(nodePools))
-	for i := range nodePools {
-		if nodePools[i].Name != nil {
-			if _, ok := ret[*nodePools[i].Name]; ok {
-				return nil, fmt.Errorf("cluster [%s] cannot have multiple nodepools with name %s", clusterName, *nodePools[i].Name)
-			}
-			ret[*nodePools[i].Name] = &nodePools[i]
-		}
-	}
-	return ret, nil
-}
-
-func GetCluster(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
-	cred, err := getSecret(ctx, secretsCache, configSpec)
-	if err != nil {
-		return nil, err
-	}
-	gkeClient, err := gke.GetGKEClusterClient(ctx, cred)
-	if err != nil {
-		return nil, err
-	}
-	return gke.GetCluster(ctx, gkeClient, configSpec)
-}
-
-func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
+func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfigSpec, error) {
 	newSpec := &gkev1.GKEClusterConfigSpec{
 		KubernetesVersion:     &cluster.CurrentMasterVersion,
 		EnableKubernetesAlpha: &cluster.EnableKubernetesAlpha,
@@ -706,11 +661,16 @@ func BuildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKEClusterConfig
 // createCASecret creates a secret containing a CA and endpoint for use in generating a kubeconfig file.
 func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi.Cluster) error {
 	var err error
-	endpoint := cluster.Endpoint
-	var ca []byte
-	if cluster.MasterAuth != nil {
-		ca = []byte(cluster.MasterAuth.ClusterCaCertificate)
+
+	if cluster.Endpoint == "" {
+		return fmt.Errorf("cluster [%s] has no endpoint", config.Name)
 	}
+	endpoint := cluster.Endpoint
+
+	if cluster.MasterAuth == nil || cluster.MasterAuth.ClusterCaCertificate == "" {
+		return fmt.Errorf("cluster [%s] has no CA", config.Name)
+	}
+	ca := []byte(cluster.MasterAuth.ClusterCaCertificate)
 
 	_, err = h.secrets.Create(
 		&corev1.Secret{
@@ -738,14 +698,15 @@ func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi
 	return err
 }
 
-func GetTokenSource(ctx context.Context, secretsCache wranglerv1.SecretCache, configSpec *gkev1.GKEClusterConfigSpec) (oauth2.TokenSource, error) {
-	cred, err := getSecret(ctx, secretsCache, configSpec)
-	if err != nil {
-		return nil, fmt.Errorf("error getting secret: %w", err)
+func buildNodePoolMap(nodePools []gkev1.GKENodePoolConfig, clusterName string) (map[string]*gkev1.GKENodePoolConfig, error) {
+	ret := make(map[string]*gkev1.GKENodePoolConfig, len(nodePools))
+	for i := range nodePools {
+		if nodePools[i].Name != nil {
+			if _, ok := ret[*nodePools[i].Name]; ok {
+				return nil, fmt.Errorf("cluster [%s] cannot have multiple nodepools with name %s", clusterName, *nodePools[i].Name)
+			}
+			ret[*nodePools[i].Name] = &nodePools[i]
+		}
 	}
-	ts, err := gke.GetTokenSource(ctx, cred)
-	if err != nil {
-		return nil, fmt.Errorf("error getting oauth2 token: %w", err)
-	}
-	return ts, nil
+	return ret, nil
 }
