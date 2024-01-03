@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/golang/mock/gomock"
@@ -40,6 +41,13 @@ var _ = Describe("createCASecret", func() {
 		}
 		Expect(cl.Create(ctx, gkeConfig)).To(Succeed())
 
+		caSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      gkeConfig.Name,
+				Namespace: gkeConfig.Namespace,
+			},
+		}
+
 		clusterState = &gkeapi.Cluster{
 			Name:     "test-cluster",
 			Endpoint: "https://test.com",
@@ -56,7 +64,7 @@ var _ = Describe("createCASecret", func() {
 	})
 
 	AfterEach(func() {
-		Expect(test.CleanupAndWait(ctx, cl, gkeConfig)).To(Succeed())
+		Expect(test.CleanupAndWait(ctx, cl, gkeConfig, caSecret)).To(Succeed())
 	})
 
 	It("should create CA secret", func() {
@@ -65,12 +73,6 @@ var _ = Describe("createCASecret", func() {
 	})
 
 	It("should return nil if caSecret exist", func() {
-		caSecret = &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      gkeConfig.Name,
-				Namespace: gkeConfig.Namespace,
-			},
-		}
 		Expect(cl.Create(ctx, caSecret)).To(Succeed())
 
 		err := handler.createCASecret(gkeConfig, clusterState)
@@ -367,23 +369,24 @@ var _ = Describe("importCluster", func() {
 				Namespace: gkeConfig.Namespace,
 			},
 		}
-		Expect(cl.Create(ctx, caSecret)).To(Succeed())
 
 		handler = &Handler{
 			gkeCC:        gkeFactory.Gke().V1().GKEClusterConfig(),
 			secrets:      coreFactory.Core().V1().Secret(),
 			secretsCache: coreFactory.Core().V1().Secret().Cache(),
+			gkeClient:    gkeServiceMock,
+			gkeClientCtx: context.Background(),
 		}
 	})
 
 	AfterEach(func() {
-		Expect(test.CleanupAndWait(ctx, cl, testNamespace, credentialSecret, gkeConfig, caSecret)).To(Succeed())
+		Expect(test.CleanupAndWait(ctx, cl, credentialSecret, gkeConfig, caSecret)).To(Succeed())
 	})
 
 	It("should import cluster and update status", func() {
 		gkeServiceMock.EXPECT().
 			ClusterGet(
-				ctx,
+				context.Background(),
 				gke.ClusterRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone),
 					gkeConfig.Spec.ClusterName)).
 			Return(clusterState, nil)
