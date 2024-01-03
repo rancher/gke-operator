@@ -23,7 +23,7 @@ func Create(ctx context.Context, gkeClient services.GKEClusterService, config *g
 		return err
 	}
 
-	createClusterRequest := newClusterCreateRequest(config)
+	createClusterRequest := NewClusterCreateRequest(config)
 
 	_, err = gkeClient.ClusterCreate(ctx,
 		LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
@@ -60,8 +60,8 @@ func CreateNodePool(ctx context.Context, gkeClient services.GKEClusterService, c
 	return Changed, nil
 }
 
-// newClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
-func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
+// NewClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
+func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
 	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{

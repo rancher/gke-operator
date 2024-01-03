@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
@@ -243,14 +242,14 @@ const authTestJson = `
 
 var _ = Describe("importCluster", func() {
 	var (
-		handler          *Handler
-		mockController   *gomock.Controller
-		gkeServiceMock   *mock_services.MockGKEClusterService
-		gkeConfig        *gkev1.GKEClusterConfig
-		credentialSecret *corev1.Secret
-		caSecret         *corev1.Secret
-		testNamespace    *corev1.Namespace
-		clusterState     *gkeapi.Cluster
+		handler             *Handler
+		mockController      *gomock.Controller
+		gkeServiceMock      *mock_services.MockGKEClusterService
+		gkeConfig           *gkev1.GKEClusterConfig
+		credentialSecret    *corev1.Secret
+		caSecret            *corev1.Secret
+		importTestNamespace *corev1.Namespace
+		clusterState        *gkeapi.Cluster
 	)
 
 	BeforeEach(func() {
@@ -328,18 +327,18 @@ var _ = Describe("importCluster", func() {
 			},
 		}
 
-		testNamespace = &corev1.Namespace{
+		importTestNamespace = &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-namespace",
+				Name: "import-test-namespace",
 			},
 			Spec: corev1.NamespaceSpec{},
 		}
-		Expect(cl.Create(ctx, testNamespace)).To(Succeed())
+		cl.Create(ctx, importTestNamespace)
 
 		credentialSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-secret",
-				Namespace: testNamespace.Name,
+				Namespace: importTestNamespace.Name,
 			},
 			Data: map[string][]byte{
 				"googlecredentialConfig-authEncodedJson": []byte(authTestJson),
@@ -347,12 +346,11 @@ var _ = Describe("importCluster", func() {
 		}
 		Expect(cl.Create(ctx, credentialSecret)).To(Succeed())
 		cl.Get(ctx, client.ObjectKeyFromObject(credentialSecret), credentialSecret)
-		fmt.Printf("TESTO %v", credentialSecret.Data["googlecredentialConfig-authEncodedJson"])
 
 		gkeConfig = &gkev1.GKEClusterConfig{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-cluster",
-				Namespace: testNamespace.Name,
+				Namespace: importTestNamespace.Name,
 			},
 			Spec: gkev1.GKEClusterConfigSpec{
 				ClusterName:            "test-cluster",
@@ -391,15 +389,10 @@ var _ = Describe("importCluster", func() {
 					gkeConfig.Spec.ClusterName)).
 			Return(clusterState, nil)
 
-		fmt.Println("TEST1")
 		gotGKEConfig, err := handler.importCluster(gkeConfig)
-		fmt.Println("TEST2")
 		Expect(err).ToNot(HaveOccurred())
-		fmt.Println("TEST3")
 		Expect(gotGKEConfig.Status.Phase).To(Equal(gkeConfigActivePhase))
-		fmt.Println("TEST4")
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(caSecret), caSecret)).To(Succeed())
-		fmt.Println("TEST5")
 		Expect(caSecret.OwnerReferences).To(HaveLen(1))
 		Expect(caSecret.OwnerReferences[0].Name).To(Equal(gotGKEConfig.Name))
 		Expect(caSecret.OwnerReferences[0].Kind).To(Equal(gkeClusterConfigKind))
@@ -409,12 +402,249 @@ var _ = Describe("importCluster", func() {
 
 	})
 
-	/*
-		It("should return error if something fails", func() {
-			gotGKEConfig, err := handler.importCluster(gkeConfig)
-			Expect(err).To(HaveOccurred())
-			Expect(gotGKEConfig).NotTo(BeNil())
-		})
-	*/
+	It("should return error if cluster doesn't exist", func() {
+		gkeServiceMock.EXPECT().
+			ClusterGet(
+				context.Background(),
+				gke.ClusterRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone),
+					gkeConfig.Spec.ClusterName)).
+			Return(&gkeapi.Cluster{}, nil)
 
+		gotGKEConfig, err := handler.importCluster(gkeConfig)
+		Expect(err).To(HaveOccurred())
+		Expect(gotGKEConfig).NotTo(BeNil())
+	})
+})
+
+var _ = Describe("createCluster", func() {
+	var (
+		handler             *Handler
+		mockController      *gomock.Controller
+		gkeServiceMock      *mock_services.MockGKEClusterService
+		gkeConfig           *gkev1.GKEClusterConfig
+		credentialSecret    *corev1.Secret
+		caSecret            *corev1.Secret
+		createTestNamespace *corev1.Namespace
+		clusterState        *gkeapi.Cluster
+	)
+
+	BeforeEach(func() {
+		mockController = gomock.NewController(GinkgoT())
+		gkeServiceMock = mock_services.NewMockGKEClusterService(mockController)
+
+		clusterState = &gkeapi.Cluster{
+			Name:                 "test-cluster",
+			CurrentMasterVersion: "1.25.13-gke.200",
+			Zone:                 "test-east1",
+			Locations:            []string{"test-east1-a", "test-east1-b", "test-east1-c"},
+			Endpoint:             "https://test.com",
+			MasterAuth: &gkeapi.MasterAuth{
+				ClusterCaCertificate: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCnRlc3QKLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=",
+			},
+			EnableKubernetesAlpha: true,
+			ClusterIpv4Cidr:       "10.10.10.0/24",
+			LoggingService:        "logging.googleapis.com",
+			MonitoringService:     "monitoring.googleapis.com",
+			Network:               "test-network",
+			Subnetwork:            "test-subnetwork",
+			IpAllocationPolicy:    &gkeapi.IPAllocationPolicy{},
+			MasterAuthorizedNetworksConfig: &gkeapi.MasterAuthorizedNetworksConfig{
+				Enabled: false,
+			},
+			ResourceLabels: map[string]string{
+				"label1": "test1",
+				"label2": "test2",
+				"label3": "test3",
+			},
+			NetworkPolicy: &gkeapi.NetworkPolicy{
+				Enabled: true,
+			},
+			PrivateClusterConfig: &gkeapi.PrivateClusterConfig{
+				EnablePrivateEndpoint: true,
+				EnablePrivateNodes:    true,
+				MasterIpv4CidrBlock:   "172.16.0.0/28",
+			},
+			AddonsConfig: &gkeapi.AddonsConfig{
+				HttpLoadBalancing: &gkeapi.HttpLoadBalancing{
+					Disabled: false,
+				},
+				HorizontalPodAutoscaling: &gkeapi.HorizontalPodAutoscaling{
+					Disabled: false,
+				},
+				NetworkPolicyConfig: &gkeapi.NetworkPolicyConfig{
+					Disabled: false,
+				},
+			},
+			NodePools: []*gkeapi.NodePool{
+				{
+					Name:             "np-tes1",
+					InitialNodeCount: 1,
+					Version:          "1.25.13-gke.200",
+					MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
+						MaxPodsPerNode: 110,
+					},
+					Config: &gkeapi.NodeConfig{
+						MachineType: "n1-standard-1",
+						DiskSizeGb:  100,
+						DiskType:    "pd-standard",
+						ImageType:   "COS",
+						Preemptible: false,
+					},
+					Autoscaling: &gkeapi.NodePoolAutoscaling{
+						Enabled:      true,
+						MinNodeCount: 3,
+						MaxNodeCount: 5,
+					},
+					Management: &gkeapi.NodeManagement{
+						AutoRepair:  true,
+						AutoUpgrade: true,
+					},
+				},
+			},
+		}
+
+		createTestNamespace = &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "create-test-namespace",
+			},
+			Spec: corev1.NamespaceSpec{},
+		}
+		cl.Create(ctx, createTestNamespace)
+
+		credentialSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-secret",
+				Namespace: createTestNamespace.Name,
+			},
+			Data: map[string][]byte{
+				"googlecredentialConfig-authEncodedJson": []byte(authTestJson),
+			},
+		}
+		Expect(cl.Create(ctx, credentialSecret)).To(Succeed())
+		cl.Get(ctx, client.ObjectKeyFromObject(credentialSecret), credentialSecret)
+
+		k8sVersion := "1.25.12-gke.200"
+		clusterIpv4Cidr := "10.42.0.0/16"
+		networkName := "test-network"
+		subnetworkName := "test-subnetwork"
+		emptyString := ""
+		//boolTrue := true
+		boolFalse := false
+		nodePoolName := "test-node-pool"
+		initialNodeCount := int64(3)
+		maxPodsConstraint := int64(110)
+
+		gkeConfig = &gkev1.GKEClusterConfig{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-cluster",
+				Namespace: createTestNamespace.Name,
+			},
+			Spec: gkev1.GKEClusterConfigSpec{
+				ClusterName:           "test-cluster",
+				Description:           "test cluster",
+				ProjectID:             "example-project-name",
+				Region:                "test-east1",
+				Labels:                map[string]string{"test": "test"},
+				KubernetesVersion:     &k8sVersion,
+				LoggingService:        &emptyString,
+				MonitoringService:     &emptyString,
+				EnableKubernetesAlpha: &boolFalse,
+				ClusterIpv4CidrBlock:  &clusterIpv4Cidr,
+				IPAllocationPolicy: &gkev1.GKEIPAllocationPolicy{
+					UseIPAliases: true,
+				},
+				NodePools: []gkev1.GKENodePoolConfig{
+					{
+						Name: &nodePoolName,
+						Autoscaling: &gkev1.GKENodePoolAutoscaling{
+							Enabled: false,
+						},
+						Config:            &gkev1.GKENodeConfig{},
+						InitialNodeCount:  &initialNodeCount,
+						MaxPodsConstraint: &maxPodsConstraint,
+						Version:           &k8sVersion,
+						Management: &gkev1.GKENodePoolManagement{
+							AutoRepair:  true,
+							AutoUpgrade: true,
+						},
+					},
+				},
+				ClusterAddons: &gkev1.GKEClusterAddons{
+					HTTPLoadBalancing:        true,
+					NetworkPolicyConfig:      false,
+					HorizontalPodAutoscaling: true,
+				},
+				NetworkPolicyEnabled: &boolFalse,
+				Network:              &networkName,
+				Subnetwork:           &subnetworkName,
+				PrivateClusterConfig: &gkev1.GKEPrivateClusterConfig{
+					EnablePrivateEndpoint: false,
+					EnablePrivateNodes:    false,
+				},
+				MasterAuthorizedNetworksConfig: &gkev1.GKEMasterAuthorizedNetworksConfig{
+					Enabled: false,
+				},
+				Locations:              []string{},
+				MaintenanceWindow:      &emptyString,
+				GoogleCredentialSecret: credentialSecret.Namespace + ":" + credentialSecret.Name,
+				Imported:               false,
+			},
+		}
+		Expect(cl.Create(ctx, gkeConfig)).To(Succeed())
+
+		caSecret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      gkeConfig.Name,
+				Namespace: gkeConfig.Namespace,
+			},
+		}
+
+		handler = &Handler{
+			gkeCC:        gkeFactory.Gke().V1().GKEClusterConfig(),
+			secrets:      coreFactory.Core().V1().Secret(),
+			secretsCache: coreFactory.Core().V1().Secret().Cache(),
+			gkeClient:    gkeServiceMock,
+			gkeClientCtx: context.Background(),
+		}
+	})
+
+	AfterEach(func() {
+		Expect(test.CleanupAndWait(ctx, cl, credentialSecret, gkeConfig, caSecret)).To(Succeed())
+	})
+
+	It("should create cluster and update status", func() {
+		createClusterRequest := gke.NewClusterCreateRequest(gkeConfig)
+		gkeServiceMock.EXPECT().
+			ClusterCreate(
+				context.Background(),
+				gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone)),
+				createClusterRequest).
+			Return(&gkeapi.Operation{}, nil)
+
+		gkeServiceMock.EXPECT().
+			ClusterList(
+				context.Background(),
+				gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		gotGKEConfig, err := handler.create(gkeConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gotGKEConfig.Status.Phase).To(Equal(gkeConfigCreatingPhase))
+	})
+
+	It("should return error if cluster already exist", func() {
+		ctx := context.Background()
+
+		gkeServiceMock.EXPECT().
+			ClusterList(
+				ctx,
+				gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{
+				Clusters: []*gkeapi.Cluster{clusterState},
+			}, nil)
+
+		gotGKEConfig, err := handler.create(gkeConfig)
+		Expect(err).To(HaveOccurred())
+		Expect(gotGKEConfig).NotTo(BeNil())
+	})
 })
