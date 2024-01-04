@@ -134,6 +134,10 @@ docker-build-e2e:
 		--build-arg "COMMITDATE=${COMMITDATE}" \
 		-t ${REPO}:${TAG} .
 
+.PHOHY: delete-local-kind-cluster
+delete-local-kind-cluster: ## Delete the local kind cluster
+	kind delete cluster --name=$(CLUSTER_NAME)
+
 .PHONY: clean
 clean:
 	rm -rf build bin dist
