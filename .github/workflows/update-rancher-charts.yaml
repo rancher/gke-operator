@@ -5,7 +5,7 @@ on:
       ref:
         description: "Branch to use for GitHub action workflow"
         required: true
-        default: "master"
+        default: "main"
       operator_path:
         description: "Operator github repo for the workflow"
         required: true
