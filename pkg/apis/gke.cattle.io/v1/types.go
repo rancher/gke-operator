@@ -134,6 +134,11 @@ type GKEClusterConfigSpec struct {
 	// MaintenanceWindow is the maintenance window configuration.
 	// +optional
 	MaintenanceWindow *string `json:"maintenanceWindow,omitempty" norman:"pointer"`
+
+	// GKE Autopilot is a mode of operation in GKE in which Google manages your cluster configuration,
+	// including your nodes, scaling, security, and other preconfigured settings.
+	// +optional
+	AutopilotConfig *GKEAutopilotConfig `json:"autopilotConfig,omitempty"`
 }
 
 type GKEIPAllocationPolicy struct {
@@ -349,4 +354,8 @@ type GKENodePoolManagement struct {
 	// +optional
 	// +kubebuilder:default=false
 	AutoUpgrade bool `json:"autoUpgrade,omitempty"`
+}
+
+type GKEAutopilotConfig struct {
+	Enabled bool `json:"enabled,omitempty"`
 }

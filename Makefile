@@ -9,7 +9,7 @@ MOCKGEN_BIN := mockgen
 MOCKGEN := $(BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
 MOCKGEN_PKG := github.com/golang/mock/mockgen
 
-GINKGO_VER := v2.12.0
+GINKGO_VER := v2.13.2
 GINKGO_BIN := ginkgo
 GINKGO := $(BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
 

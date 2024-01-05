@@ -98,29 +98,35 @@ func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		}
 	}
 
-	addons := config.Spec.ClusterAddons
-	request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !addons.HTTPLoadBalancing}
-	request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !addons.HorizontalPodAutoscaling}
-	request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !addons.NetworkPolicyConfig}
-
-	request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
-
-	for np := range config.Spec.NodePools {
-		nodePool := newGKENodePoolFromConfig(&config.Spec.NodePools[np], config)
-		request.Cluster.NodePools = append(request.Cluster.NodePools, nodePool)
-	}
-
-	if config.Spec.MasterAuthorizedNetworksConfig != nil {
-		blocks := make([]*gkeapi.CidrBlock, len(config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks))
-		for _, b := range config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks {
-			blocks = append(blocks, &gkeapi.CidrBlock{
-				CidrBlock:   b.CidrBlock,
-				DisplayName: b.DisplayName,
-			})
+	if config.Spec.AutopilotConfig != nil && config.Spec.AutopilotConfig.Enabled {
+		request.Cluster.Autopilot = &gkeapi.Autopilot{
+			Enabled: config.Spec.AutopilotConfig.Enabled,
 		}
-		request.Cluster.MasterAuthorizedNetworksConfig = &gkeapi.MasterAuthorizedNetworksConfig{
-			Enabled:    config.Spec.MasterAuthorizedNetworksConfig.Enabled,
-			CidrBlocks: blocks,
+	} else {
+		addons := config.Spec.ClusterAddons
+		request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !addons.HTTPLoadBalancing}
+		request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !addons.HorizontalPodAutoscaling}
+		request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !addons.NetworkPolicyConfig}
+
+		request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
+
+		for np := range config.Spec.NodePools {
+			nodePool := newGKENodePoolFromConfig(&config.Spec.NodePools[np], config)
+			request.Cluster.NodePools = append(request.Cluster.NodePools, nodePool)
+		}
+
+		if config.Spec.MasterAuthorizedNetworksConfig != nil {
+			blocks := make([]*gkeapi.CidrBlock, len(config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks))
+			for _, b := range config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks {
+				blocks = append(blocks, &gkeapi.CidrBlock{
+					CidrBlock:   b.CidrBlock,
+					DisplayName: b.DisplayName,
+				})
+			}
+			request.Cluster.MasterAuthorizedNetworksConfig = &gkeapi.MasterAuthorizedNetworksConfig{
+				Enabled:    config.Spec.MasterAuthorizedNetworksConfig.Enabled,
+				CidrBlocks: blocks,
+			}
 		}
 	}
 
@@ -161,6 +167,10 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	}
 	if config.Spec.ClusterName == "" {
 		return fmt.Errorf("cluster name is required")
+	}
+
+	if len(config.Spec.NodePools) != 0 && config.Spec.AutopilotConfig != nil && config.Spec.AutopilotConfig.Enabled {
+		return fmt.Errorf("cannot create node pools for autopilot clusters")
 	}
 
 	nodeP := map[string]bool{}

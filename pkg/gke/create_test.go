@@ -118,6 +118,73 @@ var _ = Describe("CreateCluster", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
+	It("should successfully create autopilot cluster", func() {
+		config.Spec.ClusterName = "test-autopilot-cluster"
+		config.Spec.AutopilotConfig = &gkev1.GKEAutopilotConfig{
+			Enabled: true,
+		}
+
+		createClusterRequest := newClusterCreateRequest(config)
+		clusterServiceMock.EXPECT().
+			ClusterCreate(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
+				createClusterRequest).
+			Return(&gkeapi.Operation{}, nil)
+
+		clusterServiceMock.EXPECT().
+			ClusterList(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		err := Create(ctx, clusterServiceMock, config)
+		Expect(err).ToNot(HaveOccurred())
+
+		clusterServiceMock.EXPECT().
+			ClusterGet(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone),
+					config.Spec.ClusterName)).
+			Return(
+				&gkeapi.Cluster{
+					Name: "test-autopilot-cluster",
+				}, nil)
+
+		managedCluster, err := GetCluster(ctx, clusterServiceMock, &config.Spec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(managedCluster.Name).To(Equal(config.Spec.ClusterName))
+	})
+
+	It("should fail to create autopilot cluster with nodepools", func() {
+		config.Spec.ClusterName = "test-autopilot-cluster"
+		config.Spec.AutopilotConfig = &gkev1.GKEAutopilotConfig{
+			Enabled: true,
+		}
+
+		config.Spec.NodePools = []gkev1.GKENodePoolConfig{
+			{
+				Name:              &nodePoolName,
+				InitialNodeCount:  &initialNodeCount,
+				Version:           &k8sVersion,
+				MaxPodsConstraint: &maxPodsConstraint,
+				Config:            &gkev1.GKENodeConfig{},
+				Autoscaling: &gkev1.GKENodePoolAutoscaling{
+					Enabled:      true,
+					MinNodeCount: 3,
+					MaxNodeCount: 5,
+				},
+				Management: &gkev1.GKENodePoolManagement{
+					AutoRepair:  true,
+					AutoUpgrade: true,
+				},
+			},
+		}
+
+		err := Create(ctx, clusterServiceMock, config)
+		Expect(err).To(HaveOccurred())
+	})
+
 	It("should fail to create cluster with duplicated nodepool names", func() {
 		config.Spec.NodePools = []gkev1.GKENodePoolConfig{
 			{

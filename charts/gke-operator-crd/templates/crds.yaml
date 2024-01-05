@@ -21,6 +21,12 @@ spec:
         properties:
           spec:
             properties:
+              autopilotConfig:
+                nullable: true
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               clusterAddons:
                 nullable: true
                 properties:
