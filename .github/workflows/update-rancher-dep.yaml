@@ -1,4 +1,4 @@
-name: Update operator in rancher/rancher
+name: Update GKE operator in rancher/rancher
 on:
   workflow_dispatch:
     inputs:
