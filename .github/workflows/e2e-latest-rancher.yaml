@@ -12,3 +12,4 @@ jobs:
     uses: ./.github/workflows/e2e.yaml
     secrets:
       GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+      GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}

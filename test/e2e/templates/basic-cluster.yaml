@@ -7,7 +7,7 @@ spec:
   description: "gke e2e basic cluster"
   labels: {}
   region: "us-west1"
-  projectID: "your-project-id"
+  projectID: "${GKE_PROJECT_ID}"
   kubernetesVersion: "1.28.4-gke.1083000"
   loggingService: ""
   monitoringService: ""
