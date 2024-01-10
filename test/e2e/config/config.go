@@ -40,6 +40,7 @@ type E2EConfig struct {
 	RancherChartURL string `yaml:"rancherChartURL"`
 
 	GkeCredentials string `json:"gkeCredentials"`
+	GkeProjectID   string `yaml:"gkeProjectID"`
 }
 
 // ReadE2EConfig read config from yaml and substitute variables using envsubst.
@@ -98,6 +99,10 @@ func ReadE2EConfig(configPath string) (*E2EConfig, error) { //nolint:gocyclo
 
 	if gkeCredentials := os.Getenv("GKE_CREDENTIALS"); gkeCredentials != "" {
 		config.GkeCredentials = gkeCredentials
+	}
+
+	if gkeProjectID := os.Getenv("GKE_PROJECT_ID"); gkeProjectID != "" {
+		config.GkeProjectID = gkeProjectID
 	}
 
 	if certManagerVersion := os.Getenv("CERT_MANAGER_VERSION"); certManagerVersion != "" {

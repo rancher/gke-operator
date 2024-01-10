@@ -5,6 +5,13 @@ on:
       GKE_CREDENTIALS:
         description: "GKE credentials"
         required: true
+      GKE_PROJECT_ID:
+        description: "GKE project ID"
+        required: true
+env:
+  GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+  GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+
 jobs:
   e2e-tests:
     env:
@@ -66,6 +73,10 @@ jobs:
           skipClusterCreation: "true"
       - name: Create kind cluster
         run: make setup-kind
+      - name: Set the value
+        run: |
+          GKE_PROJECT_ID="${{ env.GKE_PROJECT_ID }}"
+          echo "GKE_PROJECT_ID=${GKE_PROJECT_ID}" >> $GITHUB_ENV
       - name: E2E tests
         env:
           GKE_CREDENTIALS: "${{ secrets.GKE_CREDENTIALS }}"

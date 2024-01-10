@@ -34,14 +34,14 @@ We run e2e tests after every merged PR and periodically every 24 hours. They are
 
 For running e2e tests:
 
-1. Set at least a `projectID` to valid projectID in [GKEClusterConfig](./test/e2e/templates/basic-cluster.yaml) definition, which is used to provision a GKE cluster 
-2. Set `GKE_CREDENTIALS` environment variable by providing a full path to valid gke credentials JSON:
+1. Set `GKE_PROJECT_ID` and `GKE_CREDENTIALS` environment variables:
 
 ```sh
+    export GKE_PROJECT_ID="replace-with-your-value"
     export GKE_CREDENTIALS=$( cat /path/to/gke-credentials.json )
 ```
 
-3. and finally run:
+2. and finally run:
 
 ```sh
     make kind-e2e-tests
