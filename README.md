@@ -1,3 +1,5 @@
+[![Nightly e2e tests](https://github.com/rancher/gke-operator/actions/workflows/e2e-latest-rancher.yaml/badge.svg?branch=main)](https://github.com/rancher/gke-operator/actions/workflows/e2e-latest-rancher.yaml)
+
 # gke-operator
 
 The GKE operator is a controller for Kubernetes Custom Resource Definitions (CRDs) that manages cluster provisioning in Google Kubernetes Engine. It uses a GKEClusterConfig defined by a CRD.
