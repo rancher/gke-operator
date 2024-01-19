@@ -39,6 +39,6 @@ spec:
     enablePrivateNodes: false
   masterAuthorizedNetworks:
     enabled: false
-  locations: []
+  locations: ["us-west1-c"]
   maintenanceWindow: ""
   googleCredentialSecret: default:gke-credentials

@@ -73,4 +73,119 @@ var _ = Describe("BasicCluster", func() {
 			return fmt.Errorf("cluster is not ready yet. Current phase: %s", currentCluster.Status.Phase)
 		}, waitLong, pollInterval).ShouldNot(HaveOccurred())
 	})
+
+	It("Successfully adds and removes a node pool", func() {
+		initialNodePools := gkeConfig.DeepCopy().Spec.NodePools // save to restore later and test deletion
+
+		Expect(cl.Get(ctx, runtimeclient.ObjectKey{Name: cluster.Name}, cluster)).Should(Succeed())
+		patch := runtimeclient.MergeFrom(cluster.DeepCopy())
+
+		nodePoolName := "gke-e2e-additional-node-pool"
+		initialNodeCount := int64(1)
+		maxPodsConstraint := int64(110)
+		nodePool := gkev1.GKENodePoolConfig{
+			Name:              &nodePoolName,
+			InitialNodeCount:  &initialNodeCount,
+			Version:           gkeConfig.Spec.KubernetesVersion,
+			MaxPodsConstraint: &maxPodsConstraint,
+			Config:            &gkev1.GKENodeConfig{},
+			Autoscaling: &gkev1.GKENodePoolAutoscaling{
+				Enabled:      true,
+				MinNodeCount: 1,
+				MaxNodeCount: 2,
+			},
+			Management: &gkev1.GKENodePoolManagement{
+				AutoRepair:  true,
+				AutoUpgrade: true,
+			},
+		}
+
+		cluster.Spec.GKEConfig.NodePools = append(cluster.Spec.GKEConfig.NodePools, nodePool)
+
+		Expect(cl.Patch(ctx, cluster, patch)).Should(Succeed())
+
+		By("Waiting for cluster to start adding node pool")
+		Eventually(func() error {
+			currentCluster := &gkev1.GKEClusterConfig{}
+
+			if err := cl.Get(ctx, runtimeclient.ObjectKey{
+				Name:      cluster.Name,
+				Namespace: gkeClusterConfigNamespace,
+			}, currentCluster); err != nil {
+				return err
+			}
+
+			if currentCluster.Status.Phase == "updating" && len(currentCluster.Spec.NodePools) == 2 {
+				return nil
+			}
+
+			return fmt.Errorf("cluster didn't get new node pool. Current phase: %s, node pool count %d", currentCluster.Status.Phase, len(currentCluster.Spec.NodePools))
+		}, waitLong, pollInterval).ShouldNot(HaveOccurred())
+
+		By("Waiting for cluster to finish adding node pool")
+		Eventually(func() error {
+			currentCluster := &gkev1.GKEClusterConfig{}
+
+			if err := cl.Get(ctx, runtimeclient.ObjectKey{
+				Name:      cluster.Name,
+				Namespace: gkeClusterConfigNamespace,
+			}, currentCluster); err != nil {
+				return err
+			}
+
+			if currentCluster.Status.Phase == "active" && len(currentCluster.Spec.NodePools) == 2 {
+				return nil
+			}
+
+			return fmt.Errorf("cluster didn't finish adding node pool. Current phase: %s, node pool count %d", currentCluster.Status.Phase, len(currentCluster.Spec.NodePools))
+		}, waitLong, pollInterval).ShouldNot(HaveOccurred())
+
+		By("Restoring initial node pools")
+
+		Expect(cl.Get(ctx, runtimeclient.ObjectKey{Name: cluster.Name}, cluster)).Should(Succeed())
+		patch = runtimeclient.MergeFrom(cluster.DeepCopy())
+
+		cluster.Spec.GKEConfig.NodePools = initialNodePools
+
+		Expect(cl.Patch(ctx, cluster, patch)).Should(Succeed())
+
+		By("Waiting for cluster to start removing node pool")
+		Eventually(func() error {
+			currentCluster := &gkev1.GKEClusterConfig{}
+
+			if err := cl.Get(ctx, runtimeclient.ObjectKey{
+				Name:      cluster.Name,
+				Namespace: gkeClusterConfigNamespace,
+			}, currentCluster); err != nil {
+				return err
+			}
+
+			if currentCluster.Status.Phase == "updating" && len(currentCluster.Spec.NodePools) == 1 {
+				return nil
+			}
+
+			return fmt.Errorf("cluster didn't start removing node pool. Current phase: %s, node pool count %d", currentCluster.Status.Phase, len(currentCluster.Spec.NodePools))
+		}, waitLong, pollInterval).ShouldNot(HaveOccurred())
+
+		By("Waiting for cluster to finish removing node pool")
+		Eventually(func() error {
+			currentCluster := &gkev1.GKEClusterConfig{}
+
+			if err := cl.Get(ctx, runtimeclient.ObjectKey{
+				Name:      cluster.Name,
+				Namespace: gkeClusterConfigNamespace,
+			}, currentCluster); err != nil {
+				return err
+			}
+
+			if currentCluster.Status.Phase == "active" && len(currentCluster.Spec.NodePools) == 1 {
+				return nil
+			}
+
+			return fmt.Errorf("cluster didn't finish removing node pool. Current phase: %s, node pool count %d", currentCluster.Status.Phase, len(currentCluster.Spec.NodePools))
+		}, waitLong, pollInterval).ShouldNot(HaveOccurred())
+
+		By("Done waiting for cluster to finish removing node pool")
+	})
+
 })
