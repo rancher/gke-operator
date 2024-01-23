@@ -3,7 +3,6 @@ module github.com/rancher/gke-operator
 go 1.20
 
 replace (
-	github.com/rancher/wrangler => github.com/rancher/wrangler v1.1.1-0.20230831050635-df1bd5aae9df
 	k8s.io/client-go => k8s.io/client-go v0.27.5
 	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f
 )
@@ -16,8 +15,8 @@ require (
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
 	github.com/rancher/lasso v0.0.0-20230830164424-d684fdeb6f29
 	github.com/rancher/rancher/pkg/apis v0.0.0-20240104144633-360c02b3761f
-	github.com/rancher/wrangler v1.1.1
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
+	github.com/rancher/wrangler/v2 v2.0.2
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/net v0.19.0
 	golang.org/x/oauth2 v0.15.0
@@ -76,6 +75,7 @@ require (
 	github.com/rancher/fleet/pkg/apis v0.0.0-20231017140638-93432f288e79 // indirect
 	github.com/rancher/norman v0.0.0-20230831160711-5de27f66385d // indirect
 	github.com/rancher/rke v1.5.0 // indirect
+	github.com/rancher/wrangler v1.1.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
