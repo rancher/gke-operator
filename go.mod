@@ -14,7 +14,7 @@ require (
 	github.com/onsi/gomega v1.30.0
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
 	github.com/rancher/lasso v0.0.0-20230830164424-d684fdeb6f29
-	github.com/rancher/rancher/pkg/apis v0.0.0-20240104144633-360c02b3761f
+	github.com/rancher/rancher/pkg/apis v0.0.0-20240126142034-676c3eb3dfa5
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/rancher/wrangler/v2 v2.0.2
 	github.com/sirupsen/logrus v1.9.3
@@ -27,7 +27,7 @@ require (
 	k8s.io/apiserver v0.28.3
 	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.15.0
-	sigs.k8s.io/yaml v1.3.0
+	sigs.k8s.io/yaml v1.4.0
 )
 
 require (
@@ -54,7 +54,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20230502171905-255e3b9b56de // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -70,8 +70,8 @@ require (
 	github.com/prometheus/client_model v0.4.0 // indirect
 	github.com/prometheus/common v0.44.0 // indirect
 	github.com/prometheus/procfs v0.10.1 // indirect
-	github.com/rancher/aks-operator v1.2.0 // indirect
-	github.com/rancher/eks-operator v1.3.0 // indirect
+	github.com/rancher/aks-operator v1.3.0-rc1 // indirect
+	github.com/rancher/eks-operator v1.4.0-rc1 // indirect
 	github.com/rancher/fleet/pkg/apis v0.0.0-20231017140638-93432f288e79 // indirect
 	github.com/rancher/norman v0.0.0-20230831160711-5de27f66385d // indirect
 	github.com/rancher/rke v1.5.0 // indirect
@@ -89,7 +89,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
@@ -101,7 +101,7 @@ require (
 	k8s.io/gengo v0.0.0-20230306165830-ab3349d207d4 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
-	k8s.io/kubernetes v1.27.6 // indirect
+	k8s.io/kubernetes v1.27.9 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	sigs.k8s.io/cli-utils v0.27.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
