@@ -20,6 +20,7 @@ package v1
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	v1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
@@ -48,10 +49,14 @@ type GKEClusterConfigCache interface {
 	generic.CacheInterface[*v1.GKEClusterConfig]
 }
 
+// GKEClusterConfigStatusHandler is executed for every added or modified GKEClusterConfig. Should return the new status to be updated
 type GKEClusterConfigStatusHandler func(obj *v1.GKEClusterConfig, status v1.GKEClusterConfigStatus) (v1.GKEClusterConfigStatus, error)
 
+// GKEClusterConfigGeneratingHandler is the top-level handler that is executed for every GKEClusterConfig event. It extends GKEClusterConfigStatusHandler by a returning a slice of child objects to be passed to apply.Apply
 type GKEClusterConfigGeneratingHandler func(obj *v1.GKEClusterConfig, status v1.GKEClusterConfigStatus) ([]runtime.Object, v1.GKEClusterConfigStatus, error)
 
+// RegisterGKEClusterConfigStatusHandler configures a GKEClusterConfigController to execute a GKEClusterConfigStatusHandler for every events observed.
+// If a non-empty condition is provided, it will be updated in the status conditions for every handler execution
 func RegisterGKEClusterConfigStatusHandler(ctx context.Context, controller GKEClusterConfigController, condition condition.Cond, name string, handler GKEClusterConfigStatusHandler) {
 	statusHandler := &gKEClusterConfigStatusHandler{
 		client:    controller,
@@ -61,6 +66,8 @@ func RegisterGKEClusterConfigStatusHandler(ctx context.Context, controller GKECl
 	controller.AddGenericHandler(ctx, name, generic.FromObjectHandlerToHandler(statusHandler.sync))
 }
 
+// RegisterGKEClusterConfigGeneratingHandler configures a GKEClusterConfigController to execute a GKEClusterConfigGeneratingHandler for every events observed, passing the returned objects to the provided apply.Apply.
+// If a non-empty condition is provided, it will be updated in the status conditions for every handler execution
 func RegisterGKEClusterConfigGeneratingHandler(ctx context.Context, controller GKEClusterConfigController, apply apply.Apply,
 	condition condition.Cond, name string, handler GKEClusterConfigGeneratingHandler, opts *generic.GeneratingHandlerOptions) {
 	statusHandler := &gKEClusterConfigGeneratingHandler{
@@ -82,6 +89,7 @@ type gKEClusterConfigStatusHandler struct {
 	handler   GKEClusterConfigStatusHandler
 }
 
+// sync is executed on every resource addition or modification. Executes the configured handlers and sends the updated status to the Kubernetes API
 func (a *gKEClusterConfigStatusHandler) sync(key string, obj *v1.GKEClusterConfig) (*v1.GKEClusterConfig, error) {
 	if obj == nil {
 		return obj, nil
@@ -127,8 +135,10 @@ type gKEClusterConfigGeneratingHandler struct {
 	opts  generic.GeneratingHandlerOptions
 	gvk   schema.GroupVersionKind
 	name  string
+	seen  sync.Map
 }
 
+// Remove handles the observed deletion of a resource, cascade deleting every associated resource previously applied
 func (a *gKEClusterConfigGeneratingHandler) Remove(key string, obj *v1.GKEClusterConfig) (*v1.GKEClusterConfig, error) {
 	if obj != nil {
 		return obj, nil
@@ -138,12 +148,17 @@ func (a *gKEClusterConfigGeneratingHandler) Remove(key string, obj *v1.GKECluste
 	obj.Namespace, obj.Name = kv.RSplit(key, "/")
 	obj.SetGroupVersionKind(a.gvk)
 
+	if a.opts.UniqueApplyForResourceVersion {
+		a.seen.Delete(key)
+	}
+
 	return nil, generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
 		WithOwner(obj).
 		WithSetID(a.name).
 		ApplyObjects()
 }
 
+// Handle executes the configured GKEClusterConfigGeneratingHandler and pass the resulting objects to apply.Apply, finally returning the new status of the resource
 func (a *gKEClusterConfigGeneratingHandler) Handle(obj *v1.GKEClusterConfig, status v1.GKEClusterConfigStatus) (v1.GKEClusterConfigStatus, error) {
 	if !obj.DeletionTimestamp.IsZero() {
 		return status, nil
@@ -153,9 +168,41 @@ func (a *gKEClusterConfigGeneratingHandler) Handle(obj *v1.GKEClusterConfig, sta
 	if err != nil {
 		return newStatus, err
 	}
+	if !a.isNewResourceVersion(obj) {
+		return newStatus, nil
+	}
 
-	return newStatus, generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
+	err = generic.ConfigureApplyForObject(a.apply, obj, &a.opts).
 		WithOwner(obj).
 		WithSetID(a.name).
 		ApplyObjects(objs...)
+	if err != nil {
+		return newStatus, err
+	}
+	a.storeResourceVersion(obj)
+	return newStatus, nil
+}
+
+// isNewResourceVersion detects if a specific resource version was already successfully processed.
+// Only used if UniqueApplyForResourceVersion is set in generic.GeneratingHandlerOptions
+func (a *gKEClusterConfigGeneratingHandler) isNewResourceVersion(obj *v1.GKEClusterConfig) bool {
+	if !a.opts.UniqueApplyForResourceVersion {
+		return true
+	}
+
+	// Apply once per resource version
+	key := obj.Namespace + "/" + obj.Name
+	previous, ok := a.seen.Load(key)
+	return !ok || previous != obj.ResourceVersion
+}
+
+// storeResourceVersion keeps track of the latest resource version of an object for which Apply was executed
+// Only used if UniqueApplyForResourceVersion is set in generic.GeneratingHandlerOptions
+func (a *gKEClusterConfigGeneratingHandler) storeResourceVersion(obj *v1.GKEClusterConfig) {
+	if !a.opts.UniqueApplyForResourceVersion {
+		return
+	}
+
+	key := obj.Namespace + "/" + obj.Name
+	a.seen.Store(key, obj.ResourceVersion)
 }
