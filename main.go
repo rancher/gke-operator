@@ -8,10 +8,10 @@ import (
 
 	"github.com/rancher/gke-operator/controller"
 	gkev1 "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io"
-	core3 "github.com/rancher/wrangler/pkg/generated/controllers/core"
-	"github.com/rancher/wrangler/pkg/kubeconfig"
-	"github.com/rancher/wrangler/pkg/signals"
-	"github.com/rancher/wrangler/pkg/start"
+	core3 "github.com/rancher/wrangler/v2/pkg/generated/controllers/core"
+	"github.com/rancher/wrangler/v2/pkg/kubeconfig"
+	"github.com/rancher/wrangler/v2/pkg/signals"
+	"github.com/rancher/wrangler/v2/pkg/start"
 	"github.com/sirupsen/logrus"
 )
 
