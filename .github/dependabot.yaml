@@ -22,9 +22,27 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
+    - dependency-name: "github.com/rancher/wrangler/v2"
   commit-message:
     prefix: ":seedling:"
   target-branch: "main"
+# Go modules in release-v2.9 branch
+- package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  ignore:
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually
+    # together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    # Ignore wrangler
+    - dependency-name: "github.com/rancher/wrangler"
+    - dependency-name: "github.com/rancher/wrangler/v2"
+  commit-message:
+    prefix: ":seedling:"
+  target-branch: "release-v2.9"
 # Go modules in release-v2.8 branch
 - package-ecosystem: "gomod"
   directory: "/"
@@ -38,6 +56,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
+    - dependency-name: "github.com/rancher/wrangler/v2"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.8"
@@ -54,6 +73,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
+    - dependency-name: "github.com/rancher/wrangler/v2"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.7"
