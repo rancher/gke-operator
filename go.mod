@@ -10,7 +10,7 @@ replace (
 require (
 	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo/v2 v2.15.0
-	github.com/onsi/gomega v1.30.0
+	github.com/onsi/gomega v1.31.1
 	github.com/rancher/lasso v0.0.0-20230629200414-8a54b32e6792
 	github.com/rancher/wrangler v1.1.1
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
