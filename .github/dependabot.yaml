@@ -57,6 +57,8 @@ updates:
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
     - dependency-name: "github.com/rancher/wrangler/v2"
+    # Ignore Google API version, due it is breaking integration
+    - dependency-name: "google.golang.org/api"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.8"
@@ -74,6 +76,8 @@ updates:
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
     - dependency-name: "github.com/rancher/wrangler/v2"
+    # Ignore Google API version, due it is breaking integration
+    - dependency-name: "google.golang.org/api"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.7"
