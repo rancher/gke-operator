@@ -35,3 +35,9 @@ func ClusterRRN(projectID, location, clusterName string) string {
 func NodePoolRRN(projectID, location, clusterName, nodePool string) string {
 	return fmt.Sprintf("%s/nodePools/%s", ClusterRRN(projectID, location, clusterName), nodePool)
 }
+
+// BootDiskRRN returns a Relative Resource Name of a disk key in the region or zone for the
+// specified project
+func BootDiskRRN(projectID, location, ringName, keyName string) string {
+	return fmt.Sprintf("projects/%s/locations/%s/keyRings/%s/cryptoKeys/%s", projectID, location, ringName, keyName)
+}

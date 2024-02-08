@@ -190,6 +190,13 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 		}
 	}
 
+	if config.Spec.CustomerManagedEncryptionKey != nil {
+		if config.Spec.CustomerManagedEncryptionKey.RingName == "" ||
+			config.Spec.CustomerManagedEncryptionKey.KeyName == "" {
+			return fmt.Errorf("ringName and keyName are required to enable boot disk encryption for Node Pools")
+		}
+	}
+
 	operation, err := gkeClient.ClusterList(
 		ctx, LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)))
 	if err != nil {
@@ -336,6 +343,16 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClus
 			AutoRepair:  np.Management.AutoRepair,
 			AutoUpgrade: np.Management.AutoUpgrade,
 		},
+	}
+	if config.Spec.CustomerManagedEncryptionKey != nil &&
+		config.Spec.CustomerManagedEncryptionKey.RingName != "" &&
+		config.Spec.CustomerManagedEncryptionKey.KeyName != "" {
+		ret.Config.BootDiskKmsKey = BootDiskRRN(
+			config.Spec.ProjectID,
+			Location(config.Spec.Region, config.Spec.Zone),
+			config.Spec.CustomerManagedEncryptionKey.RingName,
+			config.Spec.CustomerManagedEncryptionKey.KeyName,
+		)
 	}
 	if config.Spec.IPAllocationPolicy != nil && config.Spec.IPAllocationPolicy.UseIPAliases {
 		ret.MaxPodsConstraint = &gkeapi.MaxPodsConstraint{
