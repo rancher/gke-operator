@@ -15,8 +15,9 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
         with:
-          go-version: 1.20.x
+          go-version: 1.21.x
       - name: Analysis
         uses: golangci/golangci-lint-action@v3
         with:
           args: -v
+          skip-pkg-cache: true
