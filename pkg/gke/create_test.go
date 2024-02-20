@@ -100,6 +100,43 @@ var _ = Describe("CreateCluster", func() {
 		Expect(managedCluster.Name).To(Equal(config.Spec.ClusterName))
 	})
 
+	It("should successfully create cluster with customer managment encryption key", func() {
+		config.Spec.CustomerManagedEncryptionKey = &gkev1.CMEKConfig{
+			KeyName:  "test-key",
+			RingName: "test-keyring",
+		}
+		createClusterRequest := newClusterCreateRequest(config)
+		clusterServiceMock.EXPECT().
+			ClusterCreate(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
+				createClusterRequest).
+			Return(&gkeapi.Operation{}, nil)
+
+		clusterServiceMock.EXPECT().
+			ClusterList(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		err := Create(ctx, clusterServiceMock, config)
+		Expect(err).ToNot(HaveOccurred())
+
+		clusterServiceMock.EXPECT().
+			ClusterGet(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone),
+					config.Spec.ClusterName)).
+			Return(
+				&gkeapi.Cluster{
+					Name: "test-cluster",
+				}, nil)
+
+		managedCluster, err := GetCluster(ctx, clusterServiceMock, &config.Spec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(managedCluster.Name).To(Equal(config.Spec.ClusterName))
+	})
+
 	It("should fail to create cluster", func() {
 		clusterServiceMock.EXPECT().
 			ClusterList(
@@ -154,6 +191,14 @@ var _ = Describe("CreateCluster", func() {
 		managedCluster, err := GetCluster(ctx, clusterServiceMock, &config.Spec)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(managedCluster.Name).To(Equal(config.Spec.ClusterName))
+	})
+
+	It("should fail create cluster with customer managment encryption key", func() {
+		config.Spec.CustomerManagedEncryptionKey = &gkev1.CMEKConfig{
+			KeyName: "test-key",
+		}
+		err := Create(ctx, clusterServiceMock, config)
+		Expect(err).To(HaveOccurred())
 	})
 
 	It("should fail to create autopilot cluster with nodepools", func() {
