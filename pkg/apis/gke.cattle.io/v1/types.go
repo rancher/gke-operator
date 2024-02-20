@@ -139,6 +139,11 @@ type GKEClusterConfigSpec struct {
 	// including your nodes, scaling, security, and other preconfigured settings.
 	// +optional
 	AutopilotConfig *GKEAutopilotConfig `json:"autopilotConfig,omitempty"`
+
+	// The Customer Managed Encryption Key Config used to encrypt the boot disk attached
+	// to each node in the node pool.
+	// +optional
+	CustomerManagedEncryptionKey *CMEKConfig `json:"customerManagedEncryptionKey,omitempty"`
 }
 
 type GKEIPAllocationPolicy struct {
@@ -266,6 +271,13 @@ type GKENodePoolAutoscaling struct {
 }
 
 type GKENodeConfig struct {
+	// BootDiskKmsKey is the Customer Managed Encryption Key used to encrypt
+	// the boot disk attached to each node in the node pool. This should be
+	// of the form
+	// projects/[PROJECT_ID]/locations/[LOCATION]/keyRings/[RING_NAME]/cryptoKeys/[KEY_NAME]
+	// +optional
+	BootDiskKmsKey string `json:"bootDiskKmsKey,omitempty"`
+
 	// DiskSizeGb is the size of the node's disk in gigabytes.
 	// +optional
 	DiskSizeGb int64 `json:"diskSizeGb,omitempty"`
@@ -358,4 +370,17 @@ type GKENodePoolManagement struct {
 
 type GKEAutopilotConfig struct {
 	Enabled bool `json:"enabled,omitempty"`
+}
+
+// The Customer Managed Encryption Key Config struct
+// used to provide ring name and key name for encryption
+// the boot disk attached to each node in the node pool.
+// +optional
+type CMEKConfig struct {
+	// KeyName is the name of the key to use for encryption.
+	// It has to be provided together with RingName.
+	KeyName string `json:"keyName,omitempty"`
+	// RingName is the name of the ring to use for encryption.
+	// It has to be provided together with KeyName.
+	RingName string `json:"ringName,omitempty"`
 }
