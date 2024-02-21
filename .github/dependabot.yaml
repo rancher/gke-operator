@@ -23,6 +23,8 @@ updates:
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
     - dependency-name: "github.com/rancher/wrangler/v2"
+    # Ignore rancher apis
+    - dependency-name: "github.com/rancher/rancher/pkg/apis"
   commit-message:
     prefix: ":seedling:"
   target-branch: "main"
@@ -40,6 +42,8 @@ updates:
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
     - dependency-name: "github.com/rancher/wrangler/v2"
+    # Ignore rancher apis
+    - dependency-name: "github.com/rancher/rancher/pkg/apis"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.9"
@@ -57,6 +61,8 @@ updates:
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
     - dependency-name: "github.com/rancher/wrangler/v2"
+    # Ignore rancher apis
+    - dependency-name: "github.com/rancher/rancher/pkg/apis"
     # Ignore Google API version, due it is breaking integration
     - dependency-name: "google.golang.org/api"
   commit-message:
@@ -76,6 +82,8 @@ updates:
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
     - dependency-name: "github.com/rancher/wrangler/v2"
+    # Ignore rancher apis
+    - dependency-name: "github.com/rancher/rancher/pkg/apis"
     # Ignore Google API version, due it is breaking integration
     - dependency-name: "google.golang.org/api"
   commit-message:
