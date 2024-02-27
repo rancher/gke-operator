@@ -2,7 +2,7 @@ TARGETS := $(shell ls scripts)
 GIT_BRANCH?=$(shell git branch --show-current)
 GIT_COMMIT?=$(shell git rev-parse HEAD)
 GIT_COMMIT_SHORT?=$(shell git rev-parse --short HEAD)
-GIT_TAG?=v9.0.0
+GIT_TAG?=v0.0.0
 ifneq ($(GIT_BRANCH), main)
 GIT_TAG?=$(shell git describe --abbrev=0 --tags 2>/dev/null || echo "v0.0.0" )
 endif
