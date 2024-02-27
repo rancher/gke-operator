@@ -56,8 +56,9 @@ func init() {
 }
 
 const (
-	operatorName              = "gke-config-operator"
-	crdChartName              = "gke-config-operator-crd"
+	operatorDeploymentName    = "gke-config-operator"
+	operatorReleaseName       = "rancher-gke-operator"
+	operatorCrdReleaseName    = "rancher-gke-operator-crd"
 	certManagerNamespace      = "cert-manager"
 	certManagerName           = "cert-manager"
 	certManagerCAInjectorName = "cert-manager-cainjector"
@@ -111,7 +112,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	By("Deploying rancher and cert-manager", func() {
-		By("installing cert-manager", func() {
+		By("Installing cert-manager", func() {
 			if isDeploymentReady(certManagerNamespace, certManagerName) {
 				By("already installed")
 			} else {
@@ -134,14 +135,31 @@ var _ = BeforeSuite(func() {
 			}
 		})
 
-		By("installing rancher", func() {
+		By("Add rancher helm chart repository", func() {
+			Expect(kubectl.RunHelmBinaryWithCustomErr(
+				"repo",
+				"add",
+				"--force-update",
+				"rancher-latest",
+				fmt.Sprintf(e2eCfg.RancherChartURL),
+			)).To(Succeed())
+		})
+
+		By("Update helm repositories", func() {
+			Expect(kubectl.RunHelmBinaryWithCustomErr(
+				"repo",
+				"update",
+			)).To(Succeed())
+		})
+
+		By("Installing rancher", func() {
 			if isDeploymentReady(cattleSystemNamespace, rancherName) {
 				By("already installed")
 			} else {
 				Expect(kubectl.RunHelmBinaryWithCustomErr(
+					"install",
 					"-n",
 					cattleSystemNamespace,
-					"install",
 					"--set",
 					"bootstrapPassword=admin",
 					"--set",
@@ -150,12 +168,12 @@ var _ = BeforeSuite(func() {
 					"extraEnv[0].name=CATTLE_SKIP_HOSTED_CLUSTER_CHART_INSTALLATION",
 					"--set-string",
 					"extraEnv[0].value=true",
-					"--set",
-					"global.cattle.psp.enabled=false",
 					"--set", fmt.Sprintf("hostname=%s.%s", e2eCfg.ExternalIP, e2eCfg.MagicDNS),
 					"--create-namespace",
+					"--devel",
+					"--set", fmt.Sprintf("rancherImageTag=%s", e2eCfg.RancherVersion),
 					rancherName,
-					fmt.Sprintf(e2eCfg.RancherChartURL),
+					"rancher-latest/rancher",
 				)).To(Succeed())
 				Eventually(func() bool {
 					return isDeploymentReady(cattleSystemNamespace, rancherName)
@@ -165,16 +183,16 @@ var _ = BeforeSuite(func() {
 	})
 
 	By("Deploying gke operator CRD chart", func() {
-		if isDeploymentReady(cattleSystemNamespace, operatorName) {
+		if isDeploymentReady(cattleSystemNamespace, operatorCrdReleaseName) {
 			By("already installed")
 		} else {
 			Expect(kubectl.RunHelmBinaryWithCustomErr(
 				"-n",
-				crdChartName,
+				cattleSystemNamespace,
 				"install",
 				"--create-namespace",
 				"--set", "debug=true",
-				operatorName,
+				operatorCrdReleaseName,
 				e2eCfg.CRDChart,
 			)).To(Succeed())
 
@@ -197,7 +215,7 @@ var _ = BeforeSuite(func() {
 	})
 
 	By("Deploying gke operator chart", func() {
-		if isDeploymentReady(cattleSystemNamespace, operatorName) {
+		if isDeploymentReady(cattleSystemNamespace, operatorReleaseName) {
 			By("already installed")
 		} else {
 			Expect(kubectl.RunHelmBinaryWithCustomErr(
@@ -206,13 +224,13 @@ var _ = BeforeSuite(func() {
 				"install",
 				"--create-namespace",
 				"--set", "debug=true",
-				operatorName,
+				operatorReleaseName,
 				e2eCfg.OperatorChart,
 			)).To(Succeed())
 
 			By("Waiting for gke operator deployment to be available")
 			Eventually(func() bool {
-				return isDeploymentReady(cattleSystemNamespace, operatorName)
+				return isDeploymentReady(cattleSystemNamespace, operatorDeploymentName)
 			}, 5*time.Minute, 2*time.Second).Should(BeTrue())
 		}
 		// As we are not bootstrapping rancher in the tests (going to the first login page, setting new password and rancher-url)
