@@ -1,0 +1,12 @@
+# E2E Tests config
+
+magicDNS: sslip.io
+bridgeIP: 172.17.0.1
+operatorReplicas: 1
+artifactsDir: ../../_artifacts
+
+certManagerVersion: v1.11.1
+certManagerChartURL: https://charts.jetstack.io/charts/cert-manager-${CERT_MANAGER_VERSION}.tgz
+
+rancherVersion: v2.9-head
+rancherChartURL: https://releases.rancher.com/server-charts/latest/

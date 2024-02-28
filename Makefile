@@ -21,17 +21,20 @@ GO_INSTALL = ./scripts/go_install.sh
 MOCKGEN_VER := v1.6.0
 MOCKGEN_BIN := mockgen
 MOCKGEN := $(BIN_DIR)/$(MOCKGEN_BIN)-$(MOCKGEN_VER)
-MOCKGEN_PKG := github.com/golang/mock/mockgen
 
 GINKGO_VER := v2.15.0
 GINKGO_BIN := ginkgo
 GINKGO := $(BIN_DIR)/$(GINKGO_BIN)-$(GINKGO_VER)
-GINKGO_PKG := github.com/onsi/ginkgo/v2/ginkgo
 
-GO_APIDIFF_VER := v0.7.0
-GO_APIDIFF_BIN := go-apidiff
-GO_APIDIFF := $(BIN_DIR)/$(GO_APIDIFF_BIN)-$(GO_APIDIFF_VER)
-GO_APIDIFF_PKG := github.com/joelanford/go-apidiff
+SETUP_ENVTEST_VER := v0.0.0-20211110210527-619e6b92dab9
+SETUP_ENVTEST_BIN := setup-envtest
+SETUP_ENVTEST := $(BIN_DIR)/$(SETUP_ENVTEST_BIN)-$(SETUP_ENVTEST_VER)
+
+ifeq ($(shell go env GOOS),darwin) # Use the darwin/amd64 binary until an arm64 version is available
+	KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path --arch amd64 $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
+else
+	KUBEBUILDER_ASSETS ?= $(shell $(SETUP_ENVTEST) use --use-env -p path $(KUBEBUILDER_ENVTEST_KUBERNETES_VERSION))
+endif
 
 default: operator
 
@@ -42,27 +45,6 @@ default: operator
 	@./.dapper.tmp -v
 	@mv .dapper.tmp .dapper
 
-$(MOCKGEN):
-	GOBIN=$(BIN_DIR) $(GO_INSTALL) $(MOCKGEN_PKG) $(MOCKGEN_BIN) $(MOCKGEN_VER)
-
-$(GINKGO):
-	GOBIN=$(BIN_DIR) $(GO_INSTALL) $(GINKGO_PKG) $(GINKGO_BIN) $(GINKGO_VER)
-
-$(GO_APIDIFF):
-	GOBIN=$(BIN_DIR) $(GO_INSTALL) $(GO_APIDIFF_PKG) $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
-
-.PHONY: $(TARGETS)
-$(TARGETS): .dapper
-	./.dapper $@
-
-.PHONY: generate-go
-generate-go: $(MOCKGEN)
-	go generate ./pkg/gke/...
-
-.PHONY: test
-test: $(GINKGO)
-	$(GINKGO) -v -r --trace --race ./pkg/... ./controller/...
-
 .PHONY: generate-crd
 generate-crd: $(MOCKGEN)
 	go generate main.go
@@ -72,9 +54,37 @@ generate:
 	$(MAKE) generate-go
 	$(MAKE) generate-crd
 
+.PHONY: $(TARGETS)
+$(TARGETS): .dapper
+	./.dapper $@
+
+$(MOCKGEN):
+	GOBIN=$(BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
+
+$(GINKGO):
+	GOBIN=$(BIN_DIR) $(GO_INSTALL) github.com/onsi/ginkgo/v2/ginkgo $(GINKGO_BIN) $(GINKGO_VER)
+
+$(GO_APIDIFF):
+	GOBIN=$(BIN_DIR) $(GO_INSTALL) github.com/joelanford/go-apidiff $(GO_APIDIFF_BIN) $(GO_APIDIFF_VER)
+
+$(SETUP_ENVTEST): 
+	GOBIN=$(BIN_DIR) $(GO_INSTALL) sigs.k8s.io/controller-runtime/tools/setup-envtest $(SETUP_ENVTEST_BIN) $(SETUP_ENVTEST_VER)
+
 .PHONY: operator
 operator:
 	go build -o bin/gke-operator main.go
+
+.PHONY: generate-go
+generate-go: $(MOCKGEN)
+	go generate ./pkg/gke/...
+
+.PHONY: test
+test: $(SETUP_ENVTEST) $(GINKGO)
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" $(GINKGO) -v -r -p --trace --race ./pkg/... ./controller/...
+
+.PHONY: clean
+clean:
+	rm -rf build bin dist
 
 ALL_VERIFY_CHECKS = generate
 
@@ -141,7 +151,3 @@ docker-build-e2e:
 .PHOHY: delete-local-kind-cluster
 delete-local-kind-cluster: ## Delete the local kind cluster
 	kind delete cluster --name=$(CLUSTER_NAME)
-
-.PHONY: clean
-clean:
-	rm -rf build bin dist
