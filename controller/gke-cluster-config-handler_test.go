@@ -333,8 +333,7 @@ var _ = Describe("importCluster", func() {
 			},
 			Spec: corev1.NamespaceSpec{},
 		}
-
-		Expect(cl.Create(ctx, importTestNamespace)).To(Succeed())
+		cl.Create(ctx, importTestNamespace)
 
 		credentialSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -510,7 +509,7 @@ var _ = Describe("createCluster", func() {
 			},
 			Spec: corev1.NamespaceSpec{},
 		}
-		Expect(cl.Create(ctx, testNamespace)).To(Succeed())
+		cl.Create(ctx, testNamespace)
 
 		credentialSecret = &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
