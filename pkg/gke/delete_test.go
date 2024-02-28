@@ -65,7 +65,7 @@ var _ = Describe("RemoveCluster", func() {
 	})
 
 	It("should successfully remove cluster", func() {
-		createClusterRequest := newClusterCreateRequest(config)
+		createClusterRequest := NewClusterCreateRequest(config)
 		clusterServiceMock.EXPECT().
 			ClusterCreate(
 				ctx,
@@ -183,7 +183,7 @@ var _ = Describe("RemoveNodePool", func() {
 	})
 
 	It("should successfully remove node pool", func() {
-		createClusterRequest := newClusterCreateRequest(config)
+		createClusterRequest := NewClusterCreateRequest(config)
 		clusterServiceMock.EXPECT().
 			ClusterCreate(
 				ctx,
