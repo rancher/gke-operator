@@ -9,7 +9,7 @@ replace (
 
 require (
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.15.0
+	github.com/onsi/ginkgo/v2 v2.16.0
 	github.com/onsi/gomega v1.31.1
 	github.com/rancher/lasso v0.0.0-20230629200414-8a54b32e6792
 	github.com/rancher/wrangler v1.1.1
@@ -31,7 +31,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-logr/logr v1.3.0 // indirect
+	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.1 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
@@ -65,12 +65,12 @@ require (
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.16.1 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
 	google.golang.org/grpc v1.59.0 // indirect
