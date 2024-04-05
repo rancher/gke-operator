@@ -7,6 +7,9 @@ ifneq ($(GIT_BRANCH), main)
 GIT_TAG?=$(shell git describe --abbrev=0 --tags 2>/dev/null || echo "v0.0.0" )
 endif
 TAG?=${GIT_TAG}-${GIT_COMMIT_SHORT}
+IMAGE = $(REPO):$(TAG)
+TARGET_PLATFORMS := linux/amd64,linux/arm64
+MACHINE := rancher
 OPERATOR_CHART?=$(shell find $(ROOT_DIR) -type f -name "rancher-gke-operator-[0-9]*.tgz" -print)
 CRD_CHART?=$(shell find $(ROOT_DIR) -type f -name "rancher-gke-operator-crd*.tgz" -print)
 CHART_VERSION?=900 # Only used in e2e to avoid downgrades from rancher
@@ -117,6 +120,24 @@ crd-chart:
 charts:
 	$(MAKE) operator-chart
 	$(MAKE) crd-chart
+
+buildx-machine:
+	@docker buildx ls | grep $(MACHINE) || \
+		docker buildx create --name=$(MACHINE) --platform=$(TARGET_PLATFORMS)
+
+.PHONY: image-build
+image-build: buildx-machine ## build (and load) the container image targeting the current platform.
+	docker buildx build -f package/Dockerfile \
+    --builder $(MACHINE) --build-arg VERSION=$(TAG) \
+    -t "$(IMAGE)" $(BUILD_ACTION) .
+	@echo "Built $(IMAGE)"
+
+.PHONY: image-push
+image-push: buildx-machine ## build the container image targeting all platforms defined by TARGET_PLATFORMS and push to a registry.
+	docker buildx build -f package/Dockerfile \
+    --builder $(MACHINE) --build-arg VERSION=$(TAG) \
+    --platform=$(TARGET_PLATFORMS) -t "$(IMAGE)" --push .
+	@echo "Pushed $(IMAGE)"
 
 .PHONY: setup-kind
 setup-kind:
