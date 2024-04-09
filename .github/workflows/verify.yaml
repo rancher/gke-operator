@@ -2,8 +2,7 @@ name: Verify
 on:
   pull_request:
   push:
-    branches:
-      - master
+    branches: [ "main", "release-v*" ]
 jobs:
   test:
     runs-on: ubuntu-latest
