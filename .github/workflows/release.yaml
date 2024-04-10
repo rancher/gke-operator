@@ -1,8 +1,8 @@
 name: Release
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ "main", "release-v*" ]
     tags:
       - 'v*'
 
