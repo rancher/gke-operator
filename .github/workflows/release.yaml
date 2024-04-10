@@ -44,6 +44,9 @@ jobs:
       uses: docker/setup-buildx-action@v3
     - name: Checkout code
       uses: actions/checkout@v4 
+    - name: Build operator binary
+      run: |
+        make operator
     - name: Build and push all image variations
       run: |
         make image-push
