@@ -30,8 +30,8 @@ jobs:
       uses: rancher-eio/read-vault-secrets@main
       with:
         secrets: |
-          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials docker_username | PUBLIC_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials docker_password | PUBLIC_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials username | PUBLIC_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials password | PUBLIC_REGISTRY_PASSWORD ;
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
