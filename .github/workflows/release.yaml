@@ -23,15 +23,15 @@ jobs:
   publish-public:
     permissions:
       contents: read
-      id-token: write # this is important, it's how we authenticate with Vault
+      id-token: write
     runs-on: ubuntu-22.04
     steps:
     - name: Read secrets
       uses: rancher-eio/read-vault-secrets@main
       with:
         secrets: |
-          secret/data/github/repo/${{ github.repository }}/dockerhub/credentials docker_username | PUBLIC_REGISTRY_USERNAME ;
-          secret/data/github/repo/${{ github.repository }}/dockerhub/credentials docker_password | PUBLIC_REGISTRY_PASSWORD ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials docker_username | PUBLIC_REGISTRY_USERNAME ;
+          secret/data/github/repo/${{ github.repository }}/dockerhub/${{ github.repository_owner }}/credentials docker_password | PUBLIC_REGISTRY_PASSWORD ;
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
