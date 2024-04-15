@@ -1,0 +1,45 @@
+name: Run E2E test workflow
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: 0 22 * * *
+permissions: read-all
+jobs:
+  e2e-test-main:
+    uses: ./.github/workflows/e2e-branch.yaml
+    with:
+      branch: main
+    secrets:
+      GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+      GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  e2e-test-v2_9:
+    if: ${{ always() }}
+    needs: e2e-test-main
+    uses: ./.github/workflows/e2e-branch.yaml
+    with:
+      branch: release-v2.9
+    secrets:
+      GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+      GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  e2e-test-v2_8:
+    if: ${{ always() }}
+    needs: [ e2e-test-main, e2e-test-v2_9 ]
+    uses: ./.github/workflows/e2e-branch.yaml
+    with:
+      branch: release-v2.8
+    secrets:
+      GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+      GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  e2e-test-v2_7:
+    if: ${{ always() }}
+    needs: [ e2e-test-main, e2e-test-v2_9, e2e-test-v2_8 ]
+    uses: ./.github/workflows/e2e-branch.yaml
+    with:
+      branch: release-v2.7
+    secrets:
+      GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+      GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
