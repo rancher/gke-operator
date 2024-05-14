@@ -22,7 +22,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
-    - dependency-name: "github.com/rancher/wrangler/v2"
+    - dependency-name: "github.com/rancher/wrangler/v3"
     # Ignore rancher apis
     - dependency-name: "github.com/rancher/rancher/pkg/apis"
   commit-message:
@@ -41,7 +41,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
-    - dependency-name: "github.com/rancher/wrangler/v2"
+    - dependency-name: "github.com/rancher/wrangler/v3"
     # Ignore rancher apis
     - dependency-name: "github.com/rancher/rancher/pkg/apis"
   commit-message:
@@ -60,7 +60,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
-    - dependency-name: "github.com/rancher/wrangler/v2"
+    - dependency-name: "github.com/rancher/wrangler/v3"
     # Ignore rancher apis
     - dependency-name: "github.com/rancher/rancher/pkg/apis"
     # Ignore Google API version, due it is breaking integration
@@ -81,7 +81,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
-    - dependency-name: "github.com/rancher/wrangler/v2"
+    - dependency-name: "github.com/rancher/wrangler/v3"
     # Ignore rancher apis
     - dependency-name: "github.com/rancher/rancher/pkg/apis"
     # Ignore Google API version, due it is breaking integration
