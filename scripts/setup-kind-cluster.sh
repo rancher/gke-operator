@@ -2,8 +2,8 @@
 
 set -e
 
-KUBE_VERSION=${KUBE_VERSION:-v1.26.3}
-CLUSTER_NAME="${CLUSTER_NAME:-operator-e2e}"
+KUBE_VERSION="${KUBE_VERSION:-v1.28.9}"
+CLUSTER_NAME="${CLUSTER_NAME:-gke-operator-e2e}"
 
 if ! kind get clusters | grep "$CLUSTER_NAME"; then
 cat << EOF > kind.config
