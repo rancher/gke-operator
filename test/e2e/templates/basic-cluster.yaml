@@ -19,8 +19,8 @@ spec:
   - name: gke-e2e-basic-cluster-node-pool
     autoscaling:
       enabled: false
-    config: {}
-    labels: []
+    config:
+      labels: {}
     initialNodeCount: 1
     maxPodsConstraint: 110
     version: "1.28.7-gke.1026000"
