@@ -3,6 +3,7 @@ package gke
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
@@ -297,6 +298,11 @@ func validateNodePoolCreateRequest(np *gkev1.GKENodePoolConfig, config *gkev1.GK
 	if np.Management == nil {
 		return fmt.Errorf(nodePoolErr, "management", *np.Name, clusterName)
 	}
+
+	rxEmail := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-z]{2,}$`)
+	if np.Config.ServiceAccount != "" && np.Config.ServiceAccount != "default" && !rxEmail.MatchString(np.Config.ServiceAccount) {
+		return fmt.Errorf("field [%s] must either be an empty string, 'default' or set to a valid email address for nodepool [%s] in non-nil cluster [%s]", "serviceAccount", *np.Name, clusterName)
+	}
 	return nil
 }
 
@@ -327,16 +333,17 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClus
 		},
 		InitialNodeCount: *np.InitialNodeCount,
 		Config: &gkeapi.NodeConfig{
-			DiskSizeGb:    np.Config.DiskSizeGb,
-			DiskType:      np.Config.DiskType,
-			ImageType:     np.Config.ImageType,
-			Labels:        np.Config.Labels,
-			LocalSsdCount: np.Config.LocalSsdCount,
-			MachineType:   np.Config.MachineType,
-			OauthScopes:   np.Config.OauthScopes,
-			Preemptible:   np.Config.Preemptible,
-			Tags:          np.Config.Tags,
-			Taints:        taints,
+			DiskSizeGb:     np.Config.DiskSizeGb,
+			DiskType:       np.Config.DiskType,
+			ImageType:      np.Config.ImageType,
+			Labels:         np.Config.Labels,
+			LocalSsdCount:  np.Config.LocalSsdCount,
+			MachineType:    np.Config.MachineType,
+			OauthScopes:    np.Config.OauthScopes,
+			Preemptible:    np.Config.Preemptible,
+			Tags:           np.Config.Tags,
+			Taints:         taints,
+			ServiceAccount: np.Config.ServiceAccount,
 		},
 		Version: *np.Version,
 		Management: &gkeapi.NodeManagement{
