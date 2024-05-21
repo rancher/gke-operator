@@ -612,6 +612,7 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 				MachineType:    np.Config.MachineType,
 				Preemptible:    np.Config.Preemptible,
 				Tags:           np.Config.Tags,
+				ServiceAccount: np.Config.ServiceAccount,
 			}
 
 			newNP.Config.Taints = make([]gkev1.GKENodeTaintConfig, 0, len(np.Config.Taints))
