@@ -477,7 +477,7 @@ var _ = Describe("createCluster", func() {
 			},
 			NodePools: []*gkeapi.NodePool{
 				{
-					Name:             "np-tes1",
+					Name:             "np-test1",
 					InitialNodeCount: 1,
 					Version:          "1.25.13-gke.200",
 					MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
@@ -646,5 +646,123 @@ var _ = Describe("createCluster", func() {
 		gotGKEConfig, err := handler.create(gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
+	})
+
+	It("should create a cluster when no service account has been set", func() {
+		ctx := context.Background()
+		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = ""
+
+		gkeServiceMock.EXPECT().ClusterList(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		ccr := gke.NewClusterCreateRequest(gkeConfig)
+		Expect(ccr.Cluster.NodePools[0].Config.ServiceAccount).To(Equal(""))
+		gkeServiceMock.EXPECT().ClusterCreate(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone)),
+			ccr,
+		)
+
+		gotGKEConfig, err := handler.create(gkeConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gotGKEConfig).NotTo(BeNil())
+	})
+
+	It("should create a cluster with the default service acount when the default service account has been set", func() {
+		ctx := context.Background()
+		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = "default"
+
+		gkeServiceMock.EXPECT().ClusterList(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		ccr := gke.NewClusterCreateRequest(gkeConfig)
+		Expect(ccr.Cluster.NodePools[0].Config.ServiceAccount).To(Equal("default"))
+		gkeServiceMock.EXPECT().ClusterCreate(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone)),
+			ccr,
+		)
+
+		gotGKEConfig, err := handler.create(gkeConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gotGKEConfig).NotTo(BeNil())
+	})
+
+	It("should create a cluster with the specified service acount when a service account email address has been set", func() {
+		ctx := context.Background()
+		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = "test@example-project-name.iam.gserviceaccount.com"
+
+		gkeServiceMock.EXPECT().ClusterList(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		ccr := gke.NewClusterCreateRequest(gkeConfig)
+		Expect(ccr.Cluster.NodePools[0].Config.ServiceAccount).To(Equal("test@example-project-name.iam.gserviceaccount.com"))
+		gkeServiceMock.EXPECT().ClusterCreate(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone)),
+			ccr,
+		)
+
+		gotGKEConfig, err := handler.create(gkeConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gotGKEConfig).NotTo(BeNil())
+	})
+
+	It("should create a cluster with the specified service acount assigned to a node pool when a service account has been set for that node pool", func() {
+		ctx := context.Background()
+
+		// Add a second node pool to the spec and set its service account
+		npName := "np-test2"
+		npInitialNodeCount := int64(1)
+		npMaxPodsConstraint := int64(110)
+		npVersion := "1.30.0"
+		gkeConfig.Spec.NodePools = append(gkeConfig.Spec.NodePools, gkev1.GKENodePoolConfig{
+			Name:              &npName,
+			Autoscaling:       &gkev1.GKENodePoolAutoscaling{},
+			InitialNodeCount:  &npInitialNodeCount,
+			MaxPodsConstraint: &npMaxPodsConstraint,
+			Config: &gkev1.GKENodeConfig{
+				ServiceAccount: "test@example-project-name.iam.gserviceaccount.com",
+			},
+			Version:    &npVersion,
+			Management: &gkev1.GKENodePoolManagement{},
+		})
+
+		gkeServiceMock.EXPECT().ClusterList(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		ccr := gke.NewClusterCreateRequest(gkeConfig)
+		Expect(ccr.Cluster.NodePools[0].Config.ServiceAccount).To(Equal(""))
+		Expect(ccr.Cluster.NodePools[1].Config.ServiceAccount).To(Equal("test@example-project-name.iam.gserviceaccount.com"))
+		gkeServiceMock.EXPECT().ClusterCreate(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone)),
+			ccr,
+		)
+
+		gotGKEConfig, err := handler.create(gkeConfig)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(gotGKEConfig).NotTo(BeNil())
+	})
+
+	It("should not create a cluster if the service account email address is not valid", func() {
+		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = "not-a-valid-email-address"
+
+		gkeServiceMock.EXPECT().ClusterList(
+			ctx,
+			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(&gkeapi.ListClustersResponse{}, nil)
+
+		_, err := handler.create(gkeConfig)
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("field [serviceAccount] must either be an empty string, 'default' or set to a valid email address for nodepool [test-node-pool] in non-nil cluster [test-cluster]"))
 	})
 })
