@@ -79,7 +79,7 @@ $(SETUP_ENVTEST):
 
 .PHONY: operator
 operator:
-	go build -o bin/gke-operator main.go
+	CGO_ENABLED=0 go build -o bin/gke-operator main.go
 
 .PHONY: generate-go
 generate-go: $(MOCKGEN)
