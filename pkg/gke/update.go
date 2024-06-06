@@ -457,6 +457,9 @@ func UpdateNodePoolAutoscaling(
 	if nodePool.Autoscaling == nil {
 		return NotChanged, nil
 	}
+	if upstreamNodePool.Autoscaling == nil {
+		upstreamNodePool.Autoscaling = &gkev1.GKENodePoolAutoscaling{}
+	}
 
 	updateRequest := &gkeapi.SetNodePoolAutoscalingRequest{
 		Autoscaling: &gkeapi.NodePoolAutoscaling{},
