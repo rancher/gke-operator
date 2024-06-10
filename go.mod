@@ -2,8 +2,9 @@ module github.com/rancher/gke-operator
 
 go 1.22.0
 
-toolchain go1.22.1
+toolchain go1.22.3
 
+// TODO: to be removed when rancher/pkg/apis is updated after k8s-1.30 PR is merged in rancher
 replace k8s.io/apiserver => k8s.io/apiserver v0.29.4
 
 replace (
@@ -21,7 +22,6 @@ require (
 	github.com/rancher/lasso v0.0.0-20240430201833-6f3def65ffc5
 	github.com/rancher/rancher/pkg/apis v0.0.0-20240126142034-676c3eb3dfa5
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
-	github.com/rancher/wrangler/v2 v2.2.0-rc6
 	github.com/rancher/wrangler/v3 v3.0.0-rc2
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/net v0.26.0
@@ -81,6 +81,7 @@ require (
 	github.com/rancher/norman v0.0.0-20240207153100-3bb70b772b52 // indirect
 	github.com/rancher/rke v1.5.0 // indirect
 	github.com/rancher/wrangler v1.1.1 // indirect
+	github.com/rancher/wrangler/v2 v2.2.0-rc6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
