@@ -388,13 +388,13 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 	needsUpdate := false
 	npVersion := utils.StringValue(nodePool.Version)
 	if npVersion != "" && utils.StringValue(upstreamNodePool.Version) != npVersion {
-		logrus.Infof("updating kubernetes version from %s to %s on node pool [%s] on cluster [%s (%s)]", npVersion, *upstreamNodePool.Version, *nodePool.Name, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating kubernetes versionon of node pool [%s] from %s to %s on cluster [%s (%s)]", *nodePool.Name, npVersion, *upstreamNodePool.Version, config.Spec.ClusterName, config.Name)
 		updateRequest.NodeVersion = npVersion
 		needsUpdate = true
 	}
 	imageType := strings.ToLower(nodePool.Config.ImageType)
 	if imageType != "" && strings.ToLower(upstreamNodePool.Config.ImageType) != imageType {
-		logrus.Infof("updating image type on node pool [%s] from %s to %s on cluster [%s (%s)]", imageType, upstreamNodePool.Config.ImageType, *nodePool.Name, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating image type of node pool [%s] from %s to %s on cluster [%s (%s)]", *nodePool.Name, imageType, upstreamNodePool.Config.ImageType, config.Spec.ClusterName, config.Name)
 		updateRequest.ImageType = imageType
 		needsUpdate = true
 	}
