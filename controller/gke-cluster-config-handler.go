@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
-	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
-	gkecontrollers "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
-	"github.com/rancher/gke-operator/pkg/gke"
 	wranglerv1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
+
+	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
+	gkecontrollers "github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1"
+	"github.com/rancher/gke-operator/pkg/gke"
 
 	gkeapi "google.golang.org/api/container/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -148,7 +149,7 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 		var recordErr error
 		config, recordErr = h.gkeCC.UpdateStatus(config)
 		if recordErr != nil {
-			logrus.Errorf("Error recording gkecc [%s] failure message: %s, original error: %s", config.Name, recordErr, err)
+			logrus.Errorf("Error recording gkecc [%s (%s)] failure message: %s, original error: %s", config.Spec.ClusterName, config.Name, recordErr, err)
 		}
 		return config, err
 	}
@@ -174,12 +175,12 @@ func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 
 func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
-		logrus.Infof("cluster [%s] is imported, will not delete GKE cluster", config.Name)
+		logrus.Infof("cluster [%s (%s)] is imported, will not delete GKE cluster", config.Spec.ClusterName, config.Name)
 		return config, nil
 	}
 	if config.Status.Phase == gkeConfigNotCreatedPhase {
 		// The most likely context here is that the cluster already existed in GKE, so we shouldn't delete it
-		logrus.Warnf("cluster [%s] never advanced to creating status, will not delete GKE cluster", config.Name)
+		logrus.Warnf("cluster [%s (%s)] never advanced to creating status, will not delete GKE cluster", config.Spec.ClusterName, config.Name)
 		return config, nil
 	}
 
@@ -195,9 +196,9 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 		return config, err
 	}
 
-	logrus.Infof("removing cluster %v from project %v, region/zone %v", config.Spec.ClusterName, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
+	logrus.Infof("removing cluster [%s (%s)] from project %v, region/zone %v", config.Spec.ClusterName, config.Name, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
 	if err := gke.RemoveCluster(ctx, gkeClient, config); err != nil {
-		logrus.Debugf("error deleting cluster %s: %v", config.Spec.ClusterName, err)
+		logrus.Debugf("error deleting cluster %s (%s): %v", config.Spec.ClusterName, config.Name, err)
 		return config, err
 	}
 
@@ -206,7 +207,7 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 
 func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
-		logrus.Infof("importing cluster [%s]", config.Name)
+		logrus.Infof("importing cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigImportingPhase
 		return h.gkeCC.UpdateStatus(config)
@@ -245,7 +246,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 
 	if cluster.Status == ClusterStatusReconciling {
 		// upstream cluster is already updating, must wait until sending next update
-		logrus.Infof("waiting for cluster [%s] to finish updating", config.Name)
+		logrus.Infof("waiting for cluster [%s (%s)] to finish updating", config.Spec.ClusterName, config.Name)
 		if config.Status.Phase != gkeConfigUpdatingPhase {
 			config = config.DeepCopy()
 			config.Status.Phase = gkeConfigUpdatingPhase
@@ -266,7 +267,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 					return config, err
 				}
 			}
-			logrus.Infof("waiting for cluster [%s] to update node pool [%s]", config.Name, np.Name)
+			logrus.Infof("waiting for cluster [%s (%s)] to update node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
 			h.gkeEnqueueAfter(config.Namespace, config.Name, 30*time.Second)
 			return config, nil
 		}
@@ -442,7 +443,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 				}
 			} else {
 				// There is no nodepool with this name yet, create it
-				logrus.Infof("adding node pool [%s] to cluster [%s]", *np.Name, config.Name)
+				logrus.Infof("adding node pool [%s] to cluster [%s (%s)]", *np.Name, config.Spec.ClusterName, config.Name)
 				if changed, err = gke.CreateNodePool(ctx, gkeClient, config, np); err != nil {
 					return config, err
 				}
@@ -454,7 +455,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 
 		for npName := range upstreamNodePools {
 			if _, ok := downstreamNodePools[npName]; !ok {
-				logrus.Infof("removing node pool [%s] from cluster [%s]", npName, config.Name)
+				logrus.Infof("removing node pool [%s] from cluster [%s (%s)]", npName, config.Spec.ClusterName, config.Name)
 				if changed, err = gke.RemoveNodePool(ctx, gkeClient, config, npName); err != nil {
 					return config, err
 				}
@@ -470,7 +471,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 
 	// no new updates, set to active
 	if config.Status.Phase != gkeConfigActivePhase {
-		logrus.Infof("cluster [%s] finished updating", config.Name)
+		logrus.Infof("cluster [%s (%s)] finished updating", config.Spec.ClusterName, config.Name)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigActivePhase
 		return h.gkeCC.UpdateStatus(config)
@@ -499,7 +500,7 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 		config.Status.Phase = gkeConfigActivePhase
 		return h.gkeCC.UpdateStatus(config)
 	}
-	logrus.Infof("waiting for cluster [%s] to finish creating", config.Name)
+	logrus.Infof("waiting for cluster [%s (%s)] to finish creating", config.Spec.ClusterName, config.Name)
 	h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
 
 	return config, nil
