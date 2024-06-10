@@ -6,15 +6,16 @@ import (
 	"regexp"
 	"strings"
 
+	gkeapi "google.golang.org/api/container/v1"
+
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke/services"
-	gkeapi "google.golang.org/api/container/v1"
 )
 
 // Errors
 const (
-	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s]"
-	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s]"
+	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s (%s)]"
+	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s (%s)]"
 )
 
 // Create creates an upstream GKE cluster.
@@ -177,16 +178,16 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	nodeP := map[string]bool{}
 	for _, np := range config.Spec.NodePools {
 		if np.Name == nil {
-			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Name)
+			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Spec.ClusterName, config.Name)
 		}
 		if nodeP[*np.Name] {
-			return fmt.Errorf("NodePool names must be unique within the [%s] cluster to avoid duplication", config.Spec.ClusterName)
+			return fmt.Errorf("NodePool names %q must be unique within the cluster [%s (%s)] to avoid duplication", *np.Name, config.Spec.ClusterName, config.Name)
 		}
 		nodeP[*np.Name] = true
 
 		if np.Autoscaling != nil && np.Autoscaling.Enabled {
 			if np.Autoscaling.MinNodeCount < 1 || np.Autoscaling.MaxNodeCount < np.Autoscaling.MinNodeCount {
-				return fmt.Errorf("minNodeCount in the NodePool must be >= 1 and <= maxNodeCount")
+				return fmt.Errorf("minNodeCount in the NodePool %s must be >= 1 and <= maxNodeCount within the cluster [%s (%s)]", *np.Name, config.Spec.ClusterName, config.Name)
 			}
 		}
 	}
@@ -194,7 +195,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	if config.Spec.CustomerManagedEncryptionKey != nil {
 		if config.Spec.CustomerManagedEncryptionKey.RingName == "" ||
 			config.Spec.CustomerManagedEncryptionKey.KeyName == "" {
-			return fmt.Errorf("ringName and keyName are required to enable boot disk encryption for Node Pools")
+			return fmt.Errorf("ringName and keyName are required to enable boot disk encryption for Node Pools within the cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
 		}
 	}
 
@@ -206,7 +207,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 
 	for _, cluster := range operation.Clusters {
 		if cluster.Name == config.Spec.ClusterName {
-			return fmt.Errorf("cannot create cluster [%s] because a cluster in GKE exists with the same name, please delete and recreate with a different name", config.Spec.ClusterName)
+			return fmt.Errorf("cannot create cluster [%s (%s)] because a cluster in GKE exists with the same name, please delete and recreate with a different name", config.Spec.ClusterName, config.Name)
 		}
 	}
 
@@ -216,52 +217,52 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	}
 
 	if config.Spec.EnableKubernetesAlpha == nil {
-		return fmt.Errorf(cannotBeNilError, "enableKubernetesAlpha", config.Name)
+		return fmt.Errorf(cannotBeNilError, "enableKubernetesAlpha", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.KubernetesVersion == nil {
-		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Name)
+		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.ClusterIpv4CidrBlock == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterIpv4CidrBlock", config.Name)
+		return fmt.Errorf(cannotBeNilError, "clusterIpv4CidrBlock", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.ClusterAddons == nil {
-		return fmt.Errorf(cannotBeNilError, "clusterAddons", config.Name)
+		return fmt.Errorf(cannotBeNilError, "clusterAddons", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.IPAllocationPolicy == nil {
-		return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Name)
+		return fmt.Errorf(cannotBeNilError, "ipAllocationPolicy", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.LoggingService == nil {
-		return fmt.Errorf(cannotBeNilError, "loggingService", config.Name)
+		return fmt.Errorf(cannotBeNilError, "loggingService", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.Network == nil {
-		return fmt.Errorf(cannotBeNilError, "network", config.Name)
+		return fmt.Errorf(cannotBeNilError, "network", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.Subnetwork == nil {
-		return fmt.Errorf(cannotBeNilError, "subnetwork", config.Name)
+		return fmt.Errorf(cannotBeNilError, "subnetwork", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.NetworkPolicyEnabled == nil {
-		return fmt.Errorf(cannotBeNilError, "networkPolicyEnabled", config.Name)
+		return fmt.Errorf(cannotBeNilError, "networkPolicyEnabled", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.PrivateClusterConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Name)
+		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.PrivateClusterConfig.EnablePrivateEndpoint && !config.Spec.PrivateClusterConfig.EnablePrivateNodes {
-		return fmt.Errorf("private endpoint requires private nodes for cluster [%s]", config.Name)
+		return fmt.Errorf("private endpoint requires private nodes for cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
-		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Name)
+		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.MonitoringService == nil {
-		return fmt.Errorf(cannotBeNilError, "monitoringService", config.Name)
+		return fmt.Errorf(cannotBeNilError, "monitoringService", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.Locations == nil {
-		return fmt.Errorf(cannotBeNilError, "locations", config.Name)
+		return fmt.Errorf(cannotBeNilError, "locations", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.MaintenanceWindow == nil {
-		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Name)
+		return fmt.Errorf(cannotBeNilError, "maintenanceWindow", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.Labels == nil {
-		return fmt.Errorf(cannotBeNilError, "labels", config.Name)
+		return fmt.Errorf(cannotBeNilError, "labels", config.Spec.ClusterName, config.Name)
 	}
 
 	for np := range config.Spec.NodePools {
@@ -278,30 +279,30 @@ func validateNodePoolCreateRequest(np *gkev1.GKENodePoolConfig, config *gkev1.GK
 	nodePoolErr := cannotBeNilForNodePoolError
 	clusterName := config.Spec.ClusterName
 	if np.Name == nil {
-		return fmt.Errorf(clusterErr, "nodePool.name", clusterName)
+		return fmt.Errorf(clusterErr, "nodePool.name", clusterName, config.Name)
 	}
 	if np.Version == nil {
-		return fmt.Errorf(nodePoolErr, "version", *np.Name, clusterName)
+		return fmt.Errorf(nodePoolErr, "version", *np.Name, clusterName, config.Name)
 	}
 	if np.Autoscaling == nil {
-		return fmt.Errorf(nodePoolErr, "autoscaling", *np.Name, clusterName)
+		return fmt.Errorf(nodePoolErr, "autoscaling", *np.Name, clusterName, config.Name)
 	}
 	if np.InitialNodeCount == nil {
-		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, clusterName)
+		return fmt.Errorf(nodePoolErr, "initialNodeCount", *np.Name, clusterName, config.Name)
 	}
 	if np.MaxPodsConstraint == nil && config.Spec.IPAllocationPolicy != nil && config.Spec.IPAllocationPolicy.UseIPAliases {
-		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, clusterName)
+		return fmt.Errorf(nodePoolErr, "maxPodsConstraint", *np.Name, clusterName, config.Name)
 	}
 	if np.Config == nil {
-		return fmt.Errorf(nodePoolErr, "config", *np.Name, clusterName)
+		return fmt.Errorf(nodePoolErr, "config", *np.Name, clusterName, config.Name)
 	}
 	if np.Management == nil {
-		return fmt.Errorf(nodePoolErr, "management", *np.Name, clusterName)
+		return fmt.Errorf(nodePoolErr, "management", *np.Name, clusterName, config.Name)
 	}
 
 	rxEmail := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-z]{2,}$`)
 	if np.Config.ServiceAccount != "" && np.Config.ServiceAccount != "default" && !rxEmail.MatchString(np.Config.ServiceAccount) {
-		return fmt.Errorf("field [%s] must either be an empty string, 'default' or set to a valid email address for nodepool [%s] in non-nil cluster [%s]", "serviceAccount", *np.Name, clusterName)
+		return fmt.Errorf("field [%s] must either be an empty string, 'default' or set to a valid email address for nodepool [%s] in non-nil cluster [%s (%s)]", "serviceAccount", *np.Name, clusterName, config.Name)
 	}
 	return nil
 }
