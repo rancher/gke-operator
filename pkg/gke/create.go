@@ -188,7 +188,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 
 		if np.Autoscaling != nil && np.Autoscaling.Enabled {
 			if np.Autoscaling.MinNodeCount < 1 || np.Autoscaling.MaxNodeCount < np.Autoscaling.MinNodeCount {
-				return fmt.Errorf("minNodeCount in the NodePool %s must be >= 1 and <= maxNodeCount within the cluster [%s (id: %s)]", *np.Name, config.Spec.ClusterName, config.Name)
+				return fmt.Errorf("minNodeCount in the NodePool [%s] must be >= 1 and <= maxNodeCount within the cluster [%s (id: %s)]", utils.StringValue(np.Name), config.Spec.ClusterName, config.Name)
 			}
 		}
 	}
