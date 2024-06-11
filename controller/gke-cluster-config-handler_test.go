@@ -763,6 +763,6 @@ var _ = Describe("createCluster", func() {
 
 		_, err := handler.create(gkeConfig)
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("field [serviceAccount] must either be an empty string, 'default' or set to a valid email address for nodepool [test-node-pool] in non-nil cluster [test-cluster (test-cluster)]"))
+		Expect(err.Error()).To(Equal("field [serviceAccount] must either be an empty string, 'default' or set to a valid email address for nodepool [test-node-pool] in non-nil cluster [test-cluster (id: test-cluster)]"))
 	})
 })

@@ -169,7 +169,7 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 		var recordErr error
 		config, recordErr = h.gkeCC.UpdateStatus(config)
 		if recordErr != nil {
-			logrus.Errorf("Error recording gkecc [%s (%s)] failure message: %s, original error: %s", config.Spec.ClusterName, config.Name, recordErr, err)
+			logrus.Errorf("Error recording gkecc [%s (id: %s)] failure message: %s, original error: %s", config.Spec.ClusterName, config.Name, recordErr, err)
 		}
 		return config, err
 	}
@@ -209,16 +209,16 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 	h.gkeClient = gkeClient
 
 	if config.Spec.Imported {
-		logrus.Infof("cluster [%s (%s)] is imported, will not delete GKE cluster", config.Spec.ClusterName, config.Name)
+		logrus.Infof("cluster [%s (id: %s)] is imported, will not delete GKE cluster", config.Spec.ClusterName, config.Name)
 		return config, nil
 	}
 	if config.Status.Phase == gkeConfigNotCreatedPhase {
 		// The most likely context here is that the cluster already existed in GKE, so we shouldn't delete it
-		logrus.Warnf("cluster [%s (%s)] never advanced to creating status, will not delete GKE cluster", config.Spec.ClusterName, config.Name)
+		logrus.Warnf("cluster [%s (id: %s)] never advanced to creating status, will not delete GKE cluster", config.Spec.ClusterName, config.Name)
 		return config, nil
 	}
 
-	logrus.Infof("removing cluster [%s (%s)] from project %v, region/zone %v", config.Spec.ClusterName, config.Name, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
+	logrus.Infof("removing cluster [%s (id: %s)] from project %v, region/zone %v", config.Spec.ClusterName, config.Name, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
 	if err := gke.RemoveCluster(h.gkeClientCtx, h.gkeClient, config); err != nil {
 		logrus.Debugf("error deleting cluster %s: %v", config.Spec.ClusterName, err)
 		return config, err
@@ -229,7 +229,7 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 
 func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
-		logrus.Infof("importing cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
+		logrus.Infof("importing cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigImportingPhase
 		return h.gkeCC.UpdateStatus(config)
@@ -252,7 +252,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 
 	if cluster.Status == ClusterStatusReconciling {
 		// upstream cluster is already updating, must wait until sending next update
-		logrus.Infof("waiting for cluster [%s (%s)] to finish updating", config.Spec.ClusterName, config.Name)
+		logrus.Infof("waiting for cluster [%s (id: %s)] to finish updating", config.Spec.ClusterName, config.Name)
 		if config.Status.Phase != gkeConfigUpdatingPhase {
 			config = config.DeepCopy()
 			config.Status.Phase = gkeConfigUpdatingPhase
@@ -273,7 +273,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 					return config, err
 				}
 			}
-			logrus.Infof("waiting for cluster [%s (%s)] to update node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
+			logrus.Infof("waiting for cluster [%s (id: %s)] to update node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
 			h.gkeEnqueueAfter(config.Namespace, config.Name, 30*time.Second)
 			return config, nil
 		}
@@ -437,7 +437,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 				}
 			} else {
 				// There is no nodepool with this name yet, create it
-				logrus.Infof("adding node pool [%s] to cluster [%s (%s)]", *np.Name, config.Spec.ClusterName, config.Name)
+				logrus.Infof("adding node pool [%s] to cluster [%s (id: %s)]", *np.Name, config.Spec.ClusterName, config.Name)
 				if changed, err = gke.CreateNodePool(h.gkeClientCtx, h.gkeClient, config, np); err != nil {
 					return config, err
 				}
@@ -449,7 +449,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 
 		for npName := range upstreamNodePools {
 			if _, ok := downstreamNodePools[npName]; !ok {
-				logrus.Infof("removing node pool [%s] from cluster [%s (%s)]", npName, config.Spec.ClusterName, config.Name)
+				logrus.Infof("removing node pool [%s] from cluster [%s (id: %s)]", npName, config.Spec.ClusterName, config.Name)
 				if changed, err = gke.RemoveNodePool(h.gkeClientCtx, h.gkeClient, config, npName); err != nil {
 					return config, err
 				}
@@ -465,7 +465,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 
 	// no new updates, set to active
 	if config.Status.Phase != gkeConfigActivePhase {
-		logrus.Infof("cluster [%s (%s)] finished updating", config.Spec.ClusterName, config.Name)
+		logrus.Infof("cluster [%s (id: %s)] finished updating", config.Spec.ClusterName, config.Name)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigActivePhase
 		return h.gkeCC.UpdateStatus(config)
@@ -480,18 +480,18 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 		return config, err
 	}
 	if cluster.Status == ClusterStatusError {
-		return config, fmt.Errorf("creation failed for cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
+		return config, fmt.Errorf("creation failed for cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
 	}
 	if cluster.Status == ClusterStatusRunning {
 		if err := h.createCASecret(config, cluster); err != nil {
 			return config, err
 		}
-		logrus.Infof("Cluster [%s (%s)] is running", config.Spec.ClusterName, config.Name)
+		logrus.Infof("Cluster [%s (id: %s)] is running", config.Spec.ClusterName, config.Name)
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigActivePhase
 		return h.gkeCC.UpdateStatus(config)
 	}
-	logrus.Infof("waiting for cluster [%s (%s)] to finish creating", config.Spec.ClusterName, config.Name)
+	logrus.Infof("waiting for cluster [%s (id: %s)] to finish creating", config.Spec.ClusterName, config.Name)
 	h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
 
 	return config, nil
@@ -655,12 +655,12 @@ func (h *Handler) createCASecret(config *gkev1.GKEClusterConfig, cluster *gkeapi
 	var err error
 
 	if cluster.Endpoint == "" {
-		return fmt.Errorf("cluster [%s (%s)] has no endpoint", config.Spec.ClusterName, config.Name)
+		return fmt.Errorf("cluster [%s (id: %s)] has no endpoint", config.Spec.ClusterName, config.Name)
 	}
 	endpoint := cluster.Endpoint
 
 	if cluster.MasterAuth == nil || cluster.MasterAuth.ClusterCaCertificate == "" {
-		return fmt.Errorf("cluster [%s (%s)] has no CA", config.Spec.ClusterName, config.Name)
+		return fmt.Errorf("cluster [%s (id: %s)] has no CA", config.Spec.ClusterName, config.Name)
 	}
 	ca := []byte(cluster.MasterAuth.ClusterCaCertificate)
 
