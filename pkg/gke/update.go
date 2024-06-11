@@ -107,7 +107,7 @@ func UpdateClusterAddons(ctx context.Context, gkeClient services.GKEClusterServi
 	}
 
 	if needsUpdate {
-		logrus.Infof("updating addon configuration (upstream: %+v; config: %+v) for cluster [%s (id: %s)]", *upstreamSpec.ClusterAddons, *config.Spec.ClusterAddons, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating addon configuration %+v for cluster [%s (id: %s)]", *config.Spec.ClusterAddons, config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.ClusterUpdate(ctx,
 			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 			&gkeapi.UpdateClusterRequest{
@@ -172,7 +172,7 @@ func UpdateMasterAuthorizedNetworks(
 		needsUpdate = true
 	}
 	if needsUpdate {
-		logrus.Infof("updating master authorized networks configuration (upstream: %+v; config: %+v) for cluster [%s (id: %s)]", *upstreamSpec.MasterAuthorizedNetworksConfig, *config.Spec.MasterAuthorizedNetworksConfig, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating master authorized networks configuration to %+v for cluster [%s (id: %s)]", *config.Spec.MasterAuthorizedNetworksConfig, config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.ClusterUpdate(ctx,
 			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 			&gkeapi.UpdateClusterRequest{
@@ -217,7 +217,7 @@ func UpdateLoggingMonitoringService(
 		}
 	}
 	if needsUpdate {
-		logrus.Infof("updating logging (upstream: %s; config: %s) and monitoring (upstream: %s; config: %s) configuration for cluster [%s (id: %s)]", *upstreamSpec.MonitoringService, *config.Spec.MonitoringService, *upstreamSpec.LoggingService, *config.Spec.LoggingService, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating logging to %s and monitoring to %s configuration for cluster [%s (id: %s)]", *config.Spec.MonitoringService, *config.Spec.LoggingService, config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.ClusterUpdate(ctx,
 			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 			&gkeapi.UpdateClusterRequest{
@@ -243,7 +243,7 @@ func UpdateNetworkPolicyEnabled(
 	}
 
 	if *upstreamSpec.NetworkPolicyEnabled != *config.Spec.NetworkPolicyEnabled {
-		logrus.Infof("updating network policy (upstream: %v; config: %v) for cluster [%s (id: %s)]", *upstreamSpec.NetworkPolicyEnabled, *config.Spec.NetworkPolicyEnabled, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating network policy %v for cluster [%s (id: %s)]", *config.Spec.NetworkPolicyEnabled, config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.SetNetworkPolicy(ctx,
 			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 			&gkeapi.SetNetworkPolicyRequest{
@@ -287,7 +287,7 @@ func UpdateLocations(
 
 	if !reflect.DeepEqual(locations, upstreamLocations) {
 		clusterUpdate.DesiredLocations = locations
-		logrus.Infof("updating locations (upstream: %v; config: %v) for cluster [%s (id: %s)]", upstreamLocations, locations, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating locations %v for cluster [%s (id: %s)]", locations, config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.ClusterUpdate(ctx,
 			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 			&gkeapi.UpdateClusterRequest{
@@ -351,7 +351,7 @@ func UpdateLabels(
 	if err != nil {
 		return NotChanged, err
 	}
-	logrus.Infof("updating cluster labels (upstream: %+v; config: %+v) for cluster [%s (id: %s)]", upstreamSpec.Labels, config.Spec.Labels, config.Spec.ClusterName, config.Name)
+	logrus.Infof("updating cluster labels %+v for cluster [%s (id: %s)]", config.Spec.Labels, config.Spec.ClusterName, config.Name)
 	_, err = gkeClient.SetResourceLabels(ctx,
 		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 		&gkeapi.SetLabelsRequest{
@@ -388,13 +388,13 @@ func UpdateNodePoolKubernetesVersionOrImageType(
 	needsUpdate := false
 	npVersion := utils.StringValue(nodePool.Version)
 	if npVersion != "" && utils.StringValue(upstreamNodePool.Version) != npVersion {
-		logrus.Infof("updating kubernetes version of node pool [%s] from %s to %s on cluster [%s (id: %s)]", *nodePool.Name, npVersion, utils.StringValue(upstreamNodePool.Version), config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating kubernetes version of node pool [%s] from %s to %s on cluster [%s (id: %s)]", utils.StringValue(nodePool.Name), npVersion, utils.StringValue(upstreamNodePool.Version), config.Spec.ClusterName, config.Name)
 		updateRequest.NodeVersion = npVersion
 		needsUpdate = true
 	}
 	imageType := strings.ToLower(nodePool.Config.ImageType)
 	if imageType != "" && strings.ToLower(upstreamNodePool.Config.ImageType) != imageType {
-		logrus.Infof("updating image type of node pool [%s] from %s to %s on cluster [%s (id: %s)]", *nodePool.Name, imageType, upstreamNodePool.Config.ImageType, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating image type of node pool [%s] from %s to %s on cluster [%s (id: %s)]", utils.StringValue(nodePool.Name), imageType, upstreamNodePool.Config.ImageType, config.Spec.ClusterName, config.Name)
 		updateRequest.ImageType = imageType
 		needsUpdate = true
 	}
@@ -430,7 +430,7 @@ func UpdateNodePoolSize(
 		return NotChanged, nil
 	}
 
-	logrus.Infof("updating size of node pool [%s] from %d to %d on cluster [%s (id: %s)]", *nodePool.Name, *upstreamNodePool.InitialNodeCount, *nodePool.InitialNodeCount, config.Spec.ClusterName, config.Name)
+	logrus.Infof("updating size of node pool [%s] from %d to %d on cluster [%s (id: %s)]", utils.StringValue(nodePool.Name), *upstreamNodePool.InitialNodeCount, *nodePool.InitialNodeCount, config.Spec.ClusterName, config.Name)
 	_, err := gkeClient.SetSize(ctx,
 		NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 		&gkeapi.SetNodePoolSizeRequest{
@@ -481,7 +481,7 @@ func UpdateNodePoolAutoscaling(
 		needsUpdate = true
 	}
 	if needsUpdate {
-		logrus.Infof("updating autoscaling config (upstream: %+v; config: %+v) of node pool [%s] on cluster [%s (id: %s)]", *upstreamNodePool.Autoscaling, *nodePool.Autoscaling, *nodePool.Name, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating autoscaling config %+v of node pool [%s] on cluster [%s (id: %s)]", *nodePool.Autoscaling, utils.StringValue(nodePool.Name), config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.SetAutoscaling(ctx,
 			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 			updateRequest)
@@ -522,7 +522,7 @@ func UpdateNodePoolManagement(
 		needsUpdate = true
 	}
 	if needsUpdate {
-		logrus.Infof("updating management config (upstream: %+v, config: %+v) of node pool [%s] on cluster [%s (id: %s)]", *upstreamNodePool.Management, *nodePool.Management, *nodePool.Name, config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating management config %+v of node pool [%s] on cluster [%s (id: %s)]", *nodePool.Management, utils.StringValue(nodePool.Name), config.Spec.ClusterName, config.Name)
 		_, err := gkeClient.SetManagement(ctx,
 			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 			updateRequest)
@@ -556,7 +556,7 @@ func UpdateNodePoolConfig(
 		},
 	}
 
-	logrus.Infof("updating config for node pool [%s] on cluster [%s (id: %s)]", *nodePool.Name, config.Spec.ClusterName, config.Name)
+	logrus.Infof("updating config for node pool [%s] on cluster [%s (id: %s)]", utils.StringValue(nodePool.Name), config.Spec.ClusterName, config.Name)
 	_, err := gkeClient.NodePoolUpdate(ctx,
 		NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 		updateRequest)

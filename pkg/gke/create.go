@@ -10,6 +10,7 @@ import (
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke/services"
+	"github.com/rancher/gke-operator/pkg/utils"
 )
 
 // Errors
@@ -181,7 +182,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Spec.ClusterName, config.Name)
 		}
 		if nodeP[*np.Name] {
-			return fmt.Errorf("NodePool names %q must be unique within the cluster [%s (id: %s)] to avoid duplication", *np.Name, config.Spec.ClusterName, config.Name)
+			return fmt.Errorf("NodePool name %s must be unique within the cluster [%s (id: %s)] to avoid duplication", utils.StringValue(np.Name), config.Spec.ClusterName, config.Name)
 		}
 		nodeP[*np.Name] = true
 
