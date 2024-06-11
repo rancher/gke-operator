@@ -14,8 +14,8 @@ import (
 
 // Errors
 const (
-	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s (%s)]"
-	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s (%s)]"
+	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s (id: %s)]"
+	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s (id: %s)]"
 )
 
 // Create creates an upstream GKE cluster.
@@ -181,13 +181,13 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Spec.ClusterName, config.Name)
 		}
 		if nodeP[*np.Name] {
-			return fmt.Errorf("NodePool names %q must be unique within the cluster [%s (%s)] to avoid duplication", *np.Name, config.Spec.ClusterName, config.Name)
+			return fmt.Errorf("NodePool names %q must be unique within the cluster [%s (id: %s)] to avoid duplication", *np.Name, config.Spec.ClusterName, config.Name)
 		}
 		nodeP[*np.Name] = true
 
 		if np.Autoscaling != nil && np.Autoscaling.Enabled {
 			if np.Autoscaling.MinNodeCount < 1 || np.Autoscaling.MaxNodeCount < np.Autoscaling.MinNodeCount {
-				return fmt.Errorf("minNodeCount in the NodePool %s must be >= 1 and <= maxNodeCount within the cluster [%s (%s)]", *np.Name, config.Spec.ClusterName, config.Name)
+				return fmt.Errorf("minNodeCount in the NodePool %s must be >= 1 and <= maxNodeCount within the cluster [%s (id: %s)]", *np.Name, config.Spec.ClusterName, config.Name)
 			}
 		}
 	}
@@ -195,7 +195,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	if config.Spec.CustomerManagedEncryptionKey != nil {
 		if config.Spec.CustomerManagedEncryptionKey.RingName == "" ||
 			config.Spec.CustomerManagedEncryptionKey.KeyName == "" {
-			return fmt.Errorf("ringName and keyName are required to enable boot disk encryption for Node Pools within the cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
+			return fmt.Errorf("ringName and keyName are required to enable boot disk encryption for Node Pools within the cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
 		}
 	}
 
@@ -207,7 +207,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 
 	for _, cluster := range operation.Clusters {
 		if cluster.Name == config.Spec.ClusterName {
-			return fmt.Errorf("cannot create cluster [%s (%s)] because a cluster in GKE exists with the same name, please delete and recreate with a different name", config.Spec.ClusterName, config.Name)
+			return fmt.Errorf("cannot create cluster [%s (id: %s)] because a cluster in GKE exists with the same name, please delete and recreate with a different name", config.Spec.ClusterName, config.Name)
 		}
 	}
 
@@ -247,7 +247,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 		return fmt.Errorf(cannotBeNilError, "privateClusterConfig", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.PrivateClusterConfig.EnablePrivateEndpoint && !config.Spec.PrivateClusterConfig.EnablePrivateNodes {
-		return fmt.Errorf("private endpoint requires private nodes for cluster [%s (%s)]", config.Spec.ClusterName, config.Name)
+		return fmt.Errorf("private endpoint requires private nodes for cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.MasterAuthorizedNetworksConfig == nil {
 		return fmt.Errorf(cannotBeNilError, "masterAuthorizedNetworksConfig", config.Spec.ClusterName, config.Name)
@@ -302,7 +302,7 @@ func validateNodePoolCreateRequest(np *gkev1.GKENodePoolConfig, config *gkev1.GK
 
 	rxEmail := regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-z]{2,}$`)
 	if np.Config.ServiceAccount != "" && np.Config.ServiceAccount != "default" && !rxEmail.MatchString(np.Config.ServiceAccount) {
-		return fmt.Errorf("field [%s] must either be an empty string, 'default' or set to a valid email address for nodepool [%s] in non-nil cluster [%s (%s)]", "serviceAccount", *np.Name, clusterName, config.Name)
+		return fmt.Errorf("field [%s] must either be an empty string, 'default' or set to a valid email address for nodepool [%s] in non-nil cluster [%s (id: %s)]", "serviceAccount", *np.Name, clusterName, config.Name)
 	}
 	return nil
 }
