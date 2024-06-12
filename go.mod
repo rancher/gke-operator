@@ -20,7 +20,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
 	github.com/rancher/lasso v0.0.0-20240430201833-6f3def65ffc5
-	github.com/rancher/rancher/pkg/apis v0.0.0-20240126142034-676c3eb3dfa5
+	github.com/rancher/rancher/pkg/apis v0.0.0-20240613021645-987817b45e56
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/rancher/wrangler/v3 v3.0.0-rc2
 	github.com/sirupsen/logrus v1.9.3
@@ -41,7 +41,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.8.0 // indirect
@@ -60,7 +60,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20240424215950-a892ee059fd6 // indirect
 	github.com/google/s2a-go v0.1.7 // indirect
-	github.com/google/uuid v1.5.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.12.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -75,11 +75,11 @@ require (
 	github.com/prometheus/client_model v0.5.0 // indirect
 	github.com/prometheus/common v0.45.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	github.com/rancher/aks-operator v1.3.0-rc1 // indirect
-	github.com/rancher/eks-operator v1.4.0-rc1 // indirect
+	github.com/rancher/aks-operator v1.9.0-rc.4 // indirect
+	github.com/rancher/eks-operator v1.9.0-rc.5 // indirect
 	github.com/rancher/fleet/pkg/apis v0.0.0-20231017140638-93432f288e79 // indirect
-	github.com/rancher/norman v0.0.0-20240207153100-3bb70b772b52 // indirect
-	github.com/rancher/rke v1.5.0 // indirect
+	github.com/rancher/norman v0.0.0-20240503193601-9f5f6586bb5b // indirect
+	github.com/rancher/rke v1.6.0-rc6 // indirect
 	github.com/rancher/wrangler v1.1.1 // indirect
 	github.com/rancher/wrangler/v2 v2.2.0-rc6 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -102,7 +102,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/code-generator v0.30.1 // indirect
 	k8s.io/component-base v0.30.1 // indirect
-	k8s.io/gengo v0.0.0-20240228010128-51d4e06bde70 // indirect
+	k8s.io/gengo v0.0.0-20240310015720-9cff6334dab4 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
 	k8s.io/klog/v2 v2.120.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
