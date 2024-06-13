@@ -10,7 +10,7 @@ import (
 	"github.com/rancher/gke-operator/pkg/gke"
 
 	"github.com/rancher/gke-operator/pkg/gke/services"
-	wranglerv1 "github.com/rancher/wrangler/v2/pkg/generated/controllers/core/v1"
+	wranglerv1 "github.com/rancher/wrangler/v3/pkg/generated/controllers/core/v1"
 	"github.com/sirupsen/logrus"
 
 	gkeapi "google.golang.org/api/container/v1"
