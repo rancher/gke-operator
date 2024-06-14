@@ -8,7 +8,7 @@ spec:
   labels: {}
   region: "us-west1"
   projectID: "${GKE_PROJECT_ID}"
-  kubernetesVersion: "1.28.7-gke.1026000"
+  kubernetesVersion: "1.28.10-gke.1089000"
   loggingService: ""
   monitoringService: ""
   enableKubernetesAlpha: false
@@ -23,7 +23,7 @@ spec:
       labels: {}
     initialNodeCount: 1
     maxPodsConstraint: 110
-    version: "1.28.7-gke.1026000"
+    version: "1.28.10-gke.1089000"
     management:
       autoRepair: true
       autoUpgrade: true
