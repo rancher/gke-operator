@@ -89,7 +89,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4.3.3
         with:
-          name: ci-artifacts
+          name: ci-artifacts-${{ env.BRANCH }}
           path: _artifacts
           if-no-files-found: ignore
       - name: Send failed status to slack
