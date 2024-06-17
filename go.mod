@@ -2,8 +2,6 @@ module github.com/rancher/gke-operator
 
 go 1.22.0
 
-toolchain go1.22.3
-
 // TODO: to be removed when rancher/pkg/apis is updated after k8s-1.30 PR is merged in rancher
 replace k8s.io/apiserver => k8s.io/apiserver v0.29.4
 
