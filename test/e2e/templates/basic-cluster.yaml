@@ -1,0 +1,44 @@
+apiVersion: gke.cattle.io/v1
+kind: GKEClusterConfig
+metadata:
+  name: basic-cluster
+spec:
+  clusterName: "basic-cluster"
+  description: "gke e2e basic cluster"
+  labels: {}
+  region: "us-west1"
+  projectID: "${GKE_PROJECT_ID}"
+  kubernetesVersion: "1.28.10-gke.1089000"
+  loggingService: ""
+  monitoringService: ""
+  enableKubernetesAlpha: false
+  clusterIpv4Cidr: "10.42.0.0/16"
+  ipAllocationPolicy:
+    useIpAliases: true
+  nodePools:
+  - name: gke-e2e-basic-cluster-node-pool
+    autoscaling:
+      enabled: false
+    config:
+      labels: {}
+    initialNodeCount: 1
+    maxPodsConstraint: 110
+    version: "1.28.10-gke.1089000"
+    management:
+      autoRepair: true
+      autoUpgrade: true
+  clusterAddons:
+    httpLoadBalancing: true
+    networkPolicyConfig: false
+    horizontalPodAutoscaling: true
+  networkPolicyEnabled: false
+  network: default
+  subnetwork: default
+  privateClusterConfig:
+    enablePrivateEndpoint: false
+    enablePrivateNodes: false
+  masterAuthorizedNetworks:
+    enabled: false
+  locations: ["us-west1-c"]
+  maintenanceWindow: ""
+  googleCredentialSecret: default:gke-credentials
