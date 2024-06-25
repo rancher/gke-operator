@@ -14,8 +14,8 @@ var _ = Describe("UpdateMasterKubernetesVersion", func() {
 	var (
 		mockController     *gomock.Controller
 		clusterServiceMock *mock_services.MockGKEClusterService
-		oldVersion         = "1.25.12-gke.200"
-		k8sVersion         = "1.26.8-gke.110"
+		oldVersion         = "1.27.13-gke.3013000"
+		k8sVersion         = "1.28.10-gke.1089000"
 		clusterIpv4Cidr    = "10.42.0.0/16"
 		networkName        = "test-network"
 		subnetworkName     = "test-subnetwork"
@@ -100,7 +100,7 @@ var _ = Describe("UpdateClusterAddons", func() {
 	var (
 		mockController     *gomock.Controller
 		clusterServiceMock *mock_services.MockGKEClusterService
-		k8sVersion         = "1.26.8-gke.110"
+		k8sVersion         = "1.28.10-gke.1089000"
 		clusterIpv4Cidr    = "10.42.0.0/16"
 		networkName        = "test-network"
 		subnetworkName     = "test-subnetwork"
@@ -201,7 +201,7 @@ var _ = Describe("UpdateMasterAuthorizedNetworks", func() {
 	var (
 		mockController     *gomock.Controller
 		clusterServiceMock *mock_services.MockGKEClusterService
-		k8sVersion         = "1.26.8-gke.110"
+		k8sVersion         = "1.28.10-gke.1089000"
 		clusterIpv4Cidr    = "10.42.0.0/16"
 		networkName        = "test-network"
 		subnetworkName     = "test-subnetwork"
@@ -314,7 +314,7 @@ var _ = Describe("UpdateNodePoolAutoscaling", func() {
 	var (
 		mockController     *gomock.Controller
 		clusterServiceMock *mock_services.MockGKEClusterService
-		k8sVersion         = "1.26.8-gke.110"
+		k8sVersion         = "1.28.10-gke.1089000"
 		clusterIpv4Cidr    = "10.42.0.0/16"
 		networkName        = "test-network"
 		subnetworkName     = "test-subnetwork"

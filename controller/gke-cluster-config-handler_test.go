@@ -104,7 +104,7 @@ var _ = Describe("buildUpstreamClusterState", func() {
 	BeforeEach(func() {
 		clusterState = &gkeapi.Cluster{
 			Name:                 "test-cluster",
-			CurrentMasterVersion: "1.25.13-gke.200",
+			CurrentMasterVersion: "1.28.10-gke.1089000",
 			Zone:                 "test-east1",
 			Locations:            []string{"test-east1-a", "test-east1-b", "test-east1-c"},
 			Endpoint:             "https://test.com",
@@ -149,7 +149,7 @@ var _ = Describe("buildUpstreamClusterState", func() {
 				{
 					Name:             "np-tes1",
 					InitialNodeCount: 1,
-					Version:          "1.25.13-gke.200",
+					Version:          "1.28.10-gke.1089000",
 					MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
 						MaxPodsPerNode: 110,
 					},
@@ -258,7 +258,7 @@ var _ = Describe("importCluster", func() {
 
 		clusterState = &gkeapi.Cluster{
 			Name:                 "test-cluster",
-			CurrentMasterVersion: "1.25.13-gke.200",
+			CurrentMasterVersion: "1.28.10-gke.1089000",
 			Zone:                 "test-east1",
 			Locations:            []string{"test-east1-a", "test-east1-b", "test-east1-c"},
 			Endpoint:             "https://test.com",
@@ -303,7 +303,7 @@ var _ = Describe("importCluster", func() {
 				{
 					Name:             "np-tes1",
 					InitialNodeCount: 1,
-					Version:          "1.25.13-gke.200",
+					Version:          "1.28.10-gke.1089000",
 					MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
 						MaxPodsPerNode: 110,
 					},
@@ -434,7 +434,7 @@ var _ = Describe("createCluster", func() {
 
 		clusterState = &gkeapi.Cluster{
 			Name:                 "test-cluster",
-			CurrentMasterVersion: "1.25.13-gke.200",
+			CurrentMasterVersion: "1.28.10-gke.1089000",
 			Zone:                 "test-east1",
 			Locations:            []string{"test-east1-a", "test-east1-b", "test-east1-c"},
 			Endpoint:             "https://test.com",
@@ -479,7 +479,7 @@ var _ = Describe("createCluster", func() {
 				{
 					Name:             "np-test1",
 					InitialNodeCount: 1,
-					Version:          "1.25.13-gke.200",
+					Version:          "1.28.10-gke.1089000",
 					MaxPodsConstraint: &gkeapi.MaxPodsConstraint{
 						MaxPodsPerNode: 110,
 					},

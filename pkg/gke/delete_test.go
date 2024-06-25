@@ -14,7 +14,7 @@ var _ = Describe("RemoveCluster", func() {
 	var (
 		mockController     *gomock.Controller
 		clusterServiceMock *mock_services.MockGKEClusterService
-		k8sVersion         = "1.25.12-gke.200"
+		k8sVersion         = "1.28.10-gke.1089000"
 		clusterIpv4Cidr    = "10.42.0.0/16"
 		networkName        = "test-network"
 		subnetworkName     = "test-subnetwork"
@@ -111,7 +111,7 @@ var _ = Describe("RemoveNodePool", func() {
 	var (
 		mockController     *gomock.Controller
 		clusterServiceMock *mock_services.MockGKEClusterService
-		k8sVersion         = "1.25.12-gke.200"
+		k8sVersion         = "1.28.10-gke.1089000"
 		clusterIpv4Cidr    = "10.42.0.0/16"
 		networkName        = "test-network"
 		subnetworkName     = "test-subnetwork"
