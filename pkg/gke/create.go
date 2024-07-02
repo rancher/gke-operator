@@ -182,7 +182,7 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 			return fmt.Errorf(cannotBeNilError, "nodePool.name", config.Spec.ClusterName, config.Name)
 		}
 		if nodeP[*np.Name] {
-			return fmt.Errorf("NodePool name %s is not unique within the cluster [%s (id: %s)] to avoid duplication", utils.StringValue(np.Name), config.Spec.ClusterName, config.Name)
+			return fmt.Errorf("NodePool name [%s] is not unique within the cluster [%s (id: %s)] to avoid duplication", utils.StringValue(np.Name), config.Spec.ClusterName, config.Name)
 		}
 		nodeP[*np.Name] = true
 
