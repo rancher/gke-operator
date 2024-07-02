@@ -220,7 +220,7 @@ func UpdateLoggingMonitoringService(
 		}
 	}
 	if needsUpdate {
-		logrus.Infof("updating logging configuration to %s and monitoring configuration to %s for cluster [%s (id: %s)]", utils.StringValue(config.Spec.MonitoringService), utils.StringValue(config.Spec.LoggingService), config.Spec.ClusterName, config.Name)
+		logrus.Infof("updating logging configuration to %s and monitoring configuration to %s for cluster [%s (id: %s)]", utils.StringValue(config.Spec.LoggingService), utils.StringValue(config.Spec.MonitoringService), config.Spec.ClusterName, config.Name)
 		logrus.Debugf("[logging] config: %s; upstream: %s", utils.StringValue(config.Spec.LoggingService), utils.StringValue(upstreamSpec.LoggingService))
 		logrus.Debugf("[monitoring] config: %s; upstream: %s", utils.StringValue(config.Spec.MonitoringService), utils.StringValue(upstreamSpec.MonitoringService))
 		_, err := gkeClient.ClusterUpdate(ctx,

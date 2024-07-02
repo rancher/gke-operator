@@ -218,7 +218,7 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 		return config, nil
 	}
 
-	logrus.Infof("removing cluster [%s (id: %s)] from project %v, region/zone %v", config.Spec.ClusterName, config.Name, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
+	logrus.Infof("removing cluster [%s (id: %s)] from project %s, region/zone %s", config.Spec.ClusterName, config.Name, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
 	if err := gke.RemoveCluster(h.gkeClientCtx, h.gkeClient, config); err != nil {
 		logrus.Debugf("error deleting cluster %s: %v", config.Spec.ClusterName, err)
 		return config, err
