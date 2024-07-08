@@ -34,11 +34,14 @@ find ./packages/rancher-${OPERATOR}/ -type f -exec sed -i -e "s/version: ${PREV_
 find ./packages/rancher-${OPERATOR}/ -type f -exec sed -i -e "/doNotRelease: false/d" {} \;
 
 if [ "${REPLACE}" == "true" ] && grep -q "rancher-${OPERATOR}:" release.yaml; then
+    # replace previous with new version
     sed -i -e "s/${PREV_CHART_VERSION}+up${PREV_OPERATOR_VERSION}/${NEW_CHART_VERSION}+up${NEW_OPERATOR_VERSION}/g" release.yaml
 else
     if grep -q "rancher-${OPERATOR}:" release.yaml; then
+        # append new version below previous version
         sed -i -e "s/${PREV_CHART_VERSION}+up${PREV_OPERATOR_VERSION}/${PREV_CHART_VERSION}+up${PREV_OPERATOR_VERSION}\n  - ${NEW_CHART_VERSION}+up${NEW_OPERATOR_VERSION}/g" release.yaml
     else
+        # add new version to release.yaml
         cat <<< "
 rancher-${OPERATOR}:
 - ${PREV_CHART_VERSION}+up${PREV_OPERATOR_VERSION}
