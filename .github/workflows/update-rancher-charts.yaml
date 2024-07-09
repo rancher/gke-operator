@@ -83,6 +83,7 @@ jobs:
           GH_TOKEN: ${{secrets.CI_BOT_TOKEN}}
         run: |
           gh pr create \
+            --repo rancher/charts \
             --base "${{ github.event.inputs.charts_ref }}" \
             --head "highlander-ci-bot:${{ env.OPERATOR }}-$VERSION-$TIMESTAMP" \
             --title "[${{ github.event.inputs.charts_ref }}] rancher-${{ env.OPERATOR }} ${{ github.event.inputs.new_chart_version }}+up${{ github.event.inputs.new_operator_version }} update" \
