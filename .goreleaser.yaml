@@ -1,6 +1,6 @@
 version: 2
 
-project_name: gke-operator
+project_name: eks-operator
 
 before:
   hooks:
@@ -14,7 +14,7 @@ builds:
     goarch:
       - amd64
       - arm64
-    binary: gke-operator
+    binary: eks-operator
 
 release:
   prerelease: auto
