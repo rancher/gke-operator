@@ -23,7 +23,7 @@ require (
 	github.com/rancher/wrangler/v3 v3.0.0-rc2
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/net v0.27.0
-	golang.org/x/oauth2 v0.21.0
+	golang.org/x/oauth2 v0.22.0
 	google.golang.org/api v0.153.0
 	k8s.io/api v0.30.1
 	k8s.io/apiextensions-apiserver v0.30.1
