@@ -87,7 +87,7 @@ generate-go: $(MOCKGEN)
 
 .PHONY: test
 test: $(SETUP_ENVTEST) $(GINKGO)
-	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" $(GINKGO) -v -r -p --trace ./pkg/... ./controller/...
+	KUBEBUILDER_ASSETS="$(KUBEBUILDER_ASSETS)" $(GINKGO) -v -r -p --race --trace ./pkg/... ./controller/...
 
 .PHONY: clean
 clean:
