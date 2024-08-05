@@ -17,10 +17,10 @@ require (
 	github.com/onsi/gomega v1.34.0
 	github.com/pkg/errors v0.9.1
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
-	github.com/rancher/lasso v0.0.0-20240430201833-6f3def65ffc5
+	github.com/rancher/lasso v0.0.0-20240705194423-b2a060d103c1
 	github.com/rancher/rancher/pkg/apis v0.0.0-20240613021645-987817b45e56
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
-	github.com/rancher/wrangler/v3 v3.0.0-rc2
+	github.com/rancher/wrangler/v3 v3.0.0
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/net v0.27.0
 	golang.org/x/oauth2 v0.22.0
