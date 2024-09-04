@@ -9,7 +9,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.28.6
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.20.1
+	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20240531071842-35c37fffa28c
 	github.com/rancher/lasso v0.0.0-20240123150939-7055397d6dfa
