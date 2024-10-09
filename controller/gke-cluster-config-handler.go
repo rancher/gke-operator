@@ -18,7 +18,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/util/retry"
 )
 
 const (
@@ -136,44 +135,43 @@ func (h *Handler) OnGkeConfigChanged(_ string, config *gkev1.GKEClusterConfig) (
 // empty string will be written to status
 func (h *Handler) recordError(onChange func(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error)) func(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	return func(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+		var err error
 		var message string
-		config, onChangeErr := onChange(key, config)
+		config, err = onChange(key, config)
 		if config == nil {
 			// GKE config is likely deleting
-			return config, onChangeErr
+			return config, err
 		}
-		if config.Status.FailureMessage == message {
-			return config, onChangeErr
+		if err != nil && errors.IsConflict(err) {
+			// If a conflict error happened on an UpdateStatus call, it is probably because the handler was working from an out of sync cached object.
+			// UpdateStatus returns an empty struct when it fails, so trying to run UpdateStatus again to record the failureMessage will also fail.
+			// Just return the error instead of attempting to update the failure message.
+			return nil, err
 		}
-		statusUpdateErr := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			// Fetch the latest version of the config
-			conf, err := h.gkeCC.Get(config.Namespace, config.Name, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
+		if err != nil {
+			message = err.Error()
+		}
 
-			// Ensure we're working on a deep copy
-			conf = conf.DeepCopy()
-			// Update status with the new failure message
-			if message != "" && conf.Status.Phase == gkeConfigActivePhase {
-				// Can assume an update is failing
-				conf.Status.Phase = gkeConfigUpdatingPhase
-			}
-			conf.Status.FailureMessage = message
-			// Try to update status
-			updatedConfig, err := h.gkeCC.UpdateStatus(conf)
-			if err == nil {
-				config = updatedConfig
-			}
-			return err
-		})
-		if statusUpdateErr != nil {
-			logrus.Errorf(
-				"Error updating status for GKEClusterConfig [%s/%s]: %v. Original error from onChange: %v",
-				config.Spec.ClusterName, config.Name, statusUpdateErr, onChangeErr,
-			)
+		if config.Status.FailureMessage == message {
+			return config, err
 		}
-		return config, onChangeErr
+
+		config = config.DeepCopy()
+
+		if message != "" {
+			if config.Status.Phase == gkeConfigActivePhase {
+				// can assume an update is failing
+				config.Status.Phase = gkeConfigUpdatingPhase
+			}
+		}
+		config.Status.FailureMessage = message
+
+		var recordErr error
+		config, recordErr = h.gkeCC.UpdateStatus(config)
+		if recordErr != nil {
+			logrus.Errorf("Error recording gkecc [%s (id: %s)] failure message: %s, original error: %s", config.Spec.ClusterName, config.Name, recordErr, err)
+		}
+		return config, err
 	}
 }
 
