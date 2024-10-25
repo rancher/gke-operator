@@ -44,6 +44,8 @@ updates:
     - dependency-name: "github.com/rancher/wrangler/v3"
     # Ignore rancher apis
     - dependency-name: "github.com/rancher/rancher/pkg/apis"
+    # Ignore Google API version, due it is breaking integration
+    - dependency-name: "google.golang.org/api"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.9"
