@@ -12,15 +12,17 @@ import (
 
 var _ = Describe("UpdateMasterKubernetesVersion", func() {
 	var (
-		mockController     *gomock.Controller
-		clusterServiceMock *mock_services.MockGKEClusterService
-		oldVersion         = "1.25.12-gke.200"
-		k8sVersion         = "1.26.8-gke.110"
-		clusterIpv4Cidr    = "10.42.0.0/16"
-		networkName        = "test-network"
-		subnetworkName     = "test-subnetwork"
-		emptyString        = ""
-		boolTrue           = true
+		mockController                *gomock.Controller
+		clusterServiceMock            *mock_services.MockGKEClusterService
+		oldVersion                    = "1.25.12-gke.200"
+		k8sVersion                    = "1.26.8-gke.110"
+		higherUpstreamVersionMinor    = "1.27.0-gke.100"
+		higherUpstreamVersionRevision = "1.26.9-gke.100"
+		clusterIpv4Cidr               = "10.42.0.0/16"
+		networkName                   = "test-network"
+		subnetworkName                = "test-subnetwork"
+		emptyString                   = ""
+		boolTrue                      = true
 
 		config = &gkev1.GKEClusterConfig{
 			Spec: gkev1.GKEClusterConfigSpec{
@@ -94,6 +96,30 @@ var _ = Describe("UpdateMasterKubernetesVersion", func() {
 		Expect(status).To(Equal(NotChanged))
 	})
 
+	It("should not allow downgrades if spec minor version is lower than upstream minor version", func() {
+		upstreamSpec.KubernetesVersion = &higherUpstreamVersionMinor
+		status, err := UpdateMasterKubernetesVersion(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).To(HaveOccurred())
+		Expect(status).To(Equal(NotChanged))
+	})
+
+	It("should allow downgrades if spec revision version is lower than upstream revision version", func() {
+		clusterServiceMock.EXPECT().
+			ClusterUpdate(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: &gkeapi.ClusterUpdate{
+						DesiredMasterVersion: k8sVersion,
+					},
+				}).
+			Return(&gkeapi.Operation{}, nil)
+
+		upstreamSpec.KubernetesVersion = &higherUpstreamVersionRevision
+		status, err := UpdateMasterKubernetesVersion(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(Changed))
+	})
 })
 
 var _ = Describe("UpdateClusterAddons", func() {
