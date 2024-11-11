@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
 
+	semv "github.com/Masterminds/semver/v3"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke/services"
 	"github.com/rancher/gke-operator/pkg/utils"
@@ -46,9 +47,24 @@ func UpdateMasterKubernetesVersion(ctx context.Context, gkeClient services.GKECl
 		return NotChanged, nil
 	}
 
+	specVersion, err := semv.NewVersion(kubeVersion)
+	if err != nil {
+		return NotChanged, err
+	}
+
+	upstreamVersion, err := semv.NewVersion(*upstreamSpec.KubernetesVersion)
+	if err != nil {
+		return NotChanged, err
+	}
+
+	// Check if the minor version is being downgraded https://cloud.google.com/kubernetes-engine/docs/how-to/upgrading-a-cluster#downgrading-limitations
+	if specVersion.Major() == upstreamVersion.Major() && specVersion.Minor() < upstreamVersion.Minor() {
+		return NotChanged, fmt.Errorf("upstream version %q is higher than spec version %q and downgrades of minor versions are not supported in GKE, consider updating spec version to match upstream version", upstreamVersion, specVersion)
+	}
+
 	logrus.Infof("Updating kubernetes version to %s for cluster [%s (id: %s)]", kubeVersion, config.Spec.ClusterName, config.Name)
 	logrus.Debugf("config: %s; upstream: %s", kubeVersion, utils.StringValue(upstreamSpec.KubernetesVersion))
-	_, err := gkeClient.ClusterUpdate(ctx,
+	_, err = gkeClient.ClusterUpdate(ctx,
 		ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
 		&gkeapi.UpdateClusterRequest{
 			Update: &gkeapi.ClusterUpdate{
