@@ -79,7 +79,10 @@ $(SETUP_ENVTEST):
 
 .PHONY: operator
 operator:
-	CGO_ENABLED=0 go build -o bin/gke-operator main.go
+	CGO_ENABLED=0 go build -ldflags \
+            "-X github.com/rancher/gke-operator/pkg/version.GitCommit=$(GIT_COMMIT) \
+             -X github.com/rancher/gke-operator/pkg/version.Version=$(TAG)" \
+        -o bin/gke-operator .
 
 .PHONY: generate-go
 generate-go: $(MOCKGEN)
