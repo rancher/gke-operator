@@ -51,14 +51,6 @@ endif
 
 default: operator
 
-.dapper:
-	@echo Downloading dapper
-	@curl -sL https://releases.rancher.com/dapper/latest/dapper-`uname -s`-`uname -m` > .dapper.tmp
-	@@chmod +x .dapper.tmp
-	@./.dapper.tmp -v
-	@mv .dapper.tmp .dapper
-
-
 .PHONY: generate-go
 generate-go: $(MOCKGEN)
 	go generate ./pkg/gke/...
@@ -75,10 +67,6 @@ generate:
 .PHONY: clean
 clean:
 	rm -rf build bin dist
-
-.PHONY: $(TARGETS)
-$(TARGETS): .dapper
-	./.dapper $@
 
 $(MOCKGEN):
 	GOBIN=$(BIN_DIR) $(GO_INSTALL) github.com/golang/mock/mockgen $(MOCKGEN_BIN) $(MOCKGEN_VER)
