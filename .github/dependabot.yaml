@@ -22,5 +22,7 @@ updates:
     - dependency-name: "k8s.io/*"
     # Ignore wrangler
     - dependency-name: "github.com/rancher/wrangler"
+    # Ignore lasso
+    - dependency-name: "github.com/rancher/lasso"
   commit-message:
     prefix: ":seedling:"
