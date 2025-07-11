@@ -15,9 +15,19 @@ jobs:
       GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
       GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-  e2e-test-v2_11:
+  e2e-test-v2_12:
     if: ${{ always() }}
     needs: e2e-test-main
+    uses: ./.github/workflows/e2e-branch.yaml
+    with:
+      branch: release-v2.12
+    secrets:
+      GKE_CREDENTIALS: ${{ secrets.GKE_CREDENTIALS }}
+      GKE_PROJECT_ID: ${{ secrets.GKE_PROJECT_ID }}
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  e2e-test-v2_11:
+    if: ${{ always() }}
+    needs: e2e-test-v2_12
     uses: ./.github/workflows/e2e-branch.yaml
     with:
       branch: release-v2.11
