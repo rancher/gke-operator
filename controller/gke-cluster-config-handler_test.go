@@ -373,7 +373,6 @@ var _ = Describe("importCluster", func() {
 			secrets:      coreFactory.Core().V1().Secret(),
 			secretsCache: coreFactory.Core().V1().Secret().Cache(),
 			gkeClient:    gkeServiceMock,
-			gkeClientCtx: context.Background(),
 		}
 	})
 
@@ -389,7 +388,7 @@ var _ = Describe("importCluster", func() {
 					gkeConfig.Spec.ClusterName)).
 			Return(clusterState, nil)
 
-		gotGKEConfig, err := handler.importCluster(gkeConfig)
+		gotGKEConfig, err := handler.importCluster(context.Background(), gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig.Status.Phase).To(Equal(gkeConfigActivePhase))
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(caSecret), caSecret)).To(Succeed())
@@ -410,7 +409,7 @@ var _ = Describe("importCluster", func() {
 					gkeConfig.Spec.ClusterName)).
 			Return(&gkeapi.Cluster{}, nil)
 
-		gotGKEConfig, err := handler.importCluster(gkeConfig)
+		gotGKEConfig, err := handler.importCluster(context.Background(), gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -604,7 +603,6 @@ var _ = Describe("createCluster", func() {
 			secrets:      coreFactory.Core().V1().Secret(),
 			secretsCache: coreFactory.Core().V1().Secret().Cache(),
 			gkeClient:    gkeServiceMock,
-			gkeClientCtx: context.Background(),
 		}
 	})
 
@@ -627,7 +625,7 @@ var _ = Describe("createCluster", func() {
 				gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
 			Return(&gkeapi.ListClustersResponse{}, nil)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig.Status.Phase).To(Equal(gkeConfigCreatingPhase))
 	})
@@ -643,7 +641,7 @@ var _ = Describe("createCluster", func() {
 				Clusters: []*gkeapi.Cluster{clusterState},
 			}, nil)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -665,7 +663,7 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -687,7 +685,7 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -709,7 +707,7 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -748,7 +746,7 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -761,7 +759,7 @@ var _ = Describe("createCluster", func() {
 			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
 			Return(&gkeapi.ListClustersResponse{}, nil)
 
-		_, err := handler.create(gkeConfig)
+		_, err := handler.create(context.Background(), gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("field [serviceAccount] must either be an empty string, 'default' or set to a valid email address for nodepool [test-node-pool] in non-nil cluster [test-cluster (id: test-cluster)]"))
 	})

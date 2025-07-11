@@ -27,6 +27,12 @@ spec:
                   enabled:
                     type: boolean
                 type: object
+              binaryAuthorization:
+                nullable: true
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               clusterAddons:
                 nullable: true
                 properties:
@@ -53,6 +59,16 @@ spec:
                     nullable: true
                     type: string
                 type: object
+              databaseEncryption:
+                nullable: true
+                properties:
+                  keyName:
+                    nullable: true
+                    type: string
+                  state:
+                    nullable: true
+                    type: string
+                type: object
               description:
                 nullable: true
                 type: string
@@ -64,6 +80,12 @@ spec:
                 type: string
               imported:
                 type: boolean
+              intraNodeVisibilityConfig:
+                nullable: true
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               ipAllocationPolicy:
                 nullable: true
                 properties:
@@ -99,6 +121,12 @@ spec:
                   type: string
                 nullable: true
                 type: object
+              legacyAbac:
+                nullable: true
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               locations:
                 items:
                   nullable: true
@@ -111,6 +139,22 @@ spec:
               maintenanceWindow:
                 nullable: true
                 type: string
+              masterAuth:
+                nullable: true
+                properties:
+                  clientCertificateConfig:
+                    nullable: true
+                    properties:
+                      issueClientCertificate:
+                        type: boolean
+                    type: object
+                  password:
+                    nullable: true
+                    type: string
+                  username:
+                    nullable: true
+                    type: string
+                type: object
               masterAuthorizedNetworks:
                 nullable: true
                 properties:
@@ -187,6 +231,14 @@ spec:
                         serviceAccount:
                           nullable: true
                           type: string
+                        shieldedInstanceConfig:
+                          nullable: true
+                          properties:
+                            enableIntegrityMonitoring:
+                              type: boolean
+                            enableSecureBoot:
+                              type: boolean
+                          type: object
                         tags:
                           items:
                             nullable: true
@@ -208,6 +260,13 @@ spec:
                             type: object
                           nullable: true
                           type: array
+                        workloadMetadataConfig:
+                          nullable: true
+                          properties:
+                            mode:
+                              nullable: true
+                              type: string
+                          type: object
                       type: object
                     initialNodeCount:
                       nullable: true
@@ -249,9 +308,22 @@ spec:
               region:
                 nullable: true
                 type: string
+              shieldedNodes:
+                nullable: true
+                properties:
+                  enabled:
+                    type: boolean
+                type: object
               subnetwork:
                 nullable: true
                 type: string
+              workloadIdentityConfig:
+                nullable: true
+                properties:
+                  workloadPool:
+                    nullable: true
+                    type: string
+                type: object
               zone:
                 nullable: true
                 type: string
