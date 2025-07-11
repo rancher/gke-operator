@@ -1,8 +1,6 @@
 module github.com/rancher/gke-operator
 
-go 1.23.0
-
-toolchain go1.23.6
+go 1.24.0
 
 replace (
 	k8s.io/client-go => k8s.io/client-go v0.32.1
@@ -17,7 +15,7 @@ require (
 	github.com/onsi/gomega v1.37.0
 	github.com/pkg/errors v0.9.1
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
-	github.com/rancher/lasso v0.2.2
+	github.com/rancher/lasso v0.2.3
 	github.com/rancher/rancher/pkg/apis v0.0.0-20240821150307-952f563826f5
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/rancher/wrangler/v3 v3.2.0-rc.3
@@ -25,9 +23,9 @@ require (
 	golang.org/x/net v0.41.0
 	golang.org/x/oauth2 v0.30.0
 	google.golang.org/api v0.221.0
-	k8s.io/api v0.32.1
+	k8s.io/api v0.33.1
 	k8s.io/apiextensions-apiserver v0.32.1
-	k8s.io/apimachinery v0.32.1
+	k8s.io/apimachinery v0.33.1
 	k8s.io/apiserver v0.32.1
 	k8s.io/client-go v12.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.19.4
@@ -115,10 +113,11 @@ require (
 	k8s.io/gengo v0.0.0-20250130153323-76c5745d3511 // indirect
 	k8s.io/gengo/v2 v2.0.0-20240911193312-2b36238f13e9 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
+	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/kubernetes v1.30.10 // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
 	sigs.k8s.io/cli-utils v0.37.2 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.3 // indirect
+	sigs.k8s.io/randfill v1.0.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.6.0 // indirect
 )
