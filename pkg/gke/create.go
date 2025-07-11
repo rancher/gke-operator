@@ -66,6 +66,13 @@ func CreateNodePool(ctx context.Context, gkeClient services.GKEClusterService, c
 // NewClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
 	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
+	var clusterIpv4Cidr string
+
+	// Set top-level ClusterIpv4Cidr if specified (validation ensures no conflict with secondary ranges)
+	if config.Spec.ClusterIpv4CidrBlock != nil {
+		clusterIpv4Cidr = *config.Spec.ClusterIpv4CidrBlock
+	}
+
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
@@ -73,9 +80,10 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			ResourceLabels:        config.Spec.Labels,
 			InitialClusterVersion: *config.Spec.KubernetesVersion,
 			EnableKubernetesAlpha: enableKubernetesAlpha,
-			ClusterIpv4Cidr:       *config.Spec.ClusterIpv4CidrBlock,
+			ClusterIpv4Cidr:       clusterIpv4Cidr,
 			LoggingService:        *config.Spec.LoggingService,
 			MonitoringService:     *config.Spec.MonitoringService,
+			Locations:             config.Spec.Locations,
 			IpAllocationPolicy: &gkeapi.IPAllocationPolicy{
 				ClusterIpv4CidrBlock:       config.Spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
 				ClusterSecondaryRangeName:  config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName,
@@ -86,30 +94,33 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 				SubnetworkName:             config.Spec.IPAllocationPolicy.SubnetworkName,
 				UseIpAliases:               config.Spec.IPAllocationPolicy.UseIPAliases,
 			},
-			AddonsConfig:      &gkeapi.AddonsConfig{},
-			NodePools:         []*gkeapi.NodePool{},
-			Locations:         config.Spec.Locations,
-			MaintenancePolicy: &gkeapi.MaintenancePolicy{},
 		},
 	}
 
-	if *config.Spec.MaintenanceWindow != "" {
-		request.Cluster.MaintenancePolicy.Window = &gkeapi.MaintenanceWindow{
-			DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
-				StartTime: *config.Spec.MaintenanceWindow,
+	// Maintenance Window Configuration
+	if config.Spec.MaintenanceWindow != nil && *config.Spec.MaintenanceWindow != "" {
+		request.Cluster.MaintenancePolicy = &gkeapi.MaintenancePolicy{
+			Window: &gkeapi.MaintenanceWindow{
+				DailyMaintenanceWindow: &gkeapi.DailyMaintenanceWindow{
+					StartTime: *config.Spec.MaintenanceWindow,
+				},
 			},
 		}
 	}
 
+	// Autopilot Configuration
 	if config.Spec.AutopilotConfig != nil && config.Spec.AutopilotConfig.Enabled {
 		request.Cluster.Autopilot = &gkeapi.Autopilot{
 			Enabled: config.Spec.AutopilotConfig.Enabled,
 		}
 	} else {
+		// Configure addons for non-autopilot clusters
 		addons := config.Spec.ClusterAddons
-		request.Cluster.AddonsConfig.HttpLoadBalancing = &gkeapi.HttpLoadBalancing{Disabled: !addons.HTTPLoadBalancing}
-		request.Cluster.AddonsConfig.HorizontalPodAutoscaling = &gkeapi.HorizontalPodAutoscaling{Disabled: !addons.HorizontalPodAutoscaling}
-		request.Cluster.AddonsConfig.NetworkPolicyConfig = &gkeapi.NetworkPolicyConfig{Disabled: !addons.NetworkPolicyConfig}
+		request.Cluster.AddonsConfig = &gkeapi.AddonsConfig{
+			HttpLoadBalancing:        &gkeapi.HttpLoadBalancing{Disabled: !addons.HTTPLoadBalancing},
+			HorizontalPodAutoscaling: &gkeapi.HorizontalPodAutoscaling{Disabled: !addons.HorizontalPodAutoscaling},
+			NetworkPolicyConfig:      &gkeapi.NetworkPolicyConfig{Disabled: !addons.NetworkPolicyConfig},
+		}
 
 		request.Cluster.NodePools = make([]*gkeapi.NodePool, 0, len(config.Spec.NodePools))
 
@@ -151,6 +162,65 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			EnablePrivateEndpoint: config.Spec.PrivateClusterConfig.EnablePrivateEndpoint,
 			EnablePrivateNodes:    config.Spec.PrivateClusterConfig.EnablePrivateNodes,
 			MasterIpv4CidrBlock:   config.Spec.PrivateClusterConfig.MasterIpv4CidrBlock,
+		}
+	}
+
+	// Security Controls Implementation
+
+	// Database Encryption (etcd encryption at rest with Cloud KMS)
+	if config.Spec.DatabaseEncryption != nil {
+		request.Cluster.DatabaseEncryption = &gkeapi.DatabaseEncryption{
+			State:   config.Spec.DatabaseEncryption.State,
+			KeyName: config.Spec.DatabaseEncryption.KeyName,
+		}
+	}
+
+	// Binary Authorization
+	if config.Spec.BinaryAuthorization != nil {
+		request.Cluster.BinaryAuthorization = &gkeapi.BinaryAuthorization{
+			Enabled: config.Spec.BinaryAuthorization.Enabled,
+		}
+	}
+
+	// Shielded Nodes
+	if config.Spec.ShieldedNodes != nil {
+		request.Cluster.ShieldedNodes = &gkeapi.ShieldedNodes{
+			Enabled: config.Spec.ShieldedNodes.Enabled,
+		}
+	}
+
+	// Workload Identity
+	if config.Spec.WorkloadIdentityConfig != nil {
+		request.Cluster.WorkloadIdentityConfig = &gkeapi.WorkloadIdentityConfig{
+			WorkloadPool: config.Spec.WorkloadIdentityConfig.WorkloadPool,
+		}
+	}
+
+	// Legacy ABAC (should be disabled for security)
+	if config.Spec.LegacyAbac != nil {
+		request.Cluster.LegacyAbac = &gkeapi.LegacyAbac{
+			Enabled: config.Spec.LegacyAbac.Enabled,
+		}
+	}
+
+	// Master Authentication (basic auth and client certs should be disabled)
+	if config.Spec.MasterAuth != nil {
+		masterAuth := &gkeapi.MasterAuth{
+			Username: config.Spec.MasterAuth.Username,
+			Password: config.Spec.MasterAuth.Password,
+		}
+		if config.Spec.MasterAuth.ClientCertificateConfig != nil {
+			masterAuth.ClientCertificateConfig = &gkeapi.ClientCertificateConfig{
+				IssueClientCertificate: config.Spec.MasterAuth.ClientCertificateConfig.IssueClientCertificate,
+			}
+		}
+		request.Cluster.MasterAuth = masterAuth
+	}
+
+	// Intra-node Visibility
+	if config.Spec.IntraNodeVisibilityConfig != nil {
+		request.Cluster.NetworkConfig = &gkeapi.NetworkConfig{
+			EnableIntraNodeVisibility: config.Spec.IntraNodeVisibilityConfig.Enabled,
 		}
 	}
 
@@ -223,7 +293,8 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Spec.ClusterName, config.Name)
 	}
-	if config.Spec.ClusterIpv4CidrBlock == nil {
+	// clusterIpv4CidrBlock is required when not using secondary ranges
+	if config.Spec.ClusterIpv4CidrBlock == nil && config.Spec.IPAllocationPolicy != nil && config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName == "" {
 		return fmt.Errorf(cannotBeNilError, "clusterIpv4CidrBlock", config.Spec.ClusterName, config.Name)
 	}
 	if config.Spec.ClusterAddons == nil {
@@ -264,6 +335,27 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	}
 	if config.Spec.Labels == nil {
 		return fmt.Errorf(cannotBeNilError, "labels", config.Spec.ClusterName, config.Name)
+	}
+
+	// Validate IP allocation policy to prevent CIDR conflicts
+	// Validate cluster IP allocation
+	if config.Spec.IPAllocationPolicy.ClusterIpv4CidrBlock != "" && config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName != "" {
+		return fmt.Errorf("cluster IP allocation conflict: cannot specify both clusterIpv4CidrBlock and clusterSecondaryRangeName for cluster [%s (id: %s)]. Use either CIDR block or secondary range name, not both", config.Spec.ClusterName, config.Name)
+	}
+
+	// Validate services IP allocation
+	if config.Spec.IPAllocationPolicy.ServicesIpv4CidrBlock != "" && config.Spec.IPAllocationPolicy.ServicesSecondaryRangeName != "" {
+		return fmt.Errorf("services IP allocation conflict: cannot specify both servicesIpv4CidrBlock and servicesSecondaryRangeName for cluster [%s (id: %s)]. Use either CIDR block or secondary range name, not both", config.Spec.ClusterName, config.Name)
+	}
+
+	// When using secondary ranges, ensure useIpAliases is enabled
+	if (config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName != "" || config.Spec.IPAllocationPolicy.ServicesSecondaryRangeName != "") && !config.Spec.IPAllocationPolicy.UseIPAliases {
+		return fmt.Errorf("IP aliases must be enabled when using secondary ranges for cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
+	}
+
+	// Validate that top-level clusterIpv4Cidr is not used with secondary ranges
+	if config.Spec.ClusterIpv4CidrBlock != nil && config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName != "" {
+		return fmt.Errorf("cluster CIDR conflict: cannot specify both top-level clusterIpv4Cidr and ipAllocationPolicy.clusterSecondaryRangeName for cluster [%s (id: %s)]. When using secondary ranges, omit the top-level clusterIpv4Cidr field", config.Spec.ClusterName, config.Name)
 	}
 
 	for np := range config.Spec.NodePools {
@@ -329,9 +421,7 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClus
 	ret := &gkeapi.NodePool{
 		Name: *np.Name,
 		Autoscaling: &gkeapi.NodePoolAutoscaling{
-			Enabled:      np.Autoscaling.Enabled,
-			MaxNodeCount: np.Autoscaling.MaxNodeCount,
-			MinNodeCount: np.Autoscaling.MinNodeCount,
+			Enabled: np.Autoscaling.Enabled,
 		},
 		InitialNodeCount: *np.InitialNodeCount,
 		Config: &gkeapi.NodeConfig{
@@ -353,17 +443,64 @@ func newGKENodePoolFromConfig(np *gkev1.GKENodePoolConfig, config *gkev1.GKEClus
 			AutoUpgrade: np.Management.AutoUpgrade,
 		},
 	}
+
+	// Only set autoscaling node counts when autoscaling is enabled
+	if np.Autoscaling.Enabled {
+		ret.Autoscaling.MaxNodeCount = np.Autoscaling.MaxNodeCount
+		ret.Autoscaling.MinNodeCount = np.Autoscaling.MinNodeCount
+	}
+
 	if config.Spec.CustomerManagedEncryptionKey != nil &&
 		config.Spec.CustomerManagedEncryptionKey.RingName != "" &&
 		config.Spec.CustomerManagedEncryptionKey.KeyName != "" {
+		// Determine which project ID to use for the KMS key
+		keyProjectID := config.Spec.ProjectID
+		if config.Spec.CustomerManagedEncryptionKey.ProjectID != "" {
+			keyProjectID = config.Spec.CustomerManagedEncryptionKey.ProjectID
+		}
+		
+		// Determine which region/zone to use for the KMS key location
+		keyRegion := config.Spec.Region
+		keyZone := config.Spec.Zone
+		if config.Spec.CustomerManagedEncryptionKey.Region != "" {
+			keyRegion = config.Spec.CustomerManagedEncryptionKey.Region
+		}
+		if config.Spec.CustomerManagedEncryptionKey.Zone != "" {
+			keyZone = config.Spec.CustomerManagedEncryptionKey.Zone
+		}
+		keyLocation := Location(keyRegion, keyZone)
+		
 		ret.Config.BootDiskKmsKey = BootDiskRRN(
-			config.Spec.ProjectID,
-			Location(config.Spec.Region, config.Spec.Zone),
+			keyProjectID,
+			keyLocation,
 			config.Spec.CustomerManagedEncryptionKey.RingName,
 			config.Spec.CustomerManagedEncryptionKey.KeyName,
 		)
 	}
-	if config.Spec.IPAllocationPolicy != nil && config.Spec.IPAllocationPolicy.UseIPAliases {
+
+	// Check for node-pool-specific boot disk KMS key
+	if np.Config.BootDiskKmsKey != "" {
+		ret.Config.BootDiskKmsKey = np.Config.BootDiskKmsKey
+	}
+
+	// Security Controls for Node Pools
+
+	// Shielded Instance Configuration (Integrity Monitoring and Secure Boot)
+	if np.Config.ShieldedInstanceConfig != nil {
+		ret.Config.ShieldedInstanceConfig = &gkeapi.ShieldedInstanceConfig{
+			EnableIntegrityMonitoring: np.Config.ShieldedInstanceConfig.EnableIntegrityMonitoring,
+			EnableSecureBoot:          np.Config.ShieldedInstanceConfig.EnableSecureBoot,
+		}
+	}
+
+	// Workload Metadata Configuration (for GKE Metadata Server)
+	if np.Config.WorkloadMetadataConfig != nil {
+		ret.Config.WorkloadMetadataConfig = &gkeapi.WorkloadMetadataConfig{
+			Mode: np.Config.WorkloadMetadataConfig.Mode,
+		}
+	}
+
+	if config.Spec.IPAllocationPolicy.UseIPAliases {
 		ret.MaxPodsConstraint = &gkeapi.MaxPodsConstraint{
 			MaxPodsPerNode: *np.MaxPodsConstraint,
 		}
