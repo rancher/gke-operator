@@ -1,0 +1,86 @@
+apiVersion: gke.cattle.io/v1
+kind: GKEClusterConfig
+metadata:
+  name: security-cluster
+  namespace: cattle-global-data
+spec:
+  binaryAuthorization:
+    enabled: true
+  clusterAddons:
+    horizontalPodAutoscaling: true
+    httpLoadBalancing: true
+    networkPolicyConfig: true
+  clusterName: security-cluster
+  description: "GKE cluster with security features enabled"
+  enableKubernetesAlpha: false
+  googleCredentialSecret: cattle-global-data:gke-credentials
+  imported: false
+  intraNodeVisibilityConfig:
+    enabled: true
+  ipAllocationPolicy:
+    clusterIpv4CidrBlock: "10.1.0.0/16"
+    servicesIpv4CidrBlock: "10.2.0.0/16"
+    useIpAliases: true
+  kubernetesVersion: 1.28.5-gke.1217000
+  labels:
+    environment: "production"
+    security: "enabled"
+  legacyAbac:
+    enabled: false
+  locations:
+  - us-central1-a
+  - us-central1-b
+  - us-central1-c
+  loggingService: logging.googleapis.com/kubernetes
+  maintenanceWindow: "03:00"
+  masterAuth:
+    clientCertificateConfig:
+      issueClientCertificate: false
+    password: ""
+    username: ""
+  masterAuthorizedNetworks:
+    cidrBlocks:
+    - cidrBlock: 10.0.0.0/8
+      displayName: "Private networks"
+    - cidrBlock: 172.16.0.0/12
+      displayName: "Corporate VPN"
+    enabled: true
+  monitoringService: monitoring.googleapis.com/kubernetes
+  network: default
+  networkPolicyEnabled: true
+  nodePools:
+  - autoscaling:
+      enabled: true
+      minNodeCount: 1
+      maxNodeCount: 10
+    config:
+      diskSizeGb: 100
+      diskType: pd-ssd
+      imageType: COS_CONTAINERD
+      machineType: e2-medium
+      oauthScopes:
+      - https://www.googleapis.com/auth/cloud-platform
+      serviceAccount: default
+      shieldedInstanceConfig:
+        enableIntegrityMonitoring: true
+        enableSecureBoot: true
+      workloadMetadataConfig:
+        mode: GKE_METADATA
+    initialNodeCount: 3
+    management:
+      autoRepair: true
+      autoUpgrade: true
+    maxPodsConstraint: 110
+    name: default-pool
+    version: 1.28.5-gke.1217000
+  privateClusterConfig:
+    enablePrivateEndpoint: false
+    enablePrivateNodes: true
+    masterIpv4CidrBlock: 172.16.0.0/28
+  projectID: your-project-id
+  shieldedNodes:
+    enabled: true
+  subnetwork: default
+  workloadIdentityConfig:
+    workloadPool: your-project-id.svc.id.goog
+  zone: us-central1-a
