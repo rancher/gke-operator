@@ -144,6 +144,34 @@ type GKEClusterConfigSpec struct {
 	// to each node in the node pool.
 	// +optional
 	CustomerManagedEncryptionKey *CMEKConfig `json:"customerManagedEncryptionKey,omitempty"`
+
+	// DatabaseEncryption defines database encryption configuration for etcd.
+	// +optional
+	DatabaseEncryption *GKEDatabaseEncryption `json:"databaseEncryption,omitempty"`
+
+	// BinaryAuthorization defines configuration for binary authorization.
+	// +optional
+	BinaryAuthorization *GKEBinaryAuthorization `json:"binaryAuthorization,omitempty"`
+
+	// ShieldedNodes defines configuration for shielded GKE nodes.
+	// +optional
+	ShieldedNodes *GKEShieldedNodes `json:"shieldedNodes,omitempty"`
+
+	// WorkloadIdentityConfig defines workload identity configuration.
+	// +optional
+	WorkloadIdentityConfig *GKEWorkloadIdentityConfig `json:"workloadIdentityConfig,omitempty"`
+
+	// LegacyAbac defines legacy ABAC configuration.
+	// +optional
+	LegacyAbac *GKELegacyAbac `json:"legacyAbac,omitempty"`
+
+	// MasterAuth defines master authentication configuration.
+	// +optional
+	MasterAuth *GKEMasterAuth `json:"masterAuth,omitempty"`
+
+	// IntraNodeVisibilityConfig defines intra-node visibility configuration.
+	// +optional
+	IntraNodeVisibilityConfig *GKEIntraNodeVisibilityConfig `json:"intraNodeVisibilityConfig,omitempty"`
 }
 
 type GKEIPAllocationPolicy struct {
@@ -323,6 +351,14 @@ type GKENodeConfig struct {
 	// If not specified, the default service account is used.
 	// +optional
 	ServiceAccount string `json:"serviceAccount,omitempty"`
+
+	// ShieldedInstanceConfig defines shielded instance configuration for nodes.
+	// +optional
+	ShieldedInstanceConfig *GKEShieldedInstanceConfig `json:"shieldedInstanceConfig,omitempty"`
+
+	// WorkloadMetadataConfig defines workload metadata configuration.
+	// +optional
+	WorkloadMetadataConfig *GKEWorkloadMetadataConfig `json:"workloadMetadataConfig,omitempty"`
 }
 
 type GKENodeTaintConfig struct {
@@ -388,4 +424,89 @@ type CMEKConfig struct {
 	// RingName is the name of the ring to use for encryption.
 	// It has to be provided together with KeyName.
 	RingName string `json:"ringName,omitempty"`
+}
+
+// GKEDatabaseEncryption defines database encryption configuration
+type GKEDatabaseEncryption struct {
+	// State represents the encryption state (ENCRYPTED or DECRYPTED)
+	// +kubebuilder:validation:Enum=ENCRYPTED;DECRYPTED
+	State string `json:"state,omitempty"`
+	// KeyName is the Cloud KMS key to use for encryption
+	KeyName string `json:"keyName,omitempty"`
+}
+
+// GKEBinaryAuthorization defines binary authorization configuration
+type GKEBinaryAuthorization struct {
+	// Enabled indicates whether binary authorization is enabled
+	// +optional
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// GKEShieldedNodes defines shielded nodes configuration
+type GKEShieldedNodes struct {
+	// Enabled indicates whether shielded nodes are enabled
+	// +optional
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// GKEWorkloadIdentityConfig defines workload identity configuration
+type GKEWorkloadIdentityConfig struct {
+	// WorkloadPool is the workload pool to use for workload identity
+	WorkloadPool string `json:"workloadPool,omitempty"`
+}
+
+// GKELegacyAbac defines legacy ABAC configuration
+type GKELegacyAbac struct {
+	// Enabled indicates whether legacy ABAC is enabled
+	// +optional
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// GKEMasterAuth defines master authentication configuration
+type GKEMasterAuth struct {
+	// Username for basic authentication (should be empty for security)
+	Username string `json:"username,omitempty"`
+	// Password for basic authentication (should be empty for security)
+	Password string `json:"password,omitempty"`
+	// ClientCertificateConfig defines client certificate configuration
+	// +optional
+	ClientCertificateConfig *GKEClientCertificateConfig `json:"clientCertificateConfig,omitempty"`
+}
+
+// GKEClientCertificateConfig defines client certificate configuration
+type GKEClientCertificateConfig struct {
+	// IssueClientCertificate indicates whether to issue client certificates
+	// +optional
+	// +kubebuilder:default=false
+	IssueClientCertificate bool `json:"issueClientCertificate,omitempty"`
+}
+
+// GKEIntraNodeVisibilityConfig defines intra-node visibility configuration
+type GKEIntraNodeVisibilityConfig struct {
+	// Enabled indicates whether intra-node visibility is enabled
+	// +optional
+	// +kubebuilder:default=false
+	Enabled bool `json:"enabled,omitempty"`
+}
+
+// GKEShieldedInstanceConfig defines shielded instance configuration
+type GKEShieldedInstanceConfig struct {
+	// EnableIntegrityMonitoring indicates whether integrity monitoring is enabled
+	// +optional
+	// +kubebuilder:default=false
+	EnableIntegrityMonitoring bool `json:"enableIntegrityMonitoring,omitempty"`
+	// EnableSecureBoot indicates whether secure boot is enabled
+	// +optional
+	// +kubebuilder:default=false
+	EnableSecureBoot bool `json:"enableSecureBoot,omitempty"`
+}
+
+// GKEWorkloadMetadataConfig defines workload metadata configuration
+type GKEWorkloadMetadataConfig struct {
+	// Mode represents the workload metadata mode (GKE_METADATA, GCE_METADATA)
+	// +kubebuilder:validation:Enum=GKE_METADATA;GCE_METADATA
+	Mode string `json:"mode,omitempty"`
 }
