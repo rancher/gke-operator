@@ -29,7 +29,7 @@ updates:
     - dependency-name: "github.com/Masterminds/semver/v3"
   commit-message:
     prefix: ":seedling:"
-  target-branch: "release-v2.12"
+  target-branch: "main"
 # Go modules in release-v2.12 branch
 - package-ecosystem: "gomod"
   directory: "/"
@@ -50,7 +50,7 @@ updates:
     - dependency-name: "github.com/Masterminds/semver/v3"
   commit-message:
     prefix: ":seedling:"
-  target-branch: "main"
+  target-branch: "release-v2.12"
 # Go modules in release-v2.11 branch
 - package-ecosystem: "gomod"
   directory: "/"
@@ -71,6 +71,8 @@ updates:
     - dependency-name: "google.golang.org/api"
     # Ignore Google API version, due it is breaking integration
     - dependency-name: "github.com/Masterminds/semver/v3"
+    # Ignore lasso in branches earlier than 2.11 as the build fails due to a package removal
+    - dependency-name: "github.com/rancher/lasso"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.11"
