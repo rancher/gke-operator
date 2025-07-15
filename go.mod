@@ -24,7 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	golang.org/x/net v0.41.0
 	golang.org/x/oauth2 v0.30.0
-	google.golang.org/api v0.240.0
+	google.golang.org/api v0.241.0
 	k8s.io/api v0.33.1
 	k8s.io/apiextensions-apiserver v0.33.1
 	k8s.io/apimachinery v0.33.1
