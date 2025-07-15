@@ -15,6 +15,7 @@ import (
 	"github.com/rancher/gke-operator/pkg/gke/services"
 
 	gkeapi "google.golang.org/api/container/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,12 +77,14 @@ func Register(
 	ctx context.Context,
 	secrets wranglerv1.SecretController,
 	gke gkecontrollers.GKEClusterConfigController) {
+
 	controller := &Handler{
 		gkeCC:           gke,
 		gkeEnqueue:      gke.Enqueue,
 		gkeEnqueueAfter: gke.EnqueueAfter,
 		secretsCache:    secrets.Cache(),
 		secrets:         secrets,
+		gkeClientCtx:    ctx,
 	}
 
 	// Register handlers
@@ -98,17 +101,16 @@ func (h *Handler) OnGkeConfigChanged(_ string, config *gkev1.GKEClusterConfig) (
 		return nil, nil
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	// Set up context derived from controller context for cancellation on shutdown
+	ctx, cancel := context.WithCancel(h.gkeClientCtx)
 	defer cancel()
 
-	h.gkeClientCtx = ctx
-
-	cred, err := GetSecret(h.gkeClientCtx, h.secrets, &config.Spec)
+	cred, err := GetSecret(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
 
-	gkeClient, err := gke.GetGKEClusterClient(h.gkeClientCtx, cred)
+	gkeClient, err := gke.GetGKEClusterClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -117,15 +119,15 @@ func (h *Handler) OnGkeConfigChanged(_ string, config *gkev1.GKEClusterConfig) (
 
 	switch config.Status.Phase {
 	case gkeConfigImportingPhase:
-		return h.importCluster(config)
+		return h.importCluster(ctx, config)
 	case gkeConfigNotCreatedPhase:
-		return h.create(config)
+		return h.create(ctx, config)
 	case gkeConfigCreatingPhase:
-		return h.waitForCreationComplete(config)
+		return h.waitForCreationComplete(ctx, config)
 	case gkeConfigActivePhase:
-		return h.checkAndUpdate(config)
+		return h.checkAndUpdate(ctx, config)
 	case gkeConfigUpdatingPhase:
-		return h.checkAndUpdate(config)
+		return h.checkAndUpdate(ctx, config)
 	}
 
 	return config, nil
@@ -177,8 +179,8 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 
 // importCluster returns an active cluster spec containing the given config's clusterName and region/zone
 // and creates a Secret containing the cluster's CA and endpoint retrieved from the cluster object.
-func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	cluster, err := gke.GetCluster(h.gkeClientCtx, h.gkeClient, &config.Spec)
+func (h *Handler) importCluster(ctx context.Context, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+	cluster, err := gke.GetCluster(ctx, h.gkeClient, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -191,17 +193,15 @@ func (h *Handler) importCluster(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 }
 
 func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(h.gkeClientCtx)
 	defer cancel()
 
-	h.gkeClientCtx = ctx
-
-	cred, err := GetSecret(h.gkeClientCtx, h.secrets, &config.Spec)
+	cred, err := GetSecret(ctx, h.secrets, &config.Spec)
 	if err != nil {
 		return config, err
 	}
 
-	gkeClient, err := gke.GetGKEClusterClient(h.gkeClientCtx, cred)
+	gkeClient, err := gke.GetGKEClusterClient(ctx, cred)
 	if err != nil {
 		return config, err
 	}
@@ -219,7 +219,7 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 	}
 
 	logrus.Infof("Removing cluster [%s (id: %s)] from project %s, region/zone %s", config.Spec.ClusterName, config.Name, config.Spec.ProjectID, gke.Location(config.Spec.Region, config.Spec.Zone))
-	if err := gke.RemoveCluster(h.gkeClientCtx, h.gkeClient, config); err != nil {
+	if err := gke.RemoveCluster(ctx, h.gkeClient, config); err != nil {
 		logrus.Debugf("Error deleting cluster %s: %v", config.Spec.ClusterName, err)
 		return config, err
 	}
@@ -227,7 +227,7 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 	return config, nil
 }
 
-func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+func (h *Handler) create(ctx context.Context, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
 		logrus.Infof("Importing cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
 		config = config.DeepCopy()
@@ -235,7 +235,7 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 		return h.gkeCC.UpdateStatus(config)
 	}
 
-	if err := gke.Create(h.gkeClientCtx, h.gkeClient, config); err != nil {
+	if err := gke.Create(ctx, h.gkeClient, config); err != nil {
 		return config, err
 	}
 
@@ -244,8 +244,8 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 	return h.gkeCC.UpdateStatus(config)
 }
 
-func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	cluster, err := gke.GetCluster(h.gkeClientCtx, h.gkeClient, &config.Spec)
+func (h *Handler) checkAndUpdate(ctx context.Context, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+	cluster, err := gke.GetCluster(ctx, h.gkeClient, &config.Spec)
 	if err != nil {
 		return config, err
 	}
@@ -284,7 +284,7 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 		return config, err
 	}
 
-	return h.updateUpstreamClusterState(config, upstreamSpec)
+	return h.updateUpstreamClusterState(ctx, config, upstreamSpec)
 }
 
 // enqueueUpdate enqueues the config if it is already in the updating phase. Otherwise, the
@@ -300,8 +300,8 @@ func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 	return h.gkeCC.UpdateStatus(config)
 }
 
-func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (*gkev1.GKEClusterConfig, error) {
-	changed, err := gke.UpdateMasterKubernetesVersion(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+func (h *Handler) updateUpstreamClusterState(ctx context.Context, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (*gkev1.GKEClusterConfig, error) {
+	changed, err := gke.UpdateMasterKubernetesVersion(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -309,7 +309,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateClusterAddons(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateClusterAddons(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -321,7 +321,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateMasterAuthorizedNetworks(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateMasterAuthorizedNetworks(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -329,7 +329,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateLoggingMonitoringService(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateLoggingMonitoringService(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -337,7 +337,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateNetworkPolicyEnabled(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateNetworkPolicyEnabled(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -345,7 +345,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateLocations(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateLocations(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -353,7 +353,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateMaintenanceWindow(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateMaintenanceWindow(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
@@ -361,11 +361,28 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
-	changed, err = gke.UpdateLabels(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	changed, err = gke.UpdateLabels(ctx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
 	}
 	if changed == gke.Changed || changed == gke.Retry {
+		return h.enqueueUpdate(config)
+	}
+
+	// Security features updates
+	changed, err = gke.UpdateBinaryAuthorization(ctx, h.gkeClient, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
+	changed, err = gke.UpdateIntraNodeVisibility(ctx, h.gkeClient, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
 		return h.enqueueUpdate(config)
 	}
 
@@ -381,7 +398,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 			upstreamNodePool, ok := upstreamNodePools[npName]
 			if ok {
 				// There is a matching nodepool in the cluster already, so update it if needed
-				changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(h.gkeClientCtx, h.gkeClient, np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolKubernetesVersionOrImageType(ctx, h.gkeClient, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -392,7 +409,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolSize(h.gkeClientCtx, h.gkeClient, np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolSize(ctx, h.gkeClient, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -403,7 +420,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolAutoscaling(h.gkeClientCtx, h.gkeClient, np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolAutoscaling(ctx, h.gkeClient, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -414,7 +431,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolManagement(h.gkeClientCtx, h.gkeClient, np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolManagement(ctx, h.gkeClient, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -425,7 +442,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 					continue
 				}
 
-				changed, err = gke.UpdateNodePoolConfig(h.gkeClientCtx, h.gkeClient, np, config, upstreamNodePool)
+				changed, err = gke.UpdateNodePoolConfig(ctx, h.gkeClient, np, config, upstreamNodePool)
 				if err != nil {
 					return config, err
 				}
@@ -438,7 +455,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 			} else {
 				// There is no nodepool with this name yet, create it
 				logrus.Infof("Adding node pool [%s] to cluster [%s (id: %s)]", *np.Name, config.Spec.ClusterName, config.Name)
-				if changed, err = gke.CreateNodePool(h.gkeClientCtx, h.gkeClient, config, np); err != nil {
+				if changed, err = gke.CreateNodePool(ctx, h.gkeClient, config, np); err != nil {
 					return config, err
 				}
 				if changed == gke.Changed || changed == gke.Retry {
@@ -450,7 +467,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		for npName := range upstreamNodePools {
 			if _, ok := downstreamNodePools[npName]; !ok {
 				logrus.Infof("Removing node pool [%s] from cluster [%s (id: %s)]", npName, config.Spec.ClusterName, config.Name)
-				if changed, err = gke.RemoveNodePool(h.gkeClientCtx, h.gkeClient, config, npName); err != nil {
+				if changed, err = gke.RemoveNodePool(ctx, h.gkeClient, config, npName); err != nil {
 					return config, err
 				}
 				if changed == gke.Changed || changed == gke.Retry {
@@ -474,11 +491,12 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	return config, nil
 }
 
-func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
-	cluster, err := gke.GetCluster(h.gkeClientCtx, h.gkeClient, &config.Spec)
+func (h *Handler) waitForCreationComplete(ctx context.Context, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
+	cluster, err := gke.GetCluster(ctx, h.gkeClient, &config.Spec)
 	if err != nil {
 		return config, err
 	}
+
 	if cluster.Status == ClusterStatusError {
 		return config, fmt.Errorf("creation failed for cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
 	}
@@ -587,6 +605,23 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 			Enabled: cluster.Autopilot.Enabled,
 		}
 	}
+
+	// Security features
+	if cluster.BinaryAuthorization != nil {
+		newSpec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: cluster.BinaryAuthorization.Enabled,
+		}
+	}
+
+	if cluster.NetworkConfig != nil {
+		newSpec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: cluster.NetworkConfig.EnableIntraNodeVisibility,
+		}
+	}
+
+	// Note: Some security features are immutable after cluster creation:
+	// - DatabaseEncryption, ShieldedNodes, WorkloadIdentityConfig, LegacyAbac, MasterAuth
+	// These are set during creation and cannot be changed, so we don't need to track them in upstream state
 
 	// build node groups
 	newSpec.NodePools = make([]gkev1.GKENodePoolConfig, 0, len(cluster.NodePools))
