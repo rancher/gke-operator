@@ -71,7 +71,7 @@ func main() {
 		// Get namespace for leader election
 		namespace := os.Getenv("POD_NAMESPACE")
 		if namespace == "" {
-			namespace = "default"
+			namespace = "cattle-system"
 		}
 
 		// Use leader election to ensure only one instance runs controllers
