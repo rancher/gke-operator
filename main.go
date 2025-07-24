@@ -16,6 +16,7 @@ import (
 	"github.com/rancher/wrangler/v3/pkg/signals"
 	"github.com/rancher/wrangler/v3/pkg/start"
 	"github.com/sirupsen/logrus"
+
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -87,12 +88,12 @@ func main() {
 			// Start all the controllers
 			return start.All(ctx, 3, gke, core)
 		})
-		
+
 		leaderManager.Start(ctx)
 	} else {
 		// Run without leader election (for development or single instance)
 		logrus.Info("Running without leader election")
-		
+
 		// The typical pattern is to build all your controller/clients then just pass to each handler
 		// the bare minimum of what they need.  This will eventually help with writing tests.  So
 		// don't pass in something like kubeClient, apps, or sample
