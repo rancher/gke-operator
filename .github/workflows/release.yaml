@@ -164,7 +164,7 @@ jobs:
           owner: ${{ github.repository_owner }}
       - name: Dispatch to rancher/charts
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           CURRENT_BRANCH="${{ github.ref_name }}"
           BASE_VERSION=$(echo "$CURRENT_BRANCH" | sed -E 's/^[^v]*(v[0-9]+\.[0-9]+).*/\1/')
