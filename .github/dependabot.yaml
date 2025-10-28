@@ -68,7 +68,11 @@ updates:
     # Ignore rancher apis
     - dependency-name: "github.com/rancher/rancher/pkg/apis"
     # Ignore Google API version, due it is breaking integration
+    - dependency-name: "google.golang.org/api"
+    # Ignore Google API version, due it is breaking integration
     - dependency-name: "github.com/Masterminds/semver/v3"
+    # Ignore lasso in branches earlier than 2.12 as the build fails due to a package removal
+    - dependency-name: "github.com/rancher/lasso"
   commit-message:
     prefix: ":seedling:"
   target-branch: "release-v2.12"
