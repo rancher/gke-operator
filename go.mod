@@ -7,7 +7,7 @@ replace k8s.io/client-go => k8s.io/client-go v0.28.9
 require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.26.0
+	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20240531071842-35c37fffa28c
 	github.com/rancher/lasso v0.0.0-20240123150939-7055397d6dfa
@@ -75,7 +75,6 @@ require (
 	github.com/rancher/wrangler v1.1.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.uber.org/automaxprocs v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
