@@ -16,6 +16,6 @@ jobs:
         with:
           go-version: 1.24.x
       - name: Analysis
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v9
         with:
           args: -v
