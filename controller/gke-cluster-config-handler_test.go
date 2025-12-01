@@ -3,10 +3,11 @@ package controller
 import (
 	"context"
 
+	gkeapi "google.golang.org/api/container/v1"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	gkeapi "google.golang.org/api/container/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
@@ -59,6 +60,7 @@ var _ = Describe("createCASecret", func() {
 			gkeCC:        gkeFactory.Gke().V1().GKEClusterConfig(),
 			secrets:      coreFactory.Core().V1().Secret(),
 			secretsCache: coreFactory.Core().V1().Secret().Cache(),
+			gkeClientCtx: context.Background(),
 		}
 	})
 
@@ -177,6 +179,7 @@ var _ = Describe("buildUpstreamClusterState", func() {
 			gkeCC:        gkeFactory.Gke().V1().GKEClusterConfig(),
 			secrets:      coreFactory.Core().V1().Secret(),
 			secretsCache: coreFactory.Core().V1().Secret().Cache(),
+			gkeClientCtx: context.Background(),
 		}
 	})
 
@@ -389,7 +392,7 @@ var _ = Describe("importCluster", func() {
 					gkeConfig.Spec.ClusterName)).
 			Return(clusterState, nil)
 
-		gotGKEConfig, err := handler.importCluster(gkeConfig)
+		gotGKEConfig, err := handler.importCluster(handler.gkeClientCtx, gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig.Status.Phase).To(Equal(gkeConfigActivePhase))
 		Expect(cl.Get(ctx, client.ObjectKeyFromObject(caSecret), caSecret)).To(Succeed())
@@ -410,7 +413,7 @@ var _ = Describe("importCluster", func() {
 					gkeConfig.Spec.ClusterName)).
 			Return(&gkeapi.Cluster{}, nil)
 
-		gotGKEConfig, err := handler.importCluster(gkeConfig)
+		gotGKEConfig, err := handler.importCluster(handler.gkeClientCtx, gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
@@ -627,13 +630,13 @@ var _ = Describe("createCluster", func() {
 				gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
 			Return(&gkeapi.ListClustersResponse{}, nil)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(handler.gkeClientCtx, gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig.Status.Phase).To(Equal(gkeConfigCreatingPhase))
 	})
 
 	It("should return error if cluster already exist", func() {
-		ctx := context.Background()
+		ctx := handler.gkeClientCtx
 
 		gkeServiceMock.EXPECT().
 			ClusterList(
@@ -643,13 +646,13 @@ var _ = Describe("createCluster", func() {
 				Clusters: []*gkeapi.Cluster{clusterState},
 			}, nil)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(ctx, gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
 
 	It("should create a cluster when no service account has been set", func() {
-		ctx := context.Background()
+		ctx := handler.gkeClientCtx
 		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = ""
 
 		gkeServiceMock.EXPECT().ClusterList(
@@ -665,13 +668,13 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(ctx, gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
 
 	It("should create a cluster with the default service acount when the default service account has been set", func() {
-		ctx := context.Background()
+		ctx := handler.gkeClientCtx
 		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = "default"
 
 		gkeServiceMock.EXPECT().ClusterList(
@@ -687,13 +690,13 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(ctx, gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
 
 	It("should create a cluster with the specified service acount when a service account email address has been set", func() {
-		ctx := context.Background()
+		ctx := handler.gkeClientCtx
 		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = "test@example-project-name.iam.gserviceaccount.com"
 
 		gkeServiceMock.EXPECT().ClusterList(
@@ -709,13 +712,13 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(ctx, gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
 
 	It("should create a cluster with the specified service acount assigned to a node pool when a service account has been set for that node pool", func() {
-		ctx := context.Background()
+		ctx := handler.gkeClientCtx
 
 		// Add a second node pool to the spec and set its service account
 		npName := "np-test2"
@@ -748,12 +751,13 @@ var _ = Describe("createCluster", func() {
 			ccr,
 		)
 
-		gotGKEConfig, err := handler.create(gkeConfig)
+		gotGKEConfig, err := handler.create(ctx, gkeConfig)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(gotGKEConfig).NotTo(BeNil())
 	})
 
 	It("should not create a cluster if the service account email address is not valid", func() {
+		ctx := handler.gkeClientCtx
 		gkeConfig.Spec.NodePools[0].Config.ServiceAccount = "not-a-valid-email-address"
 
 		gkeServiceMock.EXPECT().ClusterList(
@@ -761,7 +765,7 @@ var _ = Describe("createCluster", func() {
 			gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
 			Return(&gkeapi.ListClustersResponse{}, nil)
 
-		_, err := handler.create(gkeConfig)
+		_, err := handler.create(ctx, gkeConfig)
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(Equal("field [serviceAccount] must either be an empty string, 'default' or set to a valid email address for nodepool [test-node-pool] in non-nil cluster [test-cluster (id: test-cluster)]"))
 	})

@@ -8,13 +8,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	gkeapi "google.golang.org/api/container/v1"
 
 	semv "github.com/Masterminds/semver/v3"
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke/services"
 	"github.com/rancher/gke-operator/pkg/utils"
+	"github.com/sirupsen/logrus"
 )
 
 // Network Providers
@@ -486,31 +486,36 @@ func UpdateNodePoolAutoscaling(
 	if nodePool.Autoscaling == nil {
 		return NotChanged, nil
 	}
-	if upstreamNodePool.Autoscaling == nil {
-		upstreamNodePool.Autoscaling = &gkev1.GKENodePoolAutoscaling{}
+
+	// Create a copy of upstream autoscaling to avoid modifying the original
+	upstreamAutoscaling := &gkev1.GKENodePoolAutoscaling{}
+	if upstreamNodePool.Autoscaling != nil {
+		*upstreamAutoscaling = *upstreamNodePool.Autoscaling
 	}
 
-	updateRequest := &gkeapi.SetNodePoolAutoscalingRequest{
-		Autoscaling: &gkeapi.NodePoolAutoscaling{},
-	}
+	// Check if any autoscaling settings differ
 	needsUpdate := false
-	if upstreamNodePool.Autoscaling.Enabled != nodePool.Autoscaling.Enabled {
-		updateRequest.Autoscaling.Enabled = nodePool.Autoscaling.Enabled
+	if upstreamAutoscaling.Enabled != nodePool.Autoscaling.Enabled {
 		needsUpdate = true
 	}
-	if nodePool.Autoscaling.Enabled && upstreamNodePool.Autoscaling.MaxNodeCount != nodePool.Autoscaling.MaxNodeCount {
-		updateRequest.Autoscaling.Enabled = nodePool.Autoscaling.Enabled
-		updateRequest.Autoscaling.MaxNodeCount = nodePool.Autoscaling.MaxNodeCount
+	if nodePool.Autoscaling.Enabled && upstreamAutoscaling.MaxNodeCount != nodePool.Autoscaling.MaxNodeCount {
 		needsUpdate = true
 	}
-	if nodePool.Autoscaling.Enabled && upstreamNodePool.Autoscaling.MinNodeCount != nodePool.Autoscaling.MinNodeCount {
-		updateRequest.Autoscaling.Enabled = nodePool.Autoscaling.Enabled
-		updateRequest.Autoscaling.MinNodeCount = nodePool.Autoscaling.MinNodeCount
+	if nodePool.Autoscaling.Enabled && upstreamAutoscaling.MinNodeCount != nodePool.Autoscaling.MinNodeCount {
 		needsUpdate = true
 	}
+
 	if needsUpdate {
+		// When we need to update, always set all the autoscaling fields from the nodePool config
+		updateRequest := &gkeapi.SetNodePoolAutoscalingRequest{
+			Autoscaling: &gkeapi.NodePoolAutoscaling{
+				Enabled:      nodePool.Autoscaling.Enabled,
+				MinNodeCount: nodePool.Autoscaling.MinNodeCount,
+				MaxNodeCount: nodePool.Autoscaling.MaxNodeCount,
+			},
+		}
 		logrus.Infof("Updating autoscaling config to %+v of node pool [%s] on cluster [%s (id: %s)]", *nodePool.Autoscaling, utils.StringValue(nodePool.Name), config.Spec.ClusterName, config.Name)
-		logrus.Debugf("config: %+v; upstream: %+v", *nodePool.Autoscaling, *upstreamNodePool.Autoscaling)
+		logrus.Debugf("config: %+v; upstream: %+v", *nodePool.Autoscaling, *upstreamAutoscaling)
 		_, err := gkeClient.SetAutoscaling(ctx,
 			NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, *nodePool.Name),
 			updateRequest)
@@ -600,6 +605,90 @@ func UpdateNodePoolConfig(
 	return Changed, nil
 }
 
+// UpdateBinaryAuthorization updates Binary Authorization configuration
+// Binary Authorization can be enabled/disabled after cluster creation
+func UpdateBinaryAuthorization(
+	ctx context.Context,
+	gkeClient services.GKEClusterService,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.BinaryAuthorization == nil {
+		return NotChanged, nil
+	}
+
+	if upstreamSpec.BinaryAuthorization == nil ||
+		upstreamSpec.BinaryAuthorization.Enabled != config.Spec.BinaryAuthorization.Enabled {
+		upstreamEnabled := "nil"
+		if upstreamSpec.BinaryAuthorization != nil {
+			upstreamEnabled = fmt.Sprintf("%v", upstreamSpec.BinaryAuthorization.Enabled)
+		}
+		logrus.Debugf("Updating binary authorization to %v for cluster [%s (id: %s)] (upstream: %s)",
+			config.Spec.BinaryAuthorization.Enabled, config.Spec.ClusterName, config.Name, upstreamEnabled)
+		logrus.Debugf("config: %v; upstream: %v",
+			config.Spec.BinaryAuthorization.Enabled,
+			upstreamSpec.BinaryAuthorization != nil && upstreamSpec.BinaryAuthorization.Enabled)
+
+		_, err := gkeClient.ClusterUpdate(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: &gkeapi.ClusterUpdate{
+					DesiredBinaryAuthorization: &gkeapi.BinaryAuthorization{
+						Enabled: config.Spec.BinaryAuthorization.Enabled,
+					},
+				},
+			},
+		)
+		if err != nil {
+			return NotChanged, err
+		}
+		return Changed, nil
+	}
+	return NotChanged, nil
+}
+
+// UpdateIntraNodeVisibility updates Intra-node Visibility configuration
+// This feature can be enabled/disabled after cluster creation
+func UpdateIntraNodeVisibility(
+	ctx context.Context,
+	gkeClient services.GKEClusterService,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
+	if config.Spec.IntraNodeVisibilityConfig == nil {
+		return NotChanged, nil
+	}
+
+	if upstreamSpec.IntraNodeVisibilityConfig == nil ||
+		upstreamSpec.IntraNodeVisibilityConfig.Enabled != config.Spec.IntraNodeVisibilityConfig.Enabled {
+		logrus.Debugf("Updating intra-node visibility to %v for cluster [%s (id: %s)]",
+			config.Spec.IntraNodeVisibilityConfig.Enabled, config.Spec.ClusterName, config.Name)
+		logrus.Debugf("config: %v; upstream: %v",
+			config.Spec.IntraNodeVisibilityConfig.Enabled,
+			upstreamSpec.IntraNodeVisibilityConfig != nil && upstreamSpec.IntraNodeVisibilityConfig.Enabled)
+
+		_, err := gkeClient.ClusterUpdate(ctx,
+			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+			&gkeapi.UpdateClusterRequest{
+				Update: &gkeapi.ClusterUpdate{
+					DesiredIntraNodeVisibilityConfig: &gkeapi.IntraNodeVisibilityConfig{
+						Enabled: config.Spec.IntraNodeVisibilityConfig.Enabled,
+					},
+				},
+			},
+		)
+		if err != nil {
+			return NotChanged, err
+		}
+		return Changed, nil
+	}
+	return NotChanged, nil
+}
+
+// Note: Most other security features are immutable after cluster creation:
+// - DatabaseEncryption: Cannot be changed after cluster creation
+// - ShieldedNodes: Cannot be changed after cluster creation
+// - WorkloadIdentityConfig: Cannot be changed after cluster creation
+// - LegacyAbac: Cannot be changed after cluster creation
+// - MasterAuth: Cannot be changed after cluster creation
 func GetCluster(ctx context.Context, gkeClient services.GKEClusterService, configSpec *gkev1.GKEClusterConfigSpec) (*gkeapi.Cluster, error) {
 	return gkeClient.ClusterGet(ctx,
 		ClusterRRN(configSpec.ProjectID, Location(configSpec.Region, configSpec.Zone), configSpec.ClusterName))
