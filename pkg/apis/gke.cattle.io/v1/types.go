@@ -186,6 +186,7 @@ type GKEIPAllocationPolicy struct {
 	// +optional
 	// +kubebuilder:default=true
 	UseIPAliases bool `json:"useIpAliases,omitempty"`
+
 	// StackType is the IP stack type of the cluster (IPV4 or IPV4_IPV6).
 	// +optional
 	StackType string `json:"stackType,omitempty"`
