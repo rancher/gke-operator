@@ -144,6 +144,12 @@ type GKEClusterConfigSpec struct {
 	// to each node in the node pool.
 	// +optional
 	CustomerManagedEncryptionKey *CMEKConfig `json:"customerManagedEncryptionKey,omitempty"`
+
+	// EnableDataplaneV2 enables Dataplane V2 (Advanced Datapath) for the cluster.
+	// This is highly recommended for Dual-Stack clusters.
+	// +optional
+	// +kubebuilder:default=false
+	EnableDataplaneV2 *bool `json:"enableDataplaneV2,omitempty"`
 }
 
 type GKEIPAllocationPolicy struct {
@@ -180,6 +186,13 @@ type GKEIPAllocationPolicy struct {
 	// +optional
 	// +kubebuilder:default=true
 	UseIPAliases bool `json:"useIpAliases,omitempty"`
+	// StackType is the IP stack type of the cluster (IPV4 or IPV4_IPV6).
+	// +optional
+	StackType string `json:"stackType,omitempty"`
+
+	// IPv6AccessType is the IPv6 access type (EXTERNAL or INTERNAL).
+	// +optional
+	IPv6AccessType string `json:"ipv6AccessType,omitempty"`
 }
 
 type GKEPrivateClusterConfig struct {

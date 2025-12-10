@@ -526,6 +526,12 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 	}
 	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
 
+	enableDataplaneV2 := false
+	if cluster.NetworkConfig != nil && cluster.NetworkConfig.DatapathProvider == "ADVANCED_DATAPATH" {
+		enableDataplaneV2 = true
+	}
+	newSpec.EnableDataplaneV2 = &enableDataplaneV2
+
 	if cluster.PrivateClusterConfig != nil {
 		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = cluster.PrivateClusterConfig.EnablePrivateEndpoint
 		newSpec.PrivateClusterConfig.EnablePrivateNodes = cluster.PrivateClusterConfig.EnablePrivateNodes
@@ -563,6 +569,8 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 		newSpec.IPAllocationPolicy.ServicesSecondaryRangeName = cluster.IpAllocationPolicy.ServicesSecondaryRangeName
 		newSpec.IPAllocationPolicy.SubnetworkName = cluster.IpAllocationPolicy.SubnetworkName
 		newSpec.IPAllocationPolicy.UseIPAliases = cluster.IpAllocationPolicy.UseIpAliases
+		newSpec.IPAllocationPolicy.StackType = cluster.IpAllocationPolicy.StackType
+		newSpec.IPAllocationPolicy.IPv6AccessType = cluster.IpAllocationPolicy.Ipv6AccessType
 	}
 
 	if cluster.MasterAuthorizedNetworksConfig != nil && cluster.MasterAuthorizedNetworksConfig.Enabled {
