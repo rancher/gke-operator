@@ -56,6 +56,9 @@ spec:
               description:
                 nullable: true
                 type: string
+              enableDataplaneV2:
+                nullable: true
+                type: boolean
               enableKubernetesAlpha:
                 nullable: true
                 type: boolean
@@ -75,6 +78,9 @@ spec:
                     type: string
                   createSubnetwork:
                     type: boolean
+                  ipv6AccessType:
+                    nullable: true
+                    type: string
                   nodeIpv4CidrBlock:
                     nullable: true
                     type: string
@@ -82,6 +88,9 @@ spec:
                     nullable: true
                     type: string
                   servicesSecondaryRangeName:
+                    nullable: true
+                    type: string
+                  stackType:
                     nullable: true
                     type: string
                   subnetworkName:
