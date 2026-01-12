@@ -8,7 +8,7 @@ require (
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golang/mock v1.6.0
 	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/gomega v1.39.0
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20240531071842-35c37fffa28c
 	github.com/rancher/lasso v0.0.0-20240123150939-7055397d6dfa
 	github.com/rancher/rancher/pkg/apis v0.0.0-20240613212755-3021cf92ff9f
