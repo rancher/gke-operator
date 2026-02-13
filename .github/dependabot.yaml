@@ -30,6 +30,27 @@ updates:
   commit-message:
     prefix: ":seedling:"
   target-branch: "main"
+# Go modules in release-v2.14 branch
+- package-ecosystem: "gomod"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  ignore:
+    # Ignore controller-runtime as its upgraded manually.
+    - dependency-name: "sigs.k8s.io/controller-runtime"
+    # Ignore k8s and its transitives modules as they are upgraded manually
+    # together with controller-runtime.
+    - dependency-name: "k8s.io/*"
+    # Ignore wrangler
+    - dependency-name: "github.com/rancher/wrangler"
+    - dependency-name: "github.com/rancher/wrangler/v3"
+    # Ignore rancher apis
+    - dependency-name: "github.com/rancher/rancher/pkg/apis"
+    # Ignore Google API version, due it is breaking integration
+    - dependency-name: "github.com/Masterminds/semver/v3"
+  commit-message:
+    prefix: ":seedling:"
+  target-branch: "release-v2.14"
 # Go modules in release-v2.13 branch
 - package-ecosystem: "gomod"
   directory: "/"
