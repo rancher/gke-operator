@@ -301,6 +301,34 @@ func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClust
 }
 
 func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (*gkev1.GKEClusterConfig, error) {
+	updateConfig := false
+	configCopy := config.DeepCopy()
+
+	if upstreamSpec.EnableDataplaneV2 != nil {
+		if configCopy.Spec.EnableDataplaneV2 == nil || *configCopy.Spec.EnableDataplaneV2 != *upstreamSpec.EnableDataplaneV2 {
+			configCopy.Spec.EnableDataplaneV2 = upstreamSpec.EnableDataplaneV2
+			updateConfig = true
+		}
+	}
+
+	if upstreamSpec.IPAllocationPolicy != nil {
+		if configCopy.Spec.IPAllocationPolicy == nil {
+			configCopy.Spec.IPAllocationPolicy = &gkev1.GKEIPAllocationPolicy{}
+		}
+
+		if configCopy.Spec.IPAllocationPolicy.StackType != upstreamSpec.IPAllocationPolicy.StackType {
+			configCopy.Spec.IPAllocationPolicy.StackType = upstreamSpec.IPAllocationPolicy.StackType
+			updateConfig = true
+		}
+		if configCopy.Spec.IPAllocationPolicy.IPv6AccessType != upstreamSpec.IPAllocationPolicy.IPv6AccessType {
+			configCopy.Spec.IPAllocationPolicy.IPv6AccessType = upstreamSpec.IPAllocationPolicy.IPv6AccessType
+			updateConfig = true
+		}
+	}
+	if updateConfig {
+		logrus.Infof("Syncing Dual-Stack/Dataplane configuration for cluster [%s]", config.Spec.ClusterName)
+		return h.gkeCC.Update(configCopy)
+	}
 	changed, err := gke.UpdateMasterKubernetesVersion(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
@@ -526,6 +554,12 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 	}
 	newSpec.NetworkPolicyEnabled = &networkPolicyEnabled
 
+	enableDataplaneV2 := false
+	if cluster.NetworkConfig != nil && cluster.NetworkConfig.DatapathProvider == "ADVANCED_DATAPATH" {
+		enableDataplaneV2 = true
+	}
+	newSpec.EnableDataplaneV2 = &enableDataplaneV2
+
 	if cluster.PrivateClusterConfig != nil {
 		newSpec.PrivateClusterConfig.EnablePrivateEndpoint = cluster.PrivateClusterConfig.EnablePrivateEndpoint
 		newSpec.PrivateClusterConfig.EnablePrivateNodes = cluster.PrivateClusterConfig.EnablePrivateNodes
@@ -563,6 +597,8 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 		newSpec.IPAllocationPolicy.ServicesSecondaryRangeName = cluster.IpAllocationPolicy.ServicesSecondaryRangeName
 		newSpec.IPAllocationPolicy.SubnetworkName = cluster.IpAllocationPolicy.SubnetworkName
 		newSpec.IPAllocationPolicy.UseIPAliases = cluster.IpAllocationPolicy.UseIpAliases
+		newSpec.IPAllocationPolicy.StackType = cluster.IpAllocationPolicy.StackType
+		newSpec.IPAllocationPolicy.IPv6AccessType = cluster.IpAllocationPolicy.Ipv6AccessType
 	}
 
 	if cluster.MasterAuthorizedNetworksConfig != nil && cluster.MasterAuthorizedNetworksConfig.Enabled {

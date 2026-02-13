@@ -247,6 +247,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(CMEKConfig)
 		**out = **in
 	}
+	if in.EnableDataplaneV2 != nil {
+		in, out := &in.EnableDataplaneV2, &out.EnableDataplaneV2
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 
