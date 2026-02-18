@@ -36,8 +36,10 @@ spec:
   masterAuth:
     clientCertificateConfig:
       issueClientCertificate: false
-    password: ""
     username: ""
+    # passwordSecret: ""  # Optional: Reference to secret containing password
+    # Note: Basic authentication is deprecated by GKE and should not be used
+    # Leave username and passwordSecret empty for security best practices
   masterAuthorizedNetworks:
     cidrBlocks:
     - cidrBlock: 10.0.0.0/8

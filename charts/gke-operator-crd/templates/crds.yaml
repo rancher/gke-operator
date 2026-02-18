@@ -157,10 +157,19 @@ spec:
                       issueClientCertificate:
                         type: boolean
                     type: object
-                  password:
+                  passwordSecret:
+                    description: |
+                      PasswordSecret is the name of a Kubernetes Secret containing the password.
+                      The secret must contain a key named "password".
+                      NOTE: Basic authentication is deprecated by GKE and should not be used.
+                      This field is kept for backward compatibility but should remain empty.
                     nullable: true
                     type: string
                   username:
+                    description: |
+                      Username for basic authentication (should be empty for security).
+                      NOTE: Basic authentication is deprecated by GKE and should not be used.
+                      This field is kept for backward compatibility but should remain empty.
                     nullable: true
                     type: string
                 type: object

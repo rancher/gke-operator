@@ -485,9 +485,15 @@ type GKELegacyAbac struct {
 // GKEMasterAuth defines master authentication configuration
 type GKEMasterAuth struct {
 	// Username for basic authentication (should be empty for security)
+	// NOTE: Basic authentication is deprecated by GKE and should not be used.
+	// This field is kept for backward compatibility but should remain empty.
 	Username string `json:"username,omitempty"`
-	// Password for basic authentication (should be empty for security)
-	Password string `json:"password,omitempty"`
+	// PasswordSecret is the name of a Kubernetes Secret containing the password.
+	// The secret must contain a key named "password".
+	// NOTE: Basic authentication is deprecated by GKE and should not be used.
+	// This field is kept for backward compatibility but should remain empty.
+	// +optional
+	PasswordSecret string `json:"passwordSecret,omitempty"`
 	// ClientCertificateConfig defines client certificate configuration
 	// +optional
 	ClientCertificateConfig *GKEClientCertificateConfig `json:"clientCertificateConfig,omitempty"`

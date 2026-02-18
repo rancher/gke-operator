@@ -575,7 +575,7 @@ var _ = Describe("CreateCluster", func() {
 		It("should create cluster with master auth configured without basic auth", func() {
 			config.Spec.MasterAuth = &gkev1.GKEMasterAuth{
 				Username: "",
-				Password: "",
+				PasswordSecret: "",  // Changed from Password to PasswordSecret
 				ClientCertificateConfig: &gkev1.GKEClientCertificateConfig{
 					IssueClientCertificate: false,
 				},
@@ -584,6 +584,7 @@ var _ = Describe("CreateCluster", func() {
 			request := NewClusterCreateRequest(config)
 			Expect(request.Cluster.MasterAuth).ToNot(BeNil())
 			Expect(request.Cluster.MasterAuth.Username).To(Equal(""))
+			// Password should not be set in the request as it's deprecated
 			Expect(request.Cluster.MasterAuth.Password).To(Equal(""))
 			Expect(request.Cluster.MasterAuth.ClientCertificateConfig).ToNot(BeNil())
 			Expect(request.Cluster.MasterAuth.ClientCertificateConfig.IssueClientCertificate).To(BeFalse())

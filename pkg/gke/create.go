@@ -204,10 +204,14 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 	}
 
 	// Master Authentication (basic auth and client certs should be disabled)
+	// Note: Basic authentication is deprecated by GKE. Username and password should be empty.
+	// Only client certificate configuration is supported for backward compatibility.
 	if config.Spec.MasterAuth != nil {
 		masterAuth := &gkeapi.MasterAuth{
 			Username: config.Spec.MasterAuth.Username,
-			Password: config.Spec.MasterAuth.Password,
+			// Password is intentionally not set here as it should not be stored in CRDs
+			// If PasswordSecret is specified, it should be resolved by the controller
+			// and passed separately. However, basic auth is deprecated and should not be used.
 		}
 		if config.Spec.MasterAuth.ClientCertificateConfig != nil {
 			masterAuth.ClientCertificateConfig = &gkeapi.ClientCertificateConfig{
