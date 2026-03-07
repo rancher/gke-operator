@@ -66,6 +66,19 @@ func CreateNodePool(ctx context.Context, gkeClient services.GKEClusterService, c
 // NewClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
 	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
+	ipAllocationPolicy := &gkeapi.IPAllocationPolicy{
+		ClusterIpv4CidrBlock:       config.Spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
+		ClusterSecondaryRangeName:  config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName,
+		CreateSubnetwork:           config.Spec.IPAllocationPolicy.CreateSubnetwork,
+		NodeIpv4CidrBlock:          config.Spec.IPAllocationPolicy.NodeIpv4CidrBlock,
+		ServicesIpv4CidrBlock:      config.Spec.IPAllocationPolicy.ServicesIpv4CidrBlock,
+		ServicesSecondaryRangeName: config.Spec.IPAllocationPolicy.ServicesSecondaryRangeName,
+		SubnetworkName:             config.Spec.IPAllocationPolicy.SubnetworkName,
+		UseIpAliases:               config.Spec.IPAllocationPolicy.UseIPAliases,
+		StackType:                  config.Spec.IPAllocationPolicy.StackType,
+		Ipv6AccessType:             config.Spec.IPAllocationPolicy.IPv6AccessType,
+	}
+
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
@@ -76,20 +89,11 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 			ClusterIpv4Cidr:       *config.Spec.ClusterIpv4CidrBlock,
 			LoggingService:        *config.Spec.LoggingService,
 			MonitoringService:     *config.Spec.MonitoringService,
-			IpAllocationPolicy: &gkeapi.IPAllocationPolicy{
-				ClusterIpv4CidrBlock:       config.Spec.IPAllocationPolicy.ClusterIpv4CidrBlock,
-				ClusterSecondaryRangeName:  config.Spec.IPAllocationPolicy.ClusterSecondaryRangeName,
-				CreateSubnetwork:           config.Spec.IPAllocationPolicy.CreateSubnetwork,
-				NodeIpv4CidrBlock:          config.Spec.IPAllocationPolicy.NodeIpv4CidrBlock,
-				ServicesIpv4CidrBlock:      config.Spec.IPAllocationPolicy.ServicesIpv4CidrBlock,
-				ServicesSecondaryRangeName: config.Spec.IPAllocationPolicy.ServicesSecondaryRangeName,
-				SubnetworkName:             config.Spec.IPAllocationPolicy.SubnetworkName,
-				UseIpAliases:               config.Spec.IPAllocationPolicy.UseIPAliases,
-			},
-			AddonsConfig:      &gkeapi.AddonsConfig{},
-			NodePools:         []*gkeapi.NodePool{},
-			Locations:         config.Spec.Locations,
-			MaintenancePolicy: &gkeapi.MaintenancePolicy{},
+			IpAllocationPolicy:    ipAllocationPolicy,
+			AddonsConfig:          &gkeapi.AddonsConfig{},
+			NodePools:             []*gkeapi.NodePool{},
+			Locations:             config.Spec.Locations,
+			MaintenancePolicy:     &gkeapi.MaintenancePolicy{},
 		},
 	}
 
@@ -138,6 +142,12 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 	}
 	if config.Spec.Subnetwork != nil {
 		request.Cluster.Subnetwork = *config.Spec.Subnetwork
+	}
+	if config.Spec.EnableDataplaneV2 != nil && *config.Spec.EnableDataplaneV2 {
+		if request.Cluster.NetworkConfig == nil {
+			request.Cluster.NetworkConfig = &gkeapi.NetworkConfig{}
+		}
+		request.Cluster.NetworkConfig.DatapathProvider = "ADVANCED_DATAPATH"
 	}
 
 	if config.Spec.NetworkPolicyEnabled != nil {
@@ -264,6 +274,14 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	}
 	if config.Spec.Labels == nil {
 		return fmt.Errorf(cannotBeNilError, "labels", config.Spec.ClusterName, config.Name)
+	}
+
+	if config.Spec.IPAllocationPolicy != nil {
+		if config.Spec.IPAllocationPolicy.StackType == "IPV4_IPV6" {
+			if !config.Spec.IPAllocationPolicy.UseIPAliases {
+				return fmt.Errorf("invalid configuration: stackType 'IPV4_IPV6' requires useIpAliases to be true")
+			}
+		}
 	}
 
 	for np := range config.Spec.NodePools {
