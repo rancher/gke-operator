@@ -34,6 +34,10 @@ spec:
         imagePullPolicy: IfNotPresent
         args: ["-debug={{ .Values.gkeOperator.debug | default false }}"]
         env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         - name: HTTP_PROXY
           value: {{ .Values.httpProxy }}
         - name: HTTPS_PROXY
