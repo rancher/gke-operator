@@ -5,7 +5,10 @@ on:
   workflow_dispatch:
 jobs:
   publish_nightly:
-    uses: rancher-sandbox/highlander-reusable-workflows/.github/workflows/operator-with-latest-rancher-build.yaml@main
+    permissions:
+      contents: read
+      packages: write
+    uses: rancher-sandbox/highlander-reusable-workflows/.github/workflows/operator-with-latest-rancher-build.yaml@a8c5ab146fed1a6ba07b5947d045fa05593b8173 # main
     with:
       operator_name: gke-operator
       operator_commit: ${{ github.sha }}
