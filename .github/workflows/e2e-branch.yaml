@@ -24,9 +24,11 @@ jobs:
       BRANCH: ${{ inputs.branch }}
       REPO: ttl.sh/gke-operator-ci
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           ref: |
             ${{ env.BRANCH }}
@@ -68,7 +70,7 @@ jobs:
             COMMITDATE=${{ steps.export_tag.outputs.commit_date }}
             COMMIT=${{ steps.export_tag.outputs.commit }}
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
           go-version: 1.22.x
       - uses: helm/kind-action@0025e74a8c7512023d06dc019c617aa3cf561fde # v1.10.0
@@ -87,14 +89,14 @@ jobs:
         run: make e2e-tests
       - name: Archive artifacts
         if: always()
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ci-artifacts-${{ env.BRANCH }}
           path: _artifacts
           if-no-files-found: ignore
       - name: Send failed status to slack
         if: failure() && github.event_name == 'schedule'
-        uses: slackapi/slack-github-action@v2.0.0
+        uses: slackapi/slack-github-action@485a9d42d3a73031f12ec201c457e2162c45d02d # v2.0.0
         with:
           payload: |
             {
