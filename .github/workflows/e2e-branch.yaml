@@ -23,6 +23,9 @@ jobs:
     env:
       BRANCH: ${{ inputs.branch }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
