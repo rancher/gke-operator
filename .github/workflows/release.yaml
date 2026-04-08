@@ -79,16 +79,58 @@ jobs:
       with:
         fetch-depth: 0
         ref: ${{ github.ref_name }}
+    - name: Setup goreleaser
+      shell: bash
+      run: |-
+        OS="Linux"
+        if [[ ${RUNNER_OS} != "Linux" ]]; then
+          echo "Unsupported OS: ${RUNNER_OS}"
+          exit 1
+        fi
+
+        # renovate-local: goreleaser-x86_64
+        GORELEASER_VERSION="v2.15.2"
+        # renovate-local: goreleaser-x86_64=v2.15.2
+        GORELEASER_CHECKSUM_x86_64="0ebdbf0353aba566b969dde746cc4e4806f96c27aa2f3971b229a9df7611fedc"
+
+        ARCH=$(uname -m)
+        CHECKSUM="${GORELEASER_CHECKSUM_x86_64}"
+        if [[ "${ARCH}" != "x86_64" ]]; then
+          echo "Unsupported architecture: ${ARCH}"
+          exit 1
+        fi
+
+        FILE="goreleaser_${OS}_${ARCH}.tar.gz"
+
+        echo "Installing ${FILE}"
+        curl -LO "https://github.com/goreleaser/goreleaser/releases/download/${GORELEASER_VERSION}/${FILE}"
+        echo "${CHECKSUM} ${FILE}" | sha256sum -c
+        tar -xf "${FILE}" goreleaser
+
+        if sudo -n true &> /dev/null; then
+          sudo install -m 755 goreleaser /usr/local/bin/goreleaser
+        else
+          install -m 755 goreleaser /usr/local/bin/goreleaser
+        fi
+        rm -f "${FILE}" goreleaser
     - name: Create release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # required for creating GH release
         GORELEASER_CURRENT_TAG: ${{ github.ref_name }} # specify the tag to be released
       id: goreleaser
-      uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7
-      with:
-        distribution: goreleaser
-        version: "~> v2"
-        args: release --clean --verbose
+      shell: bash
+      run: |-
+        goreleaser release --clean --verbose
+        if [[ ! -f dist/metadata.json ]] || [[ ! -s dist/metadata.json ]]; then
+          echo "Missing required file: dist/metadata.json"
+          exit 1
+        fi
+        if [[ ! -f dist/artifacts.json ]] || [[ ! -s dist/artifacts.json ]]; then
+          echo "Missing required file: dist/artifacts.json"
+          exit 1
+        fi
+        echo "metadata=$(tr -d '\n\r' < dist/metadata.json)" >> "${GITHUB_OUTPUT}"
+        echo "artifacts=$(tr -d '\n\r' < dist/artifacts.json)" >> "${GITHUB_OUTPUT}"
     - name: Upload charts to release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # required for updating GH release
