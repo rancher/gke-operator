@@ -11,7 +11,7 @@ jobs:
       packages: write
     steps:
       - name: Delete old gke-operator images
-        uses: actions/delete-package-versions@0d39a63126868f5eefaa47169615edd3c0f61e20 # v4
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:
           package-name: gke-operator
           package-type: container
@@ -20,7 +20,7 @@ jobs:
           owner: rancher
 
       - name: Delete old rancher-gke-operator charts
-        uses: actions/delete-package-versions@0d39a63126868f5eefaa47169615edd3c0f61e20 # v4
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:
           package-name: rancher-gke-operator-chart/rancher-gke-operator
           package-type: container
@@ -29,7 +29,7 @@ jobs:
           owner: rancher
 
       - name: Delete old rancher-gke-operator-crd charts
-        uses: actions/delete-package-versions@0d39a63126868f5eefaa47169615edd3c0f61e20 # v4
+        uses: actions/delete-package-versions@e5bc658cc4c965c472efe991f8beea3981499c55 # v5.0.0
         with:
           package-name: rancher-gke-operator-crd-chart/rancher-gke-operator-crd
           package-type: container
