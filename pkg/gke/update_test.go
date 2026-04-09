@@ -5,9 +5,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	gkeapi "google.golang.org/api/container/v1"
+
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke/services/mock_services"
-	gkeapi "google.golang.org/api/container/v1"
 )
 
 var _ = Describe("UpdateMasterKubernetesVersion", func() {
@@ -419,6 +420,11 @@ var _ = Describe("UpdateNodePoolAutoscaling", func() {
 	BeforeEach(func() {
 		mockController = gomock.NewController(GinkgoT())
 		clusterServiceMock = mock_services.NewMockGKEClusterService(mockController)
+
+		// Reset nodePool.Autoscaling to nil for each test
+		nodePool.Autoscaling = nil
+		// Reset upstreamNodePool.Autoscaling to nil for each test
+		upstreamNodePool.Autoscaling = nil
 	})
 
 	AfterEach(func() {
@@ -498,4 +504,206 @@ var _ = Describe("UpdateNodePoolAutoscaling", func() {
 		Expect(status).To(Equal(Changed))
 	})
 
+})
+
+var _ = Describe("UpdateBinaryAuthorization", func() {
+	var (
+		mockController     *gomock.Controller
+		clusterServiceMock *mock_services.MockGKEClusterService
+		config             *gkev1.GKEClusterConfig
+		upstreamSpec       *gkev1.GKEClusterConfigSpec
+	)
+
+	BeforeEach(func() {
+		mockController = gomock.NewController(GinkgoT())
+		clusterServiceMock = mock_services.NewMockGKEClusterService(mockController)
+
+		config = &gkev1.GKEClusterConfig{
+			Spec: gkev1.GKEClusterConfigSpec{
+				Region:      "test-region",
+				ProjectID:   "test-project",
+				ClusterName: "test-cluster",
+			},
+		}
+
+		upstreamSpec = &gkev1.GKEClusterConfigSpec{}
+	})
+
+	AfterEach(func() {
+		mockController.Finish()
+	})
+
+	It("should not change when binary authorization is not specified", func() {
+		config.Spec.BinaryAuthorization = nil
+
+		status, err := UpdateBinaryAuthorization(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(NotChanged))
+	})
+
+	It("should change when enabling binary authorization", func() {
+		config.Spec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: true,
+		}
+		upstreamSpec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: false,
+		}
+
+		clusterServiceMock.EXPECT().
+			ClusterUpdate(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: &gkeapi.ClusterUpdate{
+						DesiredBinaryAuthorization: &gkeapi.BinaryAuthorization{
+							Enabled: true,
+						},
+					},
+				}).
+			Return(&gkeapi.Operation{}, nil)
+
+		status, err := UpdateBinaryAuthorization(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(Changed))
+	})
+
+	It("should change when disabling binary authorization", func() {
+		config.Spec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: false,
+		}
+		upstreamSpec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: true,
+		}
+
+		clusterServiceMock.EXPECT().
+			ClusterUpdate(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: &gkeapi.ClusterUpdate{
+						DesiredBinaryAuthorization: &gkeapi.BinaryAuthorization{
+							Enabled: false,
+						},
+					},
+				}).
+			Return(&gkeapi.Operation{}, nil)
+
+		status, err := UpdateBinaryAuthorization(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(Changed))
+	})
+
+	It("should not change when binary authorization is the same", func() {
+		config.Spec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: true,
+		}
+		upstreamSpec.BinaryAuthorization = &gkev1.GKEBinaryAuthorization{
+			Enabled: true,
+		}
+
+		status, err := UpdateBinaryAuthorization(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(NotChanged))
+	})
+})
+
+var _ = Describe("UpdateIntraNodeVisibility", func() {
+	var (
+		mockController     *gomock.Controller
+		clusterServiceMock *mock_services.MockGKEClusterService
+		config             *gkev1.GKEClusterConfig
+		upstreamSpec       *gkev1.GKEClusterConfigSpec
+	)
+
+	BeforeEach(func() {
+		mockController = gomock.NewController(GinkgoT())
+		clusterServiceMock = mock_services.NewMockGKEClusterService(mockController)
+
+		config = &gkev1.GKEClusterConfig{
+			Spec: gkev1.GKEClusterConfigSpec{
+				Region:      "test-region",
+				ProjectID:   "test-project",
+				ClusterName: "test-cluster",
+			},
+		}
+
+		upstreamSpec = &gkev1.GKEClusterConfigSpec{}
+	})
+
+	AfterEach(func() {
+		mockController.Finish()
+	})
+
+	It("should not change when intra-node visibility is not specified", func() {
+		config.Spec.IntraNodeVisibilityConfig = nil
+
+		status, err := UpdateIntraNodeVisibility(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(NotChanged))
+	})
+
+	It("should change when enabling intra-node visibility", func() {
+		config.Spec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: true,
+		}
+		upstreamSpec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: false,
+		}
+
+		clusterServiceMock.EXPECT().
+			ClusterUpdate(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: &gkeapi.ClusterUpdate{
+						DesiredIntraNodeVisibilityConfig: &gkeapi.IntraNodeVisibilityConfig{
+							Enabled: true,
+						},
+					},
+				}).
+			Return(&gkeapi.Operation{}, nil)
+
+		status, err := UpdateIntraNodeVisibility(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(Changed))
+	})
+
+	It("should change when disabling intra-node visibility", func() {
+		config.Spec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: false,
+		}
+		upstreamSpec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: true,
+		}
+
+		clusterServiceMock.EXPECT().
+			ClusterUpdate(
+				ctx,
+				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				&gkeapi.UpdateClusterRequest{
+					Update: &gkeapi.ClusterUpdate{
+						DesiredIntraNodeVisibilityConfig: &gkeapi.IntraNodeVisibilityConfig{
+							Enabled: false,
+						},
+					},
+				}).
+			Return(&gkeapi.Operation{}, nil)
+
+		status, err := UpdateIntraNodeVisibility(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(Changed))
+	})
+
+	It("should not change when intra-node visibility is the same", func() {
+		config.Spec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: true,
+		}
+		upstreamSpec.IntraNodeVisibilityConfig = &gkev1.GKEIntraNodeVisibilityConfig{
+			Enabled: true,
+		}
+
+		status, err := UpdateIntraNodeVisibility(ctx, clusterServiceMock, config, upstreamSpec)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(status).To(Equal(NotChanged))
+	})
 })
