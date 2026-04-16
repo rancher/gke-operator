@@ -1,8 +1,8 @@
 module github.com/rancher/gke-operator
 
-go 1.24.0
+go 1.25.0
 
-toolchain go1.24.12
+toolchain go1.25.8
 
 replace (
 	k8s.io/client-go => k8s.io/client-go v0.33.1
@@ -17,10 +17,10 @@ require (
 	github.com/onsi/gomega v1.39.1
 	github.com/pkg/errors v0.9.1
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
-	github.com/rancher/lasso v0.2.3
+	github.com/rancher/lasso v0.2.4
 	github.com/rancher/rancher/pkg/apis v0.0.0-20240821150307-952f563826f5
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
-	github.com/rancher/wrangler/v3 v3.2.2-rc.3
+	github.com/rancher/wrangler/v3 v3.2.4
 	github.com/sirupsen/logrus v1.9.4
 	golang.org/x/net v0.49.0
 	golang.org/x/oauth2 v0.35.0
