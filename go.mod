@@ -1,6 +1,6 @@
 module github.com/rancher/gke-operator
 
-go 1.25.8
+go 1.25.11
 
 replace (
 	k8s.io/client-go => k8s.io/client-go v0.35.1
