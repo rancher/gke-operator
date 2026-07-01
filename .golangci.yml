@@ -1,5 +1,6 @@
 version: "2"
 run:
+  timeout: 5m
   go: "1.25"
   tests: false
   allow-parallel-runners: true
@@ -33,16 +34,18 @@ linters:
           alias: utilruntime
         - pkg: sigs.k8s.io/controller-runtime/pkg/client
           alias: runtimeclient
+        - pkg: k8s.io/apimachinery/pkg/api/errors
+          alias: apierrors
         - pkg: k8s.io/apimachinery/pkg/util/errors
           alias: kerrors
         - pkg: k8s.io/client-go/kubernetes/scheme
           alias: clientgoscheme
-        - pkg: github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1
-          alias: gkev1
-        - pkg: github.com/rancher/gke-operator/pkg/generated/controllers/gke.cattle.io/v1
-          alias: gkecontrollers
-        - pkg: google.golang.org/api/container/v1
-          alias: gkeapi
+        - pkg: github.com/rancher/aks-operator/pkg/apis/aks.cattle.io/v1
+          alias: aksv1
+        - pkg: github.com/rancher/aks-operator/pkg/generated/controllers/aks.cattle.io/v1
+          alias: akscontrollers
+        - pkg: github.com/rancher/rancher/pkg/apis/management.cattle.io/v3
+          alias: managementv3
       no-unaliased: true
     revive:
       rules:
@@ -83,7 +86,11 @@ linters:
       - linters:                                           
           - revive
         path: utils/
-        text: 'var-naming: avoid meaningless package names' 
+        text: 'var-naming: avoid meaningless package names'
+      - linters:
+          - importas
+        path: controller/gke-cluster-config-handler.go$
+        text: 'imported without alias but must be with alias "apierrors"'
     paths:
       - zz_generated_*
       - pkg/generated

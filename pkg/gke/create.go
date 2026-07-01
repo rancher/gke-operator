@@ -119,7 +119,7 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		}
 
 		if config.Spec.MasterAuthorizedNetworksConfig != nil {
-			blocks := make([]*gkeapi.CidrBlock, len(config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks))
+			blocks := make([]*gkeapi.CidrBlock, 0, len(config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks))
 			for _, b := range config.Spec.MasterAuthorizedNetworksConfig.CidrBlocks {
 				blocks = append(blocks, &gkeapi.CidrBlock{
 					CidrBlock:   b.CidrBlock,
