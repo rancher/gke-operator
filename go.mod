@@ -24,7 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.9.4
 	golang.org/x/net v0.56.0
 	golang.org/x/oauth2 v0.36.0
-	google.golang.org/api v0.283.0
+	google.golang.org/api v0.287.0
 	k8s.io/api v0.36.0
 	k8s.io/apiextensions-apiserver v0.36.0
 	k8s.io/apimachinery v0.36.0
@@ -59,7 +59,7 @@ require (
 	github.com/google/pprof v0.0.0-20260402051712-545e8a4df936 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.16 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.17 // indirect
 	github.com/googleapis/gax-go/v2 v2.22.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -97,7 +97,7 @@ require (
 	golang.org/x/text v0.38.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.45.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260523011958-0a33c5d7ca68 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260622175928-b703f567277d // indirect
 	google.golang.org/grpc v1.81.1 // indirect
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
