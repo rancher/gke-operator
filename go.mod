@@ -23,7 +23,7 @@ require (
 	github.com/rancher/wrangler/v3 v3.2.2-rc.3
 	github.com/sirupsen/logrus v1.9.4
 	golang.org/x/net v0.57.0
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.252.0
 	k8s.io/api v0.33.1
 	k8s.io/apiextensions-apiserver v0.33.1
@@ -99,9 +99,9 @@ require (
 	golang.org/x/time v0.13.0 // indirect
 	golang.org/x/tools v0.47.0 // indirect
 	golang.org/x/tools/go/packages/packagestest v0.1.1-deprecated // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
-	google.golang.org/grpc v1.79.3 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260414002931-afd174a4e478 // indirect
+	google.golang.org/grpc v1.82.1 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
