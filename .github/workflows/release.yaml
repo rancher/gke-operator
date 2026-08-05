@@ -36,7 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
         ref: ${{ github.ref_name}}
@@ -75,7 +75,7 @@ jobs:
     needs: publish-images
     steps:
     - name: Checkout code
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
         ref: ${{ github.ref_name }}
@@ -89,9 +89,9 @@ jobs:
         fi
 
         # renovate-local: goreleaser-x86_64
-        GORELEASER_VERSION="v2.15.2"
-        # renovate-local: goreleaser-x86_64=v2.15.2
-        GORELEASER_CHECKSUM_x86_64="0ebdbf0353aba566b969dde746cc4e4806f96c27aa2f3971b229a9df7611fedc"
+        GORELEASER_VERSION="v2.17.1"
+        # renovate-local: goreleaser-x86_64=v2.17.1
+        GORELEASER_CHECKSUM_x86_64="a99bbc7ae0d8d897b07c4c497a9b62f222558804715ef219d1af05a7e417bc80"
 
         ARCH=$(uname -m)
         CHECKSUM="${GORELEASER_CHECKSUM_x86_64}"
