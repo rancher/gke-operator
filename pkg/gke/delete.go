@@ -5,9 +5,10 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
 	"github.com/rancher/gke-operator/pkg/gke/services"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -22,9 +23,10 @@ var backoff = wait.Backoff{
 
 // RemoveCluster attempts to delete a cluster and retries the delete request if the cluster is busy.
 func RemoveCluster(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig) error {
+	clusterRRN := ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName)
+
 	return wait.ExponentialBackoff(backoff, func() (bool, error) {
-		_, err := gkeClient.ClusterDelete(ctx,
-			ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName))
+		_, err := gkeClient.ClusterDelete(ctx, clusterRRN)
 
 		if err != nil && strings.Contains(err.Error(), errWait) {
 			return false, nil
@@ -35,6 +37,7 @@ func RemoveCluster(ctx context.Context, gkeClient services.GKEClusterService, co
 		if err != nil {
 			return false, err
 		}
+
 		return true, nil
 	})
 }
