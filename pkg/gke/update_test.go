@@ -419,6 +419,8 @@ var _ = Describe("UpdateNodePoolAutoscaling", func() {
 	BeforeEach(func() {
 		mockController = gomock.NewController(GinkgoT())
 		clusterServiceMock = mock_services.NewMockGKEClusterService(mockController)
+		nodePool.Autoscaling = nil
+		upstreamNodePool.Autoscaling = nil
 	})
 
 	AfterEach(func() {

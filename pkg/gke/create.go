@@ -17,12 +17,19 @@ import (
 const (
 	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s (id: %s)]"
 	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s (id: %s)]"
-	resolveReleaseChannelError  = "cannot resolve releaseChannel for kubernetesVersion [%s] for cluster [%s (id: %s)]. Please select a version that is available in the STABLE, REGULAR, RAPID, or EXTENDED channels"
-	gkeReleaseChannelRapid      = "RAPID"
-	gkeReleaseChannelRegular    = "REGULAR"
-	gkeReleaseChannelStable     = "STABLE"
-	gkeReleaseChannelExtended   = "EXTENDED"
+	resolveReleaseChannelError  = "cannot resolve releaseChannel for kubernetesVersion [%s] for cluster [%s (id: %s)]"
 )
+
+// errInvalidReleaseChannel is returned when a releaseChannel value is set but isn't one of the
+// supported enum values.
+var errInvalidReleaseChannel = fmt.Errorf("invalid release channel")
+
+var specToGKEReleaseChannel = map[gkev1.GKEReleaseChannel]string{
+	gkev1.GKEReleaseChannelRapid:    "RAPID",
+	gkev1.GKEReleaseChannelRegular:  "REGULAR",
+	gkev1.GKEReleaseChannelStable:   "STABLE",
+	gkev1.GKEReleaseChannelExtended: "EXTENDED",
+}
 
 // Create creates an upstream GKE cluster.
 func Create(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig) error {
@@ -31,21 +38,7 @@ func Create(ctx context.Context, gkeClient services.GKEClusterService, config *g
 		return err
 	}
 
-	releaseChannel := gkeReleaseChannelStable
-	if config.Spec.KubernetesVersion != nil {
-		releaseChannel, err = resolveReleaseChannelFromVersion(
-			ctx,
-			gkeClient,
-			config.Spec.ProjectID,
-			Location(config.Spec.Region, config.Spec.Zone),
-			*config.Spec.KubernetesVersion,
-		)
-		if err != nil {
-			return fmt.Errorf(resolveReleaseChannelError+": %w", *config.Spec.KubernetesVersion, config.Spec.ClusterName, config.Name, err)
-		}
-	}
-
-	createClusterRequest := newClusterCreateRequest(config, releaseChannel)
+	createClusterRequest := newClusterCreateRequest(config, "")
 
 	_, err = gkeClient.ClusterCreate(ctx,
 		LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
@@ -84,11 +77,14 @@ func CreateNodePool(ctx context.Context, gkeClient services.GKEClusterService, c
 
 // NewClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
-	return newClusterCreateRequest(config, gkeReleaseChannelRegular)
+	return newClusterCreateRequest(config, "")
 }
 
 func newClusterCreateRequest(config *gkev1.GKEClusterConfig, releaseChannel string) *gkeapi.CreateClusterRequest {
 	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
+	if releaseChannel == "" {
+		releaseChannel = gkeReleaseChannel(config.Spec.ReleaseChannel)
+	}
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
@@ -249,6 +245,36 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	if config.Spec.KubernetesVersion == nil {
 		return fmt.Errorf(cannotBeNilError, "kubernetesVersion", config.Spec.ClusterName, config.Name)
 	}
+
+	if config.Spec.ReleaseChannel == nil || *config.Spec.ReleaseChannel == "" {
+		// No release channel was requested: derive one automatically from the
+		// kubernetesVersion, preferring the most stable channel that supports it.
+		resolvedReleaseChannel, err := resolveReleaseChannelFromVersion(
+			ctx,
+			gkeClient,
+			config.Spec.ProjectID,
+			Location(config.Spec.Region, config.Spec.Zone),
+			*config.Spec.KubernetesVersion,
+		)
+		if err != nil {
+			return fmt.Errorf(resolveReleaseChannelError, *config.Spec.KubernetesVersion, config.Spec.ClusterName, config.Name)
+		}
+		config.Spec.ReleaseChannel = &resolvedReleaseChannel
+	} else {
+		// A release channel was explicitly requested: it must be honored as-is, and the
+		// only thing left to check is that kubernetesVersion is actually available in it.
+		if err := validateVersionForReleaseChannel(
+			ctx,
+			gkeClient,
+			config.Spec.ProjectID,
+			Location(config.Spec.Region, config.Spec.Zone),
+			*config.Spec.ReleaseChannel,
+			*config.Spec.KubernetesVersion,
+		); err != nil {
+			return fmt.Errorf("%w for cluster [%s (id: %s)]", err, config.Spec.ClusterName, config.Name)
+		}
+	}
+
 	if config.Spec.ClusterIpv4CidrBlock == nil {
 		return fmt.Errorf(cannotBeNilError, "clusterIpv4CidrBlock", config.Spec.ClusterName, config.Name)
 	}
@@ -301,25 +327,67 @@ func validateCreateRequest(ctx context.Context, gkeClient services.GKEClusterSer
 	return nil
 }
 
-func resolveReleaseChannelFromVersion(ctx context.Context, gkeClient services.GKEClusterService, projectID, location, kubernetesVersion string) (string, error) {
+func gkeReleaseChannel(specChannel *gkev1.GKEReleaseChannel) string {
+	mappedChannel, err := validateAndMapReleaseChannel(specChannel)
+	if err != nil {
+		return specToGKEReleaseChannel[gkev1.GKEReleaseChannelRegular]
+	}
+	return mappedChannel
+}
+
+func validateAndMapReleaseChannel(specChannel *gkev1.GKEReleaseChannel) (string, error) {
+	if specChannel == nil || *specChannel == "" {
+		return specToGKEReleaseChannel[gkev1.GKEReleaseChannelRegular], nil
+	}
+
+	mappedChannel, ok := specToGKEReleaseChannel[*specChannel]
+	if !ok {
+		return "", fmt.Errorf("%w [%s]", errInvalidReleaseChannel, *specChannel)
+	}
+
+	return mappedChannel, nil
+}
+
+// validateVersionForReleaseChannel checks that kubernetesVersion is available in the explicitly
+// requested releaseChannel. Unlike resolveReleaseChannelFromVersion, it never substitutes a
+// different channel: the caller's selection is authoritative, this only confirms it's usable.
+func validateVersionForReleaseChannel(ctx context.Context, gkeClient services.GKEClusterService, projectID, location string, releaseChannel gkev1.GKEReleaseChannel, kubernetesVersion string) error {
+	gkeChannel, err := validateAndMapReleaseChannel(&releaseChannel)
+	if err != nil {
+		return err
+	}
+
+	serverConfig, err := gkeClient.ServerConfigGet(ctx, LocationRRN(projectID, location))
+	if err != nil {
+		return err
+	}
+
+	if !supportsVersionInChannel(serverConfig.Channels, gkeChannel, kubernetesVersion) {
+		return fmt.Errorf("kubernetesVersion [%s] is not supported by releaseChannel [%s]", kubernetesVersion, releaseChannel)
+	}
+
+	return nil
+}
+
+func resolveReleaseChannelFromVersion(ctx context.Context, gkeClient services.GKEClusterService, projectID, location, kubernetesVersion string) (gkev1.GKEReleaseChannel, error) {
 	serverConfig, err := gkeClient.ServerConfigGet(ctx, LocationRRN(projectID, location))
 	if err != nil {
 		return "", err
 	}
-	if serverConfig == nil {
-		return "", fmt.Errorf("GKE server config is nil")
-	}
 
-	priorityOrder := []string{
-		gkeReleaseChannelStable,
-		gkeReleaseChannelRegular,
-		gkeReleaseChannelRapid,
-		gkeReleaseChannelExtended,
+	priorityOrder := []struct {
+		specChannel gkev1.GKEReleaseChannel
+		gkeChannel  string
+	}{
+		{specChannel: gkev1.GKEReleaseChannelStable, gkeChannel: "STABLE"},
+		{specChannel: gkev1.GKEReleaseChannelRegular, gkeChannel: "REGULAR"},
+		{specChannel: gkev1.GKEReleaseChannelRapid, gkeChannel: "RAPID"},
+		{specChannel: gkev1.GKEReleaseChannelExtended, gkeChannel: "EXTENDED"},
 	}
 
 	for _, channel := range priorityOrder {
-		if supportsVersionInChannel(serverConfig.Channels, channel, kubernetesVersion) {
-			return channel, nil
+		if supportsVersionInChannel(serverConfig.Channels, channel.gkeChannel, kubernetesVersion) {
+			return channel.specChannel, nil
 		}
 	}
 
