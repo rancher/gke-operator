@@ -65,6 +65,19 @@ var _ = Describe("RemoveCluster", func() {
 	})
 
 	It("should successfully remove cluster", func() {
+		clusterServiceMock.EXPECT().
+			ServerConfigGet(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
+			Return(&gkeapi.ServerConfig{
+				Channels: []*gkeapi.ReleaseChannelConfig{
+					{
+						Channel:       "REGULAR",
+						ValidVersions: []string{k8sVersion},
+					},
+				},
+			}, nil)
+
 		createClusterRequest := NewClusterCreateRequest(config)
 		clusterServiceMock.EXPECT().
 			ClusterCreate(
@@ -85,7 +98,9 @@ var _ = Describe("RemoveCluster", func() {
 		clusterServiceMock.EXPECT().
 			ClusterGet(
 				ctx,
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone),
+				ClusterRRN(
+					config.Spec.ProjectID,
+					Location(config.Spec.Region, config.Spec.Zone),
 					config.Spec.ClusterName)).
 			Return(
 				&gkeapi.Cluster{
@@ -99,7 +114,10 @@ var _ = Describe("RemoveCluster", func() {
 		clusterServiceMock.EXPECT().
 			ClusterDelete(
 				ctx,
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName)).
+				ClusterRRN(
+					config.Spec.ProjectID,
+					Location(config.Spec.Region, config.Spec.Zone),
+					config.Spec.ClusterName)).
 			Return(&gkeapi.Operation{}, nil)
 
 		err = RemoveCluster(ctx, clusterServiceMock, config)
@@ -183,6 +201,19 @@ var _ = Describe("RemoveNodePool", func() {
 	})
 
 	It("should successfully remove node pool", func() {
+		clusterServiceMock.EXPECT().
+			ServerConfigGet(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
+			Return(&gkeapi.ServerConfig{
+				Channels: []*gkeapi.ReleaseChannelConfig{
+					{
+						Channel:       "REGULAR",
+						ValidVersions: []string{k8sVersion},
+					},
+				},
+			}, nil)
+
 		createClusterRequest := NewClusterCreateRequest(config)
 		clusterServiceMock.EXPECT().
 			ClusterCreate(
@@ -205,7 +236,10 @@ var _ = Describe("RemoveNodePool", func() {
 		clusterServiceMock.EXPECT().
 			NodePoolCreate(
 				ctx,
-				ClusterRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName),
+				ClusterRRN(
+					config.Spec.ProjectID,
+					Location(config.Spec.Region, config.Spec.Zone),
+					config.Spec.ClusterName),
 				createNodePoolRequest).
 			Return(&gkeapi.Operation{}, nil)
 
@@ -216,7 +250,11 @@ var _ = Describe("RemoveNodePool", func() {
 		clusterServiceMock.EXPECT().
 			NodePoolDelete(
 				ctx,
-				NodePoolRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone), config.Spec.ClusterName, nodePoolName)).
+				NodePoolRRN(
+					config.Spec.ProjectID,
+					Location(config.Spec.Region, config.Spec.Zone),
+					config.Spec.ClusterName,
+					nodePoolName)).
 			Return(&gkeapi.Operation{}, nil)
 
 		status, err = RemoveNodePool(ctx, clusterServiceMock, config, nodePoolName)
