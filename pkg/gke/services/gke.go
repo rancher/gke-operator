@@ -11,6 +11,7 @@ import (
 type GKEClusterService interface {
 	ClusterCreate(ctx context.Context, parent string, createclusterrequest *gkeapi.CreateClusterRequest) (*gkeapi.Operation, error)
 	ClusterList(ctx context.Context, parent string) (*gkeapi.ListClustersResponse, error)
+	ServerConfigGet(ctx context.Context, name string) (*gkeapi.ServerConfig, error)
 	ClusterGet(ctx context.Context, name string) (*gkeapi.Cluster, error)
 	ClusterUpdate(ctx context.Context, name string, updateclusterrequest *gkeapi.UpdateClusterRequest) (*gkeapi.Operation, error)
 	ClusterDelete(ctx context.Context, name string) (*gkeapi.Operation, error)
@@ -47,6 +48,10 @@ func (g *gkeClusterService) ClusterCreate(ctx context.Context, parent string, cr
 
 func (g *gkeClusterService) ClusterList(ctx context.Context, parent string) (*gkeapi.ListClustersResponse, error) {
 	return g.svc.Projects.Locations.Clusters.List(parent).Context(ctx).Do()
+}
+
+func (g *gkeClusterService) ServerConfigGet(ctx context.Context, name string) (*gkeapi.ServerConfig, error) {
+	return g.svc.Projects.Locations.GetServerConfig(name).Context(ctx).Do()
 }
 
 func (g *gkeClusterService) ClusterGet(ctx context.Context, name string) (*gkeapi.Cluster, error) {
