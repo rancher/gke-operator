@@ -180,6 +180,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.ReleaseChannel != nil {
+		in, out := &in.ReleaseChannel, &out.ReleaseChannel
+		*out = new(GKEReleaseChannel)
+		**out = **in
+	}
 	if in.LoggingService != nil {
 		in, out := &in.LoggingService, &out.LoggingService
 		*out = new(string)

@@ -36,6 +36,15 @@ type GKEClusterConfig struct {
 	Status GKEClusterConfigStatus `json:"status"`
 }
 
+type GKEReleaseChannel string
+
+const (
+	GKEReleaseChannelRapid    GKEReleaseChannel = "Rapid"
+	GKEReleaseChannelRegular  GKEReleaseChannel = "Regular"
+	GKEReleaseChannelStable   GKEReleaseChannel = "Stable"
+	GKEReleaseChannelExtended GKEReleaseChannel = "Extended"
+)
+
 // GKEClusterConfigSpec is the spec for a GKEClusterConfig resource
 type GKEClusterConfigSpec struct {
 	// Region is the GCP region where the cluster is located.
@@ -89,6 +98,12 @@ type GKEClusterConfigSpec struct {
 	// KubernetesVersion is the version of Kubernetes to use.
 	// +optional
 	KubernetesVersion *string `json:"kubernetesVersion" norman:"pointer"`
+
+	// ReleaseChannel is the release channel to enroll the cluster in.
+	// +optional
+	// +kubebuilder:default=Regular
+	// +kubebuilder:validation:Enum=Rapid;Regular;Stable;Extended
+	ReleaseChannel *GKEReleaseChannel `json:"releaseChannel,omitempty" norman:"pointer"`
 
 	// LoggingService is the logging service to use.
 	// +optional
