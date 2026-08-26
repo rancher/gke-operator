@@ -426,11 +426,13 @@ var _ = Describe("createCluster", func() {
 		caSecret         *corev1.Secret
 		testNamespace    *corev1.Namespace
 		clusterState     *gkeapi.Cluster
+		serverConfig     *gkeapi.ServerConfig
 	)
 
 	BeforeEach(func() {
 		mockController = gomock.NewController(GinkgoT())
 		gkeServiceMock = mock_services.NewMockGKEClusterService(mockController)
+		serverConfig = &gkeapi.ServerConfig{}
 
 		clusterState = &gkeapi.Cluster{
 			Name:                 "test-cluster",
@@ -606,6 +608,19 @@ var _ = Describe("createCluster", func() {
 			gkeClient:    gkeServiceMock,
 			gkeClientCtx: context.Background(),
 		}
+
+		serverConfig.Channels = []*gkeapi.ReleaseChannelConfig{
+			{
+				Channel:       "REGULAR",
+				ValidVersions: []string{k8sVersion},
+			},
+		}
+		gkeServiceMock.EXPECT().
+			ServerConfigGet(
+				context.Background(),
+				gke.LocationRRN(gkeConfig.Spec.ProjectID, gke.Location(gkeConfig.Spec.Region, gkeConfig.Spec.Zone))).
+			Return(serverConfig, nil).
+			AnyTimes()
 	})
 
 	AfterEach(func() {
