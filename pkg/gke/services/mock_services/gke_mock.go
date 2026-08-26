@@ -185,6 +185,21 @@ func (mr *MockGKEClusterServiceMockRecorder) NodePoolUpdate(ctx, name, updatenod
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NodePoolUpdate", reflect.TypeOf((*MockGKEClusterService)(nil).NodePoolUpdate), ctx, name, updatenodepoolrequest)
 }
 
+// ServerConfigGet mocks base method.
+func (m *MockGKEClusterService) ServerConfigGet(ctx context.Context, name string) (*container.ServerConfig, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ServerConfigGet", ctx, name)
+	ret0, _ := ret[0].(*container.ServerConfig)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ServerConfigGet indicates an expected call of ServerConfigGet.
+func (mr *MockGKEClusterServiceMockRecorder) ServerConfigGet(ctx, name interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServerConfigGet", reflect.TypeOf((*MockGKEClusterService)(nil).ServerConfigGet), ctx, name)
+}
+
 // SetAutoscaling mocks base method.
 func (m *MockGKEClusterService) SetAutoscaling(ctx context.Context, name string, setnodepoolautoscalingrequest *container.SetNodePoolAutoscalingRequest) (*container.Operation, error) {
 	m.ctrl.T.Helper()
