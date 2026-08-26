@@ -588,6 +588,12 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 		}
 	}
 
+	releaseChannel := gke.ReleaseChannelUnspecified
+	if cluster.ReleaseChannel != nil && cluster.ReleaseChannel.Channel != "" {
+		releaseChannel = cluster.ReleaseChannel.Channel
+	}
+	newSpec.ReleaseChannel = &releaseChannel
+
 	// build node groups
 	newSpec.NodePools = make([]gkev1.GKENodePoolConfig, 0, len(cluster.NodePools))
 

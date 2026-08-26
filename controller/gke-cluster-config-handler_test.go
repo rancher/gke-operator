@@ -223,6 +223,25 @@ var _ = Describe("buildUpstreamClusterState", func() {
 		Expect(upstreamSpec.NodePools[0].Management.AutoRepair).To(Equal(clusterState.NodePools[0].Management.AutoRepair))
 		Expect(upstreamSpec.NodePools[0].Management.AutoUpgrade).To(Equal(clusterState.NodePools[0].Management.AutoUpgrade))
 	})
+
+	It("should build upstream cluster state with no release channel", func() {
+		upstreamSpec, err := handler.buildUpstreamClusterState(clusterState)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(upstreamSpec).ToNot(BeNil())
+		Expect(upstreamSpec.ReleaseChannel).ToNot(BeNil())
+		Expect(*upstreamSpec.ReleaseChannel).To(Equal(gke.ReleaseChannelUnspecified))
+	})
+
+	It("should build upstream cluster state with the upstream release channel", func() {
+		clusterState.ReleaseChannel = &gkeapi.ReleaseChannel{
+			Channel: "REGULAR",
+		}
+		upstreamSpec, err := handler.buildUpstreamClusterState(clusterState)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(upstreamSpec).ToNot(BeNil())
+		Expect(upstreamSpec.ReleaseChannel).ToNot(BeNil())
+		Expect(*upstreamSpec.ReleaseChannel).To(Equal("REGULAR"))
+	})
 })
 
 const authTestJson = `

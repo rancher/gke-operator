@@ -105,4 +105,5 @@ spec:
   - us-west1-b
   - us-west1-c
   maintenanceWindow: "00:00"
+  releaseChannel: "UNSPECIFIED"
   googleCredentialSecret: "cattle-global-data:cc-abcde"

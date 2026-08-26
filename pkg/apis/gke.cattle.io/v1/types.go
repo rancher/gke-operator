@@ -144,6 +144,15 @@ type GKEClusterConfigSpec struct {
 	// to each node in the node pool.
 	// +optional
 	CustomerManagedEncryptionKey *CMEKConfig `json:"customerManagedEncryptionKey,omitempty"`
+
+	// ReleaseChannel is the GKE release channel the cluster is enrolled in.
+	// Accepted values are UNSPECIFIED (also known as "No channel"), RAPID,
+	// REGULAR, STABLE and EXTENDED. When it is not set, standard clusters are
+	// created without a release channel (UNSPECIFIED) and autopilot clusters
+	// are enrolled in the channel selected by GKE, since they cannot opt out
+	// of release channels.
+	// +optional
+	ReleaseChannel *string `json:"releaseChannel,omitempty" norman:"pointer"`
 }
 
 type GKEIPAllocationPolicy struct {

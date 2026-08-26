@@ -247,6 +247,11 @@ func (in *GKEClusterConfigSpec) DeepCopyInto(out *GKEClusterConfigSpec) {
 		*out = new(CMEKConfig)
 		**out = **in
 	}
+	if in.ReleaseChannel != nil {
+		in, out := &in.ReleaseChannel, &out.ReleaseChannel
+		*out = new(string)
+		**out = **in
+	}
 	return
 }
 

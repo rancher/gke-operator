@@ -383,3 +383,99 @@ var _ = Describe("CreateNodePool", func() {
 		Expect(status).To(Equal(NotChanged))
 	})
 })
+
+var _ = Describe("NewClusterCreateRequest release channel", func() {
+	var (
+		k8sVersion      = "1.25.12-gke.200"
+		clusterIpv4Cidr = "10.42.0.0/16"
+		networkName     = "test-network"
+		subnetworkName  = "test-subnetwork"
+		emptyString     = ""
+		boolTrue        = true
+		config          *gkev1.GKEClusterConfig
+	)
+
+	BeforeEach(func() {
+		config = &gkev1.GKEClusterConfig{
+			Spec: gkev1.GKEClusterConfigSpec{
+				Region:                "test-region",
+				ProjectID:             "test-project",
+				ClusterName:           "test-cluster",
+				Locations:             []string{""},
+				Labels:                map[string]string{"test": "test"},
+				ClusterIpv4CidrBlock:  &clusterIpv4Cidr,
+				KubernetesVersion:     &k8sVersion,
+				LoggingService:        &emptyString,
+				MonitoringService:     &emptyString,
+				EnableKubernetesAlpha: &boolTrue,
+				Network:               &networkName,
+				Subnetwork:            &subnetworkName,
+				NetworkPolicyEnabled:  &boolTrue,
+				MaintenanceWindow:     &emptyString,
+				IPAllocationPolicy: &gkev1.GKEIPAllocationPolicy{
+					UseIPAliases: true,
+				},
+				ClusterAddons: &gkev1.GKEClusterAddons{
+					HTTPLoadBalancing:        true,
+					NetworkPolicyConfig:      false,
+					HorizontalPodAutoscaling: true,
+				},
+				PrivateClusterConfig: &gkev1.GKEPrivateClusterConfig{
+					EnablePrivateEndpoint: false,
+					EnablePrivateNodes:    false,
+				},
+				MasterAuthorizedNetworksConfig: &gkev1.GKEMasterAuthorizedNetworksConfig{
+					Enabled: false,
+				},
+			},
+		}
+	})
+
+	It("should default to no release channel when none is configured", func() {
+		request := NewClusterCreateRequest(config)
+		Expect(request.Cluster.ReleaseChannel).ToNot(BeNil())
+		Expect(request.Cluster.ReleaseChannel.Channel).To(Equal(ReleaseChannelUnspecified))
+	})
+
+	It("should default to no release channel when an empty channel is configured", func() {
+		config.Spec.ReleaseChannel = &emptyString
+		request := NewClusterCreateRequest(config)
+		Expect(request.Cluster.ReleaseChannel).ToNot(BeNil())
+		Expect(request.Cluster.ReleaseChannel.Channel).To(Equal(ReleaseChannelUnspecified))
+	})
+
+	It("should use the configured release channel", func() {
+		channel := "regular"
+		config.Spec.ReleaseChannel = &channel
+		request := NewClusterCreateRequest(config)
+		Expect(request.Cluster.ReleaseChannel).ToNot(BeNil())
+		Expect(request.Cluster.ReleaseChannel.Channel).To(Equal("REGULAR"))
+	})
+
+	It("should translate a none release channel to unspecified", func() {
+		channel := "None"
+		config.Spec.ReleaseChannel = &channel
+		request := NewClusterCreateRequest(config)
+		Expect(request.Cluster.ReleaseChannel).ToNot(BeNil())
+		Expect(request.Cluster.ReleaseChannel.Channel).To(Equal(ReleaseChannelUnspecified))
+	})
+
+	It("should not set a release channel for autopilot clusters when none is configured", func() {
+		config.Spec.AutopilotConfig = &gkev1.GKEAutopilotConfig{
+			Enabled: true,
+		}
+		request := NewClusterCreateRequest(config)
+		Expect(request.Cluster.ReleaseChannel).To(BeNil())
+	})
+
+	It("should use the configured release channel for autopilot clusters", func() {
+		channel := "STABLE"
+		config.Spec.AutopilotConfig = &gkev1.GKEAutopilotConfig{
+			Enabled: true,
+		}
+		config.Spec.ReleaseChannel = &channel
+		request := NewClusterCreateRequest(config)
+		Expect(request.Cluster.ReleaseChannel).ToNot(BeNil())
+		Expect(request.Cluster.ReleaseChannel.Channel).To(Equal("STABLE"))
+	})
+})

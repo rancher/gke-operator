@@ -18,3 +18,10 @@ const (
 	errNotFound = "notFound"
 	errWait     = "Please wait and try again once it is done"
 )
+
+// Release channels
+const (
+	// ReleaseChannelUnspecified is the release channel used by clusters that are
+	// not enrolled in any GKE release channel, displayed as "No channel" in GCP.
+	ReleaseChannelUnspecified = "UNSPECIFIED"
+)

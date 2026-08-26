@@ -154,7 +154,32 @@ func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClust
 		}
 	}
 
+	request.Cluster.ReleaseChannel = newClusterReleaseChannel(config)
+
 	return request
+}
+
+// newClusterReleaseChannel returns the release channel to set on a cluster create
+// request. GKE rejects create requests that do not explicitly select a release
+// channel, so clusters that do not configure one are created with the
+// UNSPECIFIED channel ("No channel") to preserve the previous behavior.
+// Autopilot clusters cannot opt out of release channels, so no channel is sent
+// for them unless one is configured and GKE selects the default channel.
+func newClusterReleaseChannel(config *gkev1.GKEClusterConfig) *gkeapi.ReleaseChannel {
+	channel := strings.ToUpper(strings.TrimSpace(utils.StringValue(config.Spec.ReleaseChannel)))
+	if channel == "NONE" {
+		channel = ReleaseChannelUnspecified
+	}
+	if channel == "" {
+		if config.Spec.AutopilotConfig != nil && config.Spec.AutopilotConfig.Enabled {
+			return nil
+		}
+		channel = ReleaseChannelUnspecified
+	}
+
+	return &gkeapi.ReleaseChannel{
+		Channel: channel,
+	}
 }
 
 // validateCreateRequest checks a config for the ability to generate a create request
