@@ -17,7 +17,7 @@ import (
 const (
 	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s (id: %s)]"
 	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s (id: %s)]"
-	resolveReleaseChannelError  = "cannot resolve releaseChannel for kubernetesVersion [%s] for cluster [%s (id: %s)]"
+	resolveReleaseChannelError  = "cannot resolve releaseChannel for kubernetesVersion [%s] for cluster [%s (id: %s)]. Please select a version that is available in the STABLE, REGULAR, RAPID, or EXTENDED channels"
 	gkeReleaseChannelRapid      = "RAPID"
 	gkeReleaseChannelRegular    = "REGULAR"
 	gkeReleaseChannelStable     = "STABLE"
@@ -312,9 +312,9 @@ func resolveReleaseChannelFromVersion(ctx context.Context, gkeClient services.GK
 
 	priorityOrder := []string{
 		gkeReleaseChannelStable,
-		gkeReleaseChannelExtended,
 		gkeReleaseChannelRegular,
 		gkeReleaseChannelRapid,
+		gkeReleaseChannelExtended,
 	}
 
 	for _, channel := range priorityOrder {
