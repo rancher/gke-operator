@@ -521,7 +521,7 @@ var _ = Describe("resolveReleaseChannelFromVersion", func() {
 		Expect(channel).To(Equal("STABLE"))
 	})
 
-	It("should prefer EXTENDED over REGULAR and RAPID when STABLE is unavailable", func() {
+	It("should prefer REGULAR over RAPID and EXTENDED when STABLE is unavailable", func() {
 		clusterServiceMock.EXPECT().
 			ServerConfigGet(ctx, LocationRRN(projectID, location)).
 			Return(&gkeapi.ServerConfig{Channels: []*gkeapi.ReleaseChannelConfig{
@@ -532,10 +532,10 @@ var _ = Describe("resolveReleaseChannelFromVersion", func() {
 
 		channel, err := resolveReleaseChannelFromVersion(ctx, clusterServiceMock, projectID, location, k8sVersion)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(channel).To(Equal("EXTENDED"))
+		Expect(channel).To(Equal("REGULAR"))
 	})
 
-	It("should prefer EXTENDED over RAPID when STABLE and REGULAR are unavailable", func() {
+	It("should prefer RAPID over EXTENDED when STABLE and REGULAR are unavailable", func() {
 		clusterServiceMock.EXPECT().
 			ServerConfigGet(ctx, LocationRRN(projectID, location)).
 			Return(&gkeapi.ServerConfig{Channels: []*gkeapi.ReleaseChannelConfig{
@@ -545,7 +545,7 @@ var _ = Describe("resolveReleaseChannelFromVersion", func() {
 
 		channel, err := resolveReleaseChannelFromVersion(ctx, clusterServiceMock, projectID, location, k8sVersion)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(channel).To(Equal("EXTENDED"))
+		Expect(channel).To(Equal("RAPID"))
 	})
 
 	It("should resolve to EXTENDED when it is the only matching channel", func() {
