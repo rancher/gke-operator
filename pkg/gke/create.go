@@ -17,7 +17,7 @@ import (
 const (
 	cannotBeNilError            = "field [%s] cannot be nil for non-import cluster [%s (id: %s)]"
 	cannotBeNilForNodePoolError = "field [%s] cannot be nil for nodepool [%s] in non-nil cluster [%s (id: %s)]"
-	resolveReleaseChannelError  = "cannot resolve releaseChannel for kubernetesVersion [%s] for cluster [%s (id: %s)]"
+	resolveReleaseChannelError  = "cannot resolve releaseChannel for kubernetesVersion [%s] for cluster [%s (id: %s)]. Please select a version that is available in the STABLE, REGULAR, RAPID, or EXTENDED channels"
 	gkeReleaseChannelRapid      = "RAPID"
 	gkeReleaseChannelRegular    = "REGULAR"
 	gkeReleaseChannelStable     = "STABLE"
@@ -323,7 +323,7 @@ func resolveReleaseChannelFromVersion(ctx context.Context, gkeClient services.GK
 		}
 	}
 
-	return "", fmt.Errorf("kubernetes version not found in any release channel. Please select a version that is available in the STABLE, REGULAR, RAPID, or EXTENDED channels")
+	return "", fmt.Errorf("kubernetes version not found in any release channel")
 }
 
 func supportsVersionInChannel(channels []*gkeapi.ReleaseChannelConfig, gkeChannel, kubernetesVersion string) bool {
