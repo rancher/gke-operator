@@ -312,9 +312,9 @@ func resolveReleaseChannelFromVersion(ctx context.Context, gkeClient services.GK
 
 	priorityOrder := []string{
 		gkeReleaseChannelStable,
-		gkeReleaseChannelExtended,
 		gkeReleaseChannelRegular,
 		gkeReleaseChannelRapid,
+		gkeReleaseChannelExtended,
 	}
 
 	for _, channel := range priorityOrder {
@@ -323,7 +323,7 @@ func resolveReleaseChannelFromVersion(ctx context.Context, gkeClient services.GK
 		}
 	}
 
-	return "", fmt.Errorf("kubernetes version not found in any release channel")
+	return "", fmt.Errorf("kubernetes version not found in any release channel. Please select a version that is available in the STABLE, REGULAR, RAPID, or EXTENDED channels")
 }
 
 func supportsVersionInChannel(channels []*gkeapi.ReleaseChannelConfig, gkeChannel, kubernetesVersion string) bool {
