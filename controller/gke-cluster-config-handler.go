@@ -310,6 +310,14 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
+	changed, err = gke.UpdateReleaseChannel(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
 	changed, err = gke.UpdateClusterAddons(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
