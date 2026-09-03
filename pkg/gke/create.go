@@ -38,7 +38,7 @@ func Create(ctx context.Context, gkeClient services.GKEClusterService, config *g
 		return err
 	}
 
-	createClusterRequest := newClusterCreateRequest(config, "")
+	createClusterRequest := newClusterCreateRequest(config)
 
 	_, err = gkeClient.ClusterCreate(ctx,
 		LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone)),
@@ -77,14 +77,12 @@ func CreateNodePool(ctx context.Context, gkeClient services.GKEClusterService, c
 
 // NewClusterCreateRequest creates a CreateClusterRequest that can be submitted to GKE
 func NewClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
-	return newClusterCreateRequest(config, "")
+	return newClusterCreateRequest(config)
 }
 
-func newClusterCreateRequest(config *gkev1.GKEClusterConfig, releaseChannel string) *gkeapi.CreateClusterRequest {
+func newClusterCreateRequest(config *gkev1.GKEClusterConfig) *gkeapi.CreateClusterRequest {
 	enableKubernetesAlpha := config.Spec.EnableKubernetesAlpha != nil && *config.Spec.EnableKubernetesAlpha
-	if releaseChannel == "" {
-		releaseChannel = gkeReleaseChannel(config.Spec.ReleaseChannel)
-	}
+	releaseChannel := gkeReleaseChannel(config.Spec.ReleaseChannel)
 	request := &gkeapi.CreateClusterRequest{
 		Cluster: &gkeapi.Cluster{
 			Name:                  config.Spec.ClusterName,
@@ -348,9 +346,6 @@ func validateAndMapReleaseChannel(specChannel *gkev1.GKEReleaseChannel) (string,
 	return mappedChannel, nil
 }
 
-// validateVersionForReleaseChannel checks that kubernetesVersion is available in the explicitly
-// requested releaseChannel. Unlike resolveReleaseChannelFromVersion, it never substitutes a
-// different channel: the caller's selection is authoritative, this only confirms it's usable.
 func validateVersionForReleaseChannel(ctx context.Context, gkeClient services.GKEClusterService, projectID, location string, releaseChannel gkev1.GKEReleaseChannel, kubernetesVersion string) error {
 	gkeChannel, err := validateAndMapReleaseChannel(&releaseChannel)
 	if err != nil {
