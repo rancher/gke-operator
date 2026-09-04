@@ -1,8 +1,7 @@
 # Image that provides cross compilation tooling.
 FROM --platform=$BUILDPLATFORM rancher/mirrored-tonistiigi-xx:1.5.0 AS xx
 
-FROM registry.suse.com/bci/bci-base:15.7 AS base
-RUN sed -i 's/^CREATE_MAIL_SPOOL=yes/CREATE_MAIL_SPOOL=no/' /etc/default/useradd
+FROM registry.suse.com/bci/bci-base:16.1 AS base
 RUN useradd --uid 1007 gke-operator
 
 FROM --platform=$BUILDPLATFORM registry.suse.com/bci/golang:1.25 AS builder
@@ -28,7 +27,7 @@ RUN xx-go build -ldflags \
        -o /gke-operator && \
        xx-verify /gke-operator
 
-FROM registry.suse.com/bci/bci-micro:15.7
+FROM registry.suse.com/bci/bci-micro:16.1
 COPY --from=base /etc/passwd /etc/passwd
 COPY --from=base /etc/shadow /etc/shadow
 COPY --from=builder /gke-operator /usr/bin/gke-operator
