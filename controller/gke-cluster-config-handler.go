@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	gkev1 "github.com/rancher/gke-operator/pkg/apis/gke.cattle.io/v1"
@@ -309,6 +310,14 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return h.enqueueUpdate(config)
 	}
 
+	changed, err = gke.UpdateReleaseChannel(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
+	if err != nil {
+		return config, err
+	}
+	if changed == gke.Changed {
+		return h.enqueueUpdate(config)
+	}
+
 	changed, err = gke.UpdateClusterAddons(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
 	if err != nil {
 		return config, err
@@ -585,6 +594,24 @@ func (h *Handler) buildUpstreamClusterState(cluster *gkeapi.Cluster) (*gkev1.GKE
 	if cluster.Autopilot != nil && cluster.Autopilot.Enabled {
 		newSpec.AutopilotConfig = &gkev1.GKEAutopilotConfig{
 			Enabled: cluster.Autopilot.Enabled,
+		}
+	}
+
+	if cluster.ReleaseChannel != nil {
+		channel := strings.ToUpper(cluster.ReleaseChannel.Channel)
+		switch channel {
+		case "STABLE":
+			c := gkev1.GKEReleaseChannelStable
+			newSpec.ReleaseChannel = &c
+		case "REGULAR":
+			c := gkev1.GKEReleaseChannelRegular
+			newSpec.ReleaseChannel = &c
+		case "RAPID":
+			c := gkev1.GKEReleaseChannelRapid
+			newSpec.ReleaseChannel = &c
+		case "EXTENDED":
+			c := gkev1.GKEReleaseChannelExtended
+			newSpec.ReleaseChannel = &c
 		}
 	}
 
