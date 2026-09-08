@@ -20,6 +20,7 @@ var _ = Describe("RemoveCluster", func() {
 		subnetworkName     = "test-subnetwork"
 		emptyString        = ""
 		boolTrue           = true
+		serverConfig       = &gkeapi.ServerConfig{}
 		config             = &gkev1.GKEClusterConfig{
 			Spec: gkev1.GKEClusterConfigSpec{
 				Region:                "test-region",
@@ -58,6 +59,18 @@ var _ = Describe("RemoveCluster", func() {
 	BeforeEach(func() {
 		mockController = gomock.NewController(GinkgoT())
 		clusterServiceMock = mock_services.NewMockGKEClusterService(mockController)
+		serverConfig.Channels = []*gkeapi.ReleaseChannelConfig{
+			{
+				Channel:       "REGULAR",
+				ValidVersions: []string{k8sVersion},
+			},
+		}
+		clusterServiceMock.EXPECT().
+			ServerConfigGet(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
+			Return(serverConfig, nil).
+			AnyTimes()
 	})
 
 	AfterEach(func() {
@@ -65,19 +78,6 @@ var _ = Describe("RemoveCluster", func() {
 	})
 
 	It("should successfully remove cluster", func() {
-		clusterServiceMock.EXPECT().
-			ServerConfigGet(
-				ctx,
-				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
-			Return(&gkeapi.ServerConfig{
-				Channels: []*gkeapi.ReleaseChannelConfig{
-					{
-						Channel:       "REGULAR",
-						ValidVersions: []string{k8sVersion},
-					},
-				},
-			}, nil)
-
 		createClusterRequest := NewClusterCreateRequest(config)
 		clusterServiceMock.EXPECT().
 			ClusterCreate(
@@ -135,6 +135,7 @@ var _ = Describe("RemoveNodePool", func() {
 		subnetworkName     = "test-subnetwork"
 		emptyString        = ""
 		boolTrue           = true
+		serverConfig       = &gkeapi.ServerConfig{}
 
 		nodePoolName      = "test-node-pool"
 		initialNodeCount  = int64(3)
@@ -194,6 +195,18 @@ var _ = Describe("RemoveNodePool", func() {
 	BeforeEach(func() {
 		mockController = gomock.NewController(GinkgoT())
 		clusterServiceMock = mock_services.NewMockGKEClusterService(mockController)
+		serverConfig.Channels = []*gkeapi.ReleaseChannelConfig{
+			{
+				Channel:       "REGULAR",
+				ValidVersions: []string{k8sVersion},
+			},
+		}
+		clusterServiceMock.EXPECT().
+			ServerConfigGet(
+				ctx,
+				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
+			Return(serverConfig, nil).
+			AnyTimes()
 	})
 
 	AfterEach(func() {
@@ -201,19 +214,6 @@ var _ = Describe("RemoveNodePool", func() {
 	})
 
 	It("should successfully remove node pool", func() {
-		clusterServiceMock.EXPECT().
-			ServerConfigGet(
-				ctx,
-				LocationRRN(config.Spec.ProjectID, Location(config.Spec.Region, config.Spec.Zone))).
-			Return(&gkeapi.ServerConfig{
-				Channels: []*gkeapi.ReleaseChannelConfig{
-					{
-						Channel:       "REGULAR",
-						ValidVersions: []string{k8sVersion},
-					},
-				},
-			}, nil)
-
 		createClusterRequest := NewClusterCreateRequest(config)
 		clusterServiceMock.EXPECT().
 			ClusterCreate(
