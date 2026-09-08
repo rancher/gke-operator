@@ -78,6 +78,53 @@ func UpdateMasterKubernetesVersion(ctx context.Context, gkeClient services.GKECl
 	return Changed, nil
 }
 
+// UpdateReleaseChannel updates the GKE cluster release channel.
+func UpdateReleaseChannel(
+	ctx context.Context,
+	gkeClient services.GKEClusterService,
+	config *gkev1.GKEClusterConfig,
+	upstreamSpec *gkev1.GKEClusterConfigSpec,
+) (Status, error) {
+	if config.Spec.ReleaseChannel == nil {
+		return NotChanged, nil
+	}
+
+	desiredChannel := gkeReleaseChannel(config.Spec.ReleaseChannel)
+
+	if upstreamSpec.ReleaseChannel != nil &&
+		*upstreamSpec.ReleaseChannel == *config.Spec.ReleaseChannel {
+		return NotChanged, nil
+	}
+
+	logrus.Infof(
+		"Updating release channel to %s for cluster [%s (id: %s)]",
+		desiredChannel,
+		config.Spec.ClusterName,
+		config.Name,
+	)
+
+	_, err := gkeClient.ClusterUpdate(
+		ctx,
+		ClusterRRN(
+			config.Spec.ProjectID,
+			Location(config.Spec.Region, config.Spec.Zone),
+			config.Spec.ClusterName,
+		),
+		&gkeapi.UpdateClusterRequest{
+			Update: &gkeapi.ClusterUpdate{
+				DesiredReleaseChannel: &gkeapi.ReleaseChannel{
+					Channel: desiredChannel,
+				},
+			},
+		},
+	)
+	if err != nil {
+		return NotChanged, err
+	}
+
+	return Changed, nil
+}
+
 // UpdateClusterAddons updates the cluster addons.
 // In the case of the NetworkPolicyConfig addon, this may need to be retried after NetworkPolicyEnabled has been updated.
 func UpdateClusterAddons(ctx context.Context, gkeClient services.GKEClusterService, config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (Status, error) {
