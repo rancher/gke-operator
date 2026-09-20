@@ -13,3 +13,6 @@ rules:
   - apiGroups: ['gke.cattle.io']
     resources: ['gkeclusterconfigs/status']
     verbs: ['update']
+  - apiGroups: ['coordination.k8s.io']
+    resources: ['leases']
+    verbs: ['get', 'list', 'create', 'update', 'patch', 'watch', 'delete']
