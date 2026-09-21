@@ -218,6 +218,10 @@ type GKEClusterConfigStatus struct {
 	// +optional
 	Phase string `json:"phase"`
 
+	// Message contains an optional message for the cluster.
+	// +optional
+	Message string `json:"message,omitempty"`
+
 	// FailureMessage contains an optional failure message for the cluster.
 	// +optional
 	FailureMessage string `json:"failureMessage,omitempty"`
