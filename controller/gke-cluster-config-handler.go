@@ -137,7 +137,7 @@ func (h *Handler) OnGkeConfigChanged(_ string, config *gkev1.GKEClusterConfig) (
 func (h *Handler) recordError(onChange func(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error)) func(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	return func(key string, config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 		var err error
-		var message string
+		var statusMessage string
 		config, err = onChange(key, config)
 		if config == nil {
 			// GKE config is likely deleting
@@ -150,22 +150,22 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 			return nil, err
 		}
 		if err != nil {
-			message = err.Error()
+			statusMessage = err.Error()
 		}
 
-		if config.Status.FailureMessage == message {
+		if config.Status.FailureMessage == statusMessage {
 			return config, err
 		}
 
 		config = config.DeepCopy()
 
-		if message != "" {
+		if statusMessage != "" {
 			if config.Status.Phase == gkeConfigActivePhase {
 				// can assume an update is failing
 				config.Status.Phase = gkeConfigUpdatingPhase
 			}
 		}
-		config.Status.FailureMessage = message
+		config.Status.FailureMessage = statusMessage
 
 		var recordErr error
 		config, recordErr = h.gkeCC.UpdateStatus(config)
@@ -174,6 +174,18 @@ func (h *Handler) recordError(onChange func(key string, config *gkev1.GKECluster
 		}
 		return config, err
 	}
+}
+
+// updateConfigStatus updates the phase and message together when either has changed.
+func (h *Handler) updateConfigStatus(config *gkev1.GKEClusterConfig, phase, message string) (*gkev1.GKEClusterConfig, error) {
+	if config.Status.Phase == phase && config.Status.Message == message {
+		return config, nil
+	}
+
+	config = config.DeepCopy()
+	config.Status.Phase = phase
+	config.Status.Message = message
+	return h.gkeCC.UpdateStatus(config)
 }
 
 // importCluster returns an active cluster spec containing the given config's clusterName and region/zone
@@ -232,12 +244,12 @@ func (h *Handler) OnGkeConfigRemoved(_ string, config *gkev1.GKEClusterConfig) (
 
 func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfig, error) {
 	if config.Spec.Imported {
-		message := fmt.Sprintf("Importing cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
-		logrus.Infof("%s", message)
+		statusMessage := fmt.Sprintf("Importing cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
+		logrus.Infof("%s", statusMessage)
 
 		config = config.DeepCopy()
 		config.Status.Phase = gkeConfigImportingPhase
-		config.Status.Message = message
+		config.Status.Message = statusMessage
 		return h.gkeCC.UpdateStatus(config)
 	}
 
@@ -245,12 +257,12 @@ func (h *Handler) create(config *gkev1.GKEClusterConfig) (*gkev1.GKEClusterConfi
 		return config, err
 	}
 
-	message := fmt.Sprintf("Creating cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
-	logrus.Infof("%s", message)
+	statusMessage := fmt.Sprintf("Creating cluster [%s (id: %s)]", config.Spec.ClusterName, config.Name)
+	logrus.Infof("%s", statusMessage)
 
 	config = config.DeepCopy()
 	config.Status.Phase = gkeConfigCreatingPhase
-	config.Status.Message = message
+	config.Status.Message = statusMessage
 	return h.gkeCC.UpdateStatus(config)
 }
 
@@ -261,14 +273,13 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	}
 
 	if cluster.Status == ClusterStatusReconciling {
-		message := fmt.Sprintf("Waiting for cluster [%s (id: %s)] to finish updating", config.Spec.ClusterName, config.Name)
-		logrus.Infof("%s", message)
+		// upstream cluster is already updating, must wait until sending next update
+		statusMessage := fmt.Sprintf("Waiting for cluster [%s (id: %s)] to finish updating", config.Spec.ClusterName, config.Name)
+		logrus.Infof("%s", statusMessage)
 
-		if config.Status.Phase != gkeConfigUpdatingPhase || config.Status.Message != message {
-			config = config.DeepCopy()
-			config.Status.Phase = gkeConfigUpdatingPhase
-			config.Status.Message = message
-			return h.gkeCC.UpdateStatus(config)
+		config, err = h.updateConfigStatus(config, gkeConfigUpdatingPhase, statusMessage)
+		if err != nil {
+			return config, err
 		}
 
 		h.gkeEnqueueAfter(config.Namespace, config.Name, 30*time.Second)
@@ -278,26 +289,21 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 	for _, np := range cluster.NodePools {
 		if status := np.Status; status == NodePoolStatusReconciling || status == NodePoolStatusStopping ||
 			status == NodePoolStatusProvisioning {
-			var message string
+			var statusMessage string
 			switch np.Status {
 			case NodePoolStatusProvisioning:
-				message = fmt.Sprintf("Waiting for cluster [%s (id: %s)] to create node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
+				statusMessage = fmt.Sprintf("Waiting for cluster [%s (id: %s)] to create node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
 			case NodePoolStatusStopping:
-				message = fmt.Sprintf("Waiting for cluster [%s (id: %s)] to remove node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
+				statusMessage = fmt.Sprintf("Waiting for cluster [%s (id: %s)] to remove node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
 			default:
-				message = fmt.Sprintf("Waiting for cluster [%s (id: %s)] to update node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
+				statusMessage = fmt.Sprintf("Waiting for cluster [%s (id: %s)] to update node pool [%s]", config.Spec.ClusterName, config.Name, np.Name)
 			}
 
-			logrus.Infof("%s", message)
+			logrus.Infof("%s", statusMessage)
 
-			if config.Status.Phase != gkeConfigUpdatingPhase || config.Status.Message != message {
-				config = config.DeepCopy()
-				config.Status.Phase = gkeConfigUpdatingPhase
-				config.Status.Message = message
-				config, err = h.gkeCC.UpdateStatus(config)
-				if err != nil {
-					return config, err
-				}
+			config, err = h.updateConfigStatus(config, gkeConfigUpdatingPhase, statusMessage)
+			if err != nil {
+				return config, err
 			}
 
 			h.gkeEnqueueAfter(config.Namespace, config.Name, 30*time.Second)
@@ -316,11 +322,11 @@ func (h *Handler) checkAndUpdate(config *gkev1.GKEClusterConfig) (*gkev1.GKEClus
 // enqueueUpdate enqueues the config if it is already in the updating phase. Otherwise, the
 // phase is updated to "updating". This is important because the object needs to reenter the
 // onChange handler to start waiting on the update.
-func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig, message string) (*gkev1.GKEClusterConfig, error) {
+func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig, statusMessage string) (*gkev1.GKEClusterConfig, error) {
 	if config.Status.Phase == gkeConfigUpdatingPhase {
-		if config.Status.Message != message {
+		if config.Status.Message != statusMessage {
 			config = config.DeepCopy()
-			config.Status.Message = message
+			config.Status.Message = statusMessage
 			config, err := h.gkeCC.UpdateStatus(config)
 			if err != nil {
 				return config, err
@@ -332,10 +338,7 @@ func (h *Handler) enqueueUpdate(config *gkev1.GKEClusterConfig, message string) 
 		return config, nil
 	}
 
-	config = config.DeepCopy()
-	config.Status.Phase = gkeConfigUpdatingPhase
-	config.Status.Message = message
-	return h.gkeCC.UpdateStatus(config)
+	return h.updateConfigStatus(config, gkeConfigUpdatingPhase, statusMessage)
 }
 
 func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, upstreamSpec *gkev1.GKEClusterConfigSpec) (*gkev1.GKEClusterConfig, error) {
@@ -344,8 +347,8 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return config, err
 	}
 	if changed == gke.Changed {
-		message := fmt.Sprintf("Updating Kubernetes version to %s", *upstreamSpec.KubernetesVersion)
-		return h.enqueueUpdate(config, message)
+		statusMessage := fmt.Sprintf("Updating Kubernetes version to %s", *upstreamSpec.KubernetesVersion)
+		return h.enqueueUpdate(config, statusMessage)
 	}
 
 	changed, err = gke.UpdateReleaseChannel(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
@@ -353,11 +356,11 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return config, err
 	}
 	if changed == gke.Changed {
-		message := "Updating release channel"
+		statusMessage := "Updating release channel"
 		if config.Spec.ReleaseChannel != nil {
-			message = fmt.Sprintf("Updating release channel to %s", string(*config.Spec.ReleaseChannel))
+			statusMessage = fmt.Sprintf("Updating release channel to %s", string(*config.Spec.ReleaseChannel))
 		}
-		return h.enqueueUpdate(config, message)
+		return h.enqueueUpdate(config, statusMessage)
 	}
 
 	changed, err = gke.UpdateClusterAddons(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
@@ -365,17 +368,12 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return config, err
 	}
 	if changed == gke.Retry {
-		message := "Waiting for node pool to finish recreation"
-		logrus.Infof("%s", message)
+		statusMessage := "Waiting for node pool to finish recreation"
+		logrus.Infof("%s", statusMessage)
 
-		if config.Status.Phase != gkeConfigUpdatingPhase || config.Status.Message != message {
-			config = config.DeepCopy()
-			config.Status.Phase = gkeConfigUpdatingPhase
-			config.Status.Message = message
-			config, err = h.gkeCC.UpdateStatus(config)
-			if err != nil {
-				return config, err
-			}
+		config, err = h.updateConfigStatus(config, gkeConfigUpdatingPhase, statusMessage)
+		if err != nil {
+			return config, err
 		}
 
 		h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
@@ -406,11 +404,11 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 		return config, err
 	}
 	if changed == gke.Changed {
-		message := "Updating network policy"
+		statusMessage := "Updating network policy"
 		if config.Spec.NetworkPolicyEnabled != nil {
-			message = fmt.Sprintf("Updating network policy to %t", *config.Spec.NetworkPolicyEnabled)
+			statusMessage = fmt.Sprintf("Updating network policy to %t", *config.Spec.NetworkPolicyEnabled)
 		}
-		return h.enqueueUpdate(config, message)
+		return h.enqueueUpdate(config, statusMessage)
 	}
 
 	changed, err = gke.UpdateLocations(h.gkeClientCtx, h.gkeClient, config, upstreamSpec)
@@ -547,10 +545,7 @@ func (h *Handler) updateUpstreamClusterState(config *gkev1.GKEClusterConfig, ups
 	// no new updates, set to active
 	if config.Status.Phase != gkeConfigActivePhase {
 		logrus.Infof("Cluster [%s (id: %s)] finished updating", config.Spec.ClusterName, config.Name)
-		config = config.DeepCopy()
-		config.Status.Phase = gkeConfigActivePhase
-		config.Status.Message = ""
-		return h.gkeCC.UpdateStatus(config)
+		return h.updateConfigStatus(config, gkeConfigActivePhase, "")
 	}
 
 	return config, nil
@@ -575,16 +570,12 @@ func (h *Handler) waitForCreationComplete(config *gkev1.GKEClusterConfig) (*gkev
 		return h.gkeCC.UpdateStatus(config)
 	}
 
-	message := fmt.Sprintf("Waiting for cluster [%s (id: %s)] to finish creating", config.Spec.ClusterName, config.Name)
-	logrus.Infof("%s", message)
+	statusMessage := fmt.Sprintf("Waiting for cluster [%s (id: %s)] to finish creating", config.Spec.ClusterName, config.Name)
+	logrus.Infof("%s", statusMessage)
 
-	if config.Status.Message != message {
-		config = config.DeepCopy()
-		config.Status.Message = message
-		config, err = h.gkeCC.UpdateStatus(config)
-		if err != nil {
-			return config, err
-		}
+	config, err = h.updateConfigStatus(config, gkeConfigCreatingPhase, statusMessage)
+	if err != nil {
+		return config, err
 	}
 
 	h.gkeEnqueueAfter(config.Namespace, config.Name, wait*time.Second)
