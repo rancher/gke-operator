@@ -21,7 +21,7 @@ require (
 	github.com/rancher/rancher/pkg/apis v0.0.0-20260520140148-1f22fcaec55b
 	github.com/rancher/wrangler-api v0.6.1-0.20200427172631-a7c2f09b783e
 	github.com/rancher/wrangler/v3 v3.8.0-rc.1
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	golang.org/x/net v0.58.0
 	golang.org/x/oauth2 v0.36.0
 	google.golang.org/api v0.291.0
