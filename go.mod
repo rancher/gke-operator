@@ -13,8 +13,8 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/drone/envsubst/v2 v2.0.0-20210730161058-179042472c46
 	github.com/golang/mock v1.6.0
-	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.43.0
+	github.com/onsi/ginkgo/v2 v2.33.0
+	github.com/onsi/gomega v1.43.1
 	github.com/pkg/errors v0.9.1
 	github.com/rancher-sandbox/ele-testhelpers v0.0.0-20231206161614-20a517410736
 	github.com/rancher/lasso v0.2.10
@@ -24,6 +24,7 @@ require (
 	github.com/sirupsen/logrus v1.10.1
 	golang.org/x/net v0.59.0
 	golang.org/x/oauth2 v0.37.0
+	github.com/sirupsen/logrus v1.10.2
 	google.golang.org/api v0.291.0
 	k8s.io/api v0.37.0
 	k8s.io/apiextensions-apiserver v0.37.0
