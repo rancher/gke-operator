@@ -1,8 +1,8 @@
 module github.com/rancher/gke-operator
 
-go 1.26.0
+go 1.27.0
 
-toolchain go1.26.9
+toolchain go1.27.2
 
 replace (
 	k8s.io/client-go => k8s.io/client-go v0.37.0
@@ -104,7 +104,7 @@ require (
 	golang.org/x/term v0.46.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	golang.org/x/tools v0.49.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260921155816-b14227669459 // indirect
 	google.golang.org/grpc v1.84.0 // indirect
 	google.golang.org/protobuf v1.36.12 // indirect
