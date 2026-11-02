@@ -18,3 +18,6 @@ annotations:
   catalog.cattle.io/rancher-version: '>= 2.13.0-0 < 2.14.0-0'
   catalog.cattle.io/release-name: rancher-gke-operator
   catalog.cattle.io/scope: management
+  helm.sh/images: |
+    - name: gke-operator
+      image: rancher/gke-operator:v0.0.0
