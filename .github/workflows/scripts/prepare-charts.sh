@@ -15,6 +15,7 @@ if ! [[ "$TAG" =~ ^v1\.([0-9]+)\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
   echo "Error: tag $TAG must look like v1.N.P or v1.N.P-rc.R" >&2
   exit 1
 fi
+TAG_MINOR=${BASH_REMATCH[1]}
 APP_VERSION=${TAG#v}
 
 SRC_MAIN=charts/gke-operator
@@ -30,12 +31,11 @@ for src in "$SRC_MAIN" "$SRC_CRD"; do
   fi
 done
 
-# GKE operator v1.N.x releases target the Rancher 2.16 line. Keep this fixed with
-# the chart annotation and update it when this branch moves to a new Rancher minor.
-RANCHER_MINOR=16
+# Tag v1.N.x is for Rancher 2.N, but cargueiro takes the chart major from the
+# rancher-version annotation. Refuse a mismatch before anything is pushed.
 CHART_MINOR=$(sed -n -E 's|^[[:space:]]+catalog\.cattle\.io/rancher-version:[^0-9]*2\.([0-9]+)\..*|\1|p' "$SRC_MAIN/Chart.yaml")
-if [ "$CHART_MINOR" != "$RANCHER_MINOR" ]; then
-  echo "Error: $TAG is for Rancher 2.${RANCHER_MINOR}, but the catalog.cattle.io/rancher-version annotation in" >&2
+if [ "$CHART_MINOR" != "$TAG_MINOR" ]; then
+  echo "Error: tag $TAG is for Rancher 2.${TAG_MINOR}, but the catalog.cattle.io/rancher-version annotation in" >&2
   echo "$SRC_MAIN/Chart.yaml is for Rancher 2.${CHART_MINOR:-?}. Update the rancher-version and kube-version" >&2
   echo "annotations on this branch before tagging." >&2
   exit 1
@@ -46,8 +46,9 @@ CRD_DIR="$OUT_DIR/rancher-gke-operator-crd"
 rm -rf "$MAIN_DIR" "$CRD_DIR"
 mkdir -p "$OUT_DIR"
 
-# The operator chart: the appVersion and the image tag. Only the tag right after the
-# gke-operator repository. cargueiro stamp writes helm.sh/images from that tag.
+# The operator chart: the appVersion and the image tag. Only the tag right 
+# after the gke-operator repository. Note: helm.sh/images annotation is removed
+# to let cargueiro generate it in the final chart.
 cp -r "$SRC_MAIN" "$MAIN_DIR"
 sed -i.bak \
   -e "s|^appVersion:.*|appVersion: ${APP_VERSION}|" \
