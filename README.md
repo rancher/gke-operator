@@ -110,16 +110,7 @@ unRC is the process of removing the rc from a KEv2 operator tag and means the re
 
 #### Chart releases (charts v2)
 
-Once the images of a `v*` tag are published, the release workflow runs the
-[Stage chart](.github/workflows/stage-chart.yaml) workflow. It stages the `rancher-gke-operator` and
-`rancher-gke-operator-crd` charts in
-the staging registry with
-[cargueiro](https://github.com/rancher/cargueiro/blob/main/docs/CHART_OWNER.md) and opens a pull
-request against the `staging` branch of `rancher/charts`. The charts come from `charts/gke-operator`
-and `charts/gke-operator-crd`, prepared for the tag by
-[prepare-charts.sh](.github/workflows/scripts/prepare-charts.sh); the chart version is worked out
-from the `catalog.cattle.io/rancher-version` annotation, the app version and the versions already
-released. The chart steps of the release workflow stay until the old chart path is retired.
+Pushing a `v*` tag starts the [Stage chart](.github/workflows/stage-chart.yaml) workflow. It does not wait for the images of the release workflow. It stages the `rancher-gke-operator` and `rancher-gke-operator-crd` charts in the staging registry with [cargueiro](https://github.com/rancher/cargueiro/blob/main/docs/CHART_OWNER.md) and opens a pull request against the `staging` branch of `rancher/charts`. The charts come from `charts/gke-operator` and `charts/gke-operator-crd`, prepared for the tag by [prepare-charts.sh](.github/workflows/scripts/prepare-charts.sh). cargueiro works out the chart version from the `catalog.cattle.io/rancher-version` annotation, the app version and the versions already released, and writes the `helm.sh/images` annotation from the image in `values.yaml`. The chart steps of the release workflow stay until the old chart path is retired.
 
 A tag `v1.N.x` is for Rancher 2.N. Before the first tag of a new minor, update the
 `catalog.cattle.io/rancher-version` and `kube-version` annotations in `charts/gke-operator/Chart.yaml`:

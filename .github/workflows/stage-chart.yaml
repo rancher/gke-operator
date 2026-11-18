@@ -4,12 +4,11 @@ name: Stage chart
 # the staging registry with cargueiro and notify rancher/charts. See
 # https://github.com/rancher/cargueiro/blob/main/docs/CHART_OWNER.md
 #
-# release.yaml calls it once the images are published, and keeps the old chart path
-# until that is retired. To stage a tag again by hand:
+# It runs on every v* tag push, without waiting for the images of release.yaml, and
+# stages the charts of that tag. To stage a tag again by hand:
 # gh workflow run stage-chart.yaml --ref <tag>
 
 on:
-  workflow_call:
   workflow_dispatch:
 
 permissions: {}
