@@ -8,7 +8,7 @@ global:
 gkeOperator:
   image:
     repository: rancher/gke-operator
-    tag: v1.16.0-rc.6
+    tag: v1.16.0-rc.7
   debug: false
 
 httpProxy: ""
