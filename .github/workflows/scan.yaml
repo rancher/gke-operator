@@ -29,13 +29,7 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
       - name: Build image
-        uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
-        with:
-          context: .
-          tags: ghcr.io/rancher/gke-operator:${{ github.sha }}
-          load: true
-          push: false
-          file: package/Dockerfile
+        run: make image-build REPO=ghcr.io/rancher TAG=${{ github.sha }} BUILD_ACTION=--load
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         env:
