@@ -14,8 +14,8 @@ MACHINE := rancher
 # Note that what would actually be used for a given project will be
 # defined in TARGET_PLATFORMS, and must be a subset of the below:
 DEFAULT_PLATFORMS := linux/amd64,linux/arm64,darwin/arm64,darwin/amd64
-TARGET_PLATFORMS := linux/amd64,linux/arm64
-BUILDX_ARGS ?= --sbom=true --attest type=provenance,mode=max
+TARGET_PLATFORMS ?= linux/amd64,linux/arm64
+BUILDX_ARGS ?=
 
 OPERATOR_CHART?=$(shell find $(ROOT_DIR) -type f -name "rancher-gke-operator-[0-9]*.tgz" -print)
 CRD_CHART?=$(shell find $(ROOT_DIR) -type f -name "rancher-gke-operator-crd*.tgz" -print)
@@ -134,6 +134,11 @@ image-push: buildx-machine ## build the container image targeting all platforms 
     --builder $(MACHINE) $(IID_FILE_FLAG) $(BUILDX_ARGS) --build-arg COMMIT=$(GIT_COMMIT) --build-arg VERSION=$(TAG) \
     --platform=$(TARGET_PLATFORMS) -t "$(IMAGE)" --push .
 	@echo "Pushed $(IMAGE)"
+
+.PHONY: push-prime-image
+push-prime-image: ## build and push the Prime image with SBOM and provenance attestations.
+	BUILDX_ARGS="--sbom=true --attest type=provenance,mode=max" \
+	$(MAKE) image-push
 
 .PHONY: setup-kind
 setup-kind:
